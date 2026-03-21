@@ -21,6 +21,7 @@ Welcome to the EyeOnChess documentation. EyeOnChess is a fully self-hostable, op
 - [Dockerfiles](deployment/dockerfiles.md) — Container build details
 - [Nginx](deployment/nginx.md) — Reverse proxy configuration
 - [Backup & Restore](deployment/backup.md) — Database backup and recovery
+- [Observability](deployment/observability.md) — Grafana, Prometheus, Loki, Promtail
 
 ### Backend API
 

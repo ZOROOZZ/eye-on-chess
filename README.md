@@ -32,6 +32,10 @@
   <img src="https://img.shields.io/badge/Zustand-5-764ABC" alt="Zustand 5">
   <img src="https://img.shields.io/badge/chess.js-1.4-green" alt="chess.js">
   <img src="https://img.shields.io/badge/Chessground-9-B58863" alt="Chessground">
+  <img src="https://img.shields.io/badge/Grafana-11-F46800?logo=grafana&logoColor=white" alt="Grafana 11">
+  <img src="https://img.shields.io/badge/Prometheus-3-E6522C?logo=prometheus&logoColor=white" alt="Prometheus 3">
+  <img src="https://img.shields.io/badge/Loki-3-F7D02C?logo=grafana&logoColor=black" alt="Loki 3">
+  <img src="https://img.shields.io/badge/Promtail-3-F7D02C" alt="Promtail 3">
 </p>
 
 ---
@@ -150,6 +154,14 @@ All configuration is done via environment variables in `.env`. See [`.env.exampl
 | ---------------- | ----------- | ------------------------ |
 | `STOCKFISH_PATH` | `stockfish` | Path to Stockfish binary |
 
+### Observability (Grafana)
+
+| Variable                 | Default | Description            |
+| ------------------------ | ------- | ---------------------- |
+| `GRAFANA_ADMIN_USER`     | `admin` | Grafana admin username |
+| `GRAFANA_ADMIN_PASSWORD` | `admin` | Grafana admin password |
+| `GRAFANA_PORT`           | `3003`  | Grafana UI port        |
+
 ## Architecture
 
 ```
@@ -162,29 +174,34 @@ scripts/        → Backup utilities
 
 ### Services
 
-| Service      | Role                                                       |
-| ------------ | ---------------------------------------------------------- |
-| **Nginx**    | Reverse proxy (port 80), routes /api and /socket.io to API |
-| **Web**      | Next.js frontend                                           |
-| **API**      | Fastify REST API + Socket.io for real-time                 |
-| **Worker**   | Stockfish analysis pipeline (polls Redis queue)            |
-| **Postgres** | Primary database (Prisma ORM)                              |
-| **Redis**    | Presence, game clocks, analysis job queue                  |
+| Service        | Role                                                       |
+| -------------- | ---------------------------------------------------------- |
+| **Nginx**      | Reverse proxy (port 80), routes /api and /socket.io to API |
+| **Web**        | Next.js frontend                                           |
+| **API**        | Fastify REST API + Socket.io for real-time                 |
+| **Worker**     | Stockfish analysis pipeline (polls Redis queue)            |
+| **Postgres**   | Primary database (Prisma ORM)                              |
+| **Redis**      | Presence, game clocks, analysis job queue                  |
+| **Prometheus** | Metrics collection (scrapes API /metrics every 15s)        |
+| **Loki**       | Log aggregation                                            |
+| **Promtail**   | Ships Docker container logs to Loki                        |
+| **Grafana**    | Dashboards and log viewer (port 3003)                      |
 
 ## Tech Stack
 
-| Layer       | Technology                                                 |
-| ----------- | ---------------------------------------------------------- |
-| Frontend    | Next.js 14 (App Router), TypeScript, Tailwind CSS, Zustand |
-| Board UI    | Chessground                                                |
-| Chess Logic | chess.js                                                   |
-| Backend     | Fastify, TypeScript                                        |
-| Database    | PostgreSQL, Prisma ORM                                     |
-| Real-time   | Socket.io                                                  |
-| Cache       | Redis                                                      |
-| Analysis    | Stockfish 15                                               |
-| Auth        | Custom JWT (access token + httpOnly refresh cookie)        |
-| Deployment  | Docker Compose, Nginx                                      |
+| Layer         | Technology                                                 |
+| ------------- | ---------------------------------------------------------- |
+| Frontend      | Next.js 14 (App Router), TypeScript, Tailwind CSS, Zustand |
+| Board UI      | Chessground                                                |
+| Chess Logic   | chess.js                                                   |
+| Backend       | Fastify, TypeScript                                        |
+| Database      | PostgreSQL, Prisma ORM                                     |
+| Real-time     | Socket.io                                                  |
+| Cache         | Redis                                                      |
+| Analysis      | Stockfish 15                                               |
+| Auth          | Custom JWT (access token + httpOnly refresh cookie)        |
+| Observability | Grafana 11, Prometheus 3, Loki 3, Promtail 3               |
+| Deployment    | Docker Compose, Nginx                                      |
 
 ## Backup & Restore
 
