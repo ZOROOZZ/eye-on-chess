@@ -1,8 +1,10 @@
 import pino from "pino";
+import type { LoggerOptions } from "pino";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-export const logger = pino({
+// Pino options shared between Fastify and standalone loggers
+export const loggerOptions: LoggerOptions = {
   level: process.env.LOG_LEVEL || (isProduction ? "info" : "debug"),
   ...(isProduction
     ? {}
@@ -16,7 +18,10 @@ export const logger = pino({
           },
         },
       }),
-});
+};
+
+// Standalone logger for non-Fastify code (worker, etc.)
+export const logger = pino(loggerOptions);
 
 export function createChildLogger(name: string) {
   return logger.child({ module: name });
