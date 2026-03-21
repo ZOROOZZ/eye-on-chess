@@ -203,6 +203,26 @@ export async function gameRoutes(app: FastifyInstance) {
     return { game };
   });
 
+  // Get user's active game (if any)
+  app.get("/api/games/active", async (request) => {
+    const userId = request.user.userId;
+
+    const game = await prisma.game.findFirst({
+      where: {
+        status: "ACTIVE",
+        OR: [{ whiteId: userId }, { blackId: userId }],
+      },
+      include: {
+        white: { select: { id: true, username: true, rating: true, avatarUrl: true } },
+        black: { select: { id: true, username: true, rating: true, avatarUrl: true } },
+        moves: { orderBy: { ply: "asc" } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { game };
+  });
+
   // Get user's game history
   app.get<{
     Querystring: { page?: string; limit?: string };

@@ -13,9 +13,23 @@ const BOARD_COLORS: Record<BoardTheme, { light: string; dark: string }> = {
 
 const PIECE_FILTERS: Record<PieceSet, string> = {
   classic: "none",
-  modern: "saturate(1.2) contrast(1.1)",
-  minimal: "grayscale(0.3) contrast(1.3)",
+  modern: "saturate(1.3) contrast(1.15) brightness(1.05)",
+  minimal: "grayscale(0.4) contrast(1.4)",
 };
+
+function generateBoardSvg(light: string, dark: string): string {
+  // Generate an 8x8 checkerboard SVG
+  let rects = "";
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      const isLight = (x + y) % 2 === 0;
+      const color = isLight ? light : dark;
+      rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${color}"/>`;
+    }
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8" shape-rendering="crispEdges">${rects}</svg>`;
+  return `url('data:image/svg+xml;base64,${btoa(svg)}')`;
+}
 
 export default function BoardThemeStyles() {
   const boardTheme = useSettingsStore((s) => s.boardTheme);
@@ -23,20 +37,15 @@ export default function BoardThemeStyles() {
 
   const colors = BOARD_COLORS[boardTheme] || BOARD_COLORS.classic;
   const filter = PIECE_FILTERS[pieceSet] || "none";
+  const boardBg = generateBoardSvg(colors.light, colors.dark);
 
   return (
     <style jsx global>{`
       cg-board {
-        background-color: ${colors.dark} !important;
-        background-image: none !important;
-      }
-      cg-board square.white {
         background-color: ${colors.light} !important;
+        background-image: ${boardBg} !important;
       }
-      cg-board square.black {
-        background-color: ${colors.dark} !important;
-      }
-      ${filter !== "none" ? `cg-board piece { filter: ${filter} !important; }` : ""}
+      ${filter !== "none" ? `.cg-wrap piece { filter: ${filter} !important; }` : ""}
     `}</style>
   );
 }

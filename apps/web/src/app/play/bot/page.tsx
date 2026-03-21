@@ -122,6 +122,13 @@ export default function PlayBotPage() {
   const [confirmResign, setConfirmResign] = useState(false);
   const [confirmStart, setConfirmStart] = useState(false);
 
+  const [activeGame, setActiveGame] = useState<{
+    id: string;
+    botElo: number | null;
+    isVsBot: boolean;
+  } | null>(null);
+  const [showActivePrompt, setShowActivePrompt] = useState(false);
+
   const engineEval = useEngineEval(fen, showEvalBar && phase === "game");
 
   useEffect(() => {
@@ -130,6 +137,65 @@ export default function PlayBotPage() {
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
   }, [isLoading, user, router]);
+
+  // Check for active game on mount
+  useEffect(() => {
+    if (!user || phase !== "select") return;
+    async function checkActive() {
+      try {
+        const { data } = await api.get("/api/games/active");
+        if (data.game && data.game.isVsBot) {
+          setActiveGame(data.game);
+          setShowActivePrompt(true);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    checkActive();
+  }, [user, phase]);
+
+  async function resumeGame() {
+    if (!activeGame) return;
+    try {
+      const { data } = await api.get(`/api/games/${activeGame.id}`);
+      const g = data.game;
+      setGameId(g.id);
+      setPlayerIsWhite(g.whiteId === user?.id);
+      setBotElo(g.botElo || 800);
+      setTimeControl(g.timeControl);
+      setFen(g.fen);
+      if (g.moves && g.moves.length > 0) {
+        const records = g.moves.map((m: { ply: number; san: string; fen: string }) => ({
+          ply: m.ply,
+          san: m.san,
+          fen: m.fen,
+        }));
+        setMoves(records);
+        setAllSans(g.moves.map((m: { san: string }) => m.san));
+        setCurrentPly(records.length);
+        const last = g.moves[g.moves.length - 1];
+        if (last.uci && last.uci.length >= 4) {
+          setLastMove([last.uci.slice(0, 2), last.uci.slice(2, 4)]);
+        }
+      }
+      setPhase("game");
+      setShowActivePrompt(false);
+    } catch {
+      setShowActivePrompt(false);
+    }
+  }
+
+  async function resignActiveAndContinue() {
+    if (!activeGame) return;
+    try {
+      await api.post(`/api/games/${activeGame.id}/resign`);
+    } catch {
+      // ignore
+    }
+    setActiveGame(null);
+    setShowActivePrompt(false);
+  }
 
   async function startGame() {
     setError("");
@@ -191,6 +257,8 @@ export default function PlayBotPage() {
           if (showMoveFeedback) {
             const cls = classifyMoveFast(fenBefore, data.playerMove.fen, newSans);
             setFeedback(cls);
+          } else {
+            setFeedback(null);
           }
         }
         if (data.clocks) setClocks(data.clocks);
@@ -304,6 +372,29 @@ export default function PlayBotPage() {
         <div className="max-w-lg w-full space-y-6">
           <h1 className="text-2xl font-bold text-center">Play vs Bot</h1>
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
+          {/* Active game prompt */}
+          {showActivePrompt && activeGame && (
+            <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 text-center">
+              <p className="text-sm text-yellow-300 mb-3">
+                You have an active game vs Bot ({activeGame.botElo})
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={resumeGame}
+                  className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded text-sm font-medium transition-colors"
+                >
+                  Continue Game
+                </button>
+                <button
+                  onClick={resignActiveAndContinue}
+                  className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium transition-colors"
+                >
+                  Resign &amp; New Game
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="bg-gray-900 rounded-lg p-4">
             <h2 className="text-sm font-semibold text-gray-400 mb-2">Bot Difficulty</h2>
