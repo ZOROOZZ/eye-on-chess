@@ -4,9 +4,34 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/amiwrpremium/eye-on-chess"><img src="https://img.shields.io/badge/Docker-Ready-blue?logo=docker" alt="Docker"></a>
+  <a href="https://github.com/amiwrpremium/eye-on-chess/actions/workflows/ci.yml"><img src="https://github.com/amiwrpremium/eye-on-chess/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
   <a href="https://github.com/amiwrpremium/eye-on-chess/stargazers"><img src="https://img.shields.io/github/stars/amiwrpremium/eye-on-chess?style=social" alt="Stars"></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-14-black?logo=next.js" alt="Next.js 14">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React 18">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS 3">
+  <img src="https://img.shields.io/badge/Fastify-5-000000?logo=fastify&logoColor=white" alt="Fastify 5">
+  <img src="https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white" alt="Prisma 6">
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white" alt="Redis">
+  <img src="https://img.shields.io/badge/Socket.io-4-010101?logo=socket.io&logoColor=white" alt="Socket.io 4">
+  <img src="https://img.shields.io/badge/Stockfish-15-5C9E31" alt="Stockfish 15">
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/Nginx-Alpine-009639?logo=nginx&logoColor=white" alt="Nginx">
+  <img src="https://img.shields.io/badge/Node.js-22_LTS-339933?logo=node.js&logoColor=white" alt="Node.js 22">
+  <img src="https://img.shields.io/badge/pnpm-10-F69220?logo=pnpm&logoColor=white" alt="pnpm 10">
+  <img src="https://img.shields.io/badge/Turborepo-2-EF4444?logo=turborepo&logoColor=white" alt="Turborepo">
+  <img src="https://img.shields.io/badge/Vitest-4-6E9F18?logo=vitest&logoColor=white" alt="Vitest 4">
+  <img src="https://img.shields.io/badge/ESLint-9-4B32C3?logo=eslint&logoColor=white" alt="ESLint 9">
+  <img src="https://img.shields.io/badge/Prettier-3-F7B93E?logo=prettier&logoColor=black" alt="Prettier 3">
+  <img src="https://img.shields.io/badge/Pino-10-687634" alt="Pino 10">
+  <img src="https://img.shields.io/badge/Zustand-5-764ABC" alt="Zustand 5">
+  <img src="https://img.shields.io/badge/chess.js-1.4-green" alt="chess.js">
+  <img src="https://img.shields.io/badge/Chessground-9-B58863" alt="Chessground">
 </p>
 
 ---
@@ -195,6 +220,19 @@ We welcome contributions! See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for:
 - Branch naming conventions
 - PR guidelines
 - Code style notes
+
+## Acknowledgments
+
+- **[Stockfish](https://stockfishchess.org/)** — The powerful open source chess engine used for game analysis and bot play. Stockfish is licensed under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.en.html). We are grateful to the Stockfish team and contributors for making this incredible engine freely available.
+- **[chess.js](https://github.com/jhlywa/chess.js)** — Chess move generation, validation, and FEN/PGN parsing.
+- **[Chessground](https://github.com/lichess-org/chessground)** — The interactive chessboard UI library, originally built for [Lichess](https://lichess.org/).
+- **[Lichess](https://lichess.org/)** — Inspiration for many features and UX patterns.
+
+## Disclaimer
+
+This software is provided **"as is"**, without warranty of any kind, express or implied. Use it at your own risk.
+
+EyeOnChess is an independent open source project. It is **not affiliated with, endorsed by, or associated with** Lichess, Chess.com, Stockfish, or any other chess platform or organization. All trademarks and product names are the property of their respective owners.
 
 ## License
 
