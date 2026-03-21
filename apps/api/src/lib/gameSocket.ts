@@ -139,7 +139,7 @@ export function setupGameSocket(io: SocketServer) {
           return;
         }
 
-        const ply = game.moves ? (await prisma.move.count({ where: { gameId } })) + 1 : 1;
+        const ply = (await prisma.move.count({ where: { gameId } })) + 1;
 
         // Persist move
         await prisma.move.create({

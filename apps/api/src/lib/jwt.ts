@@ -1,10 +1,10 @@
-import jwt from "jsonwebtoken";
+import jwt, { type Secret } from "jsonwebtoken";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
+if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is required");
 }
+const JWT_SECRET: Secret = process.env.JWT_SECRET;
 
 export interface AccessTokenPayload {
   userId: string;
@@ -14,11 +14,12 @@ export interface AccessTokenPayload {
 }
 
 export function signAccessToken(payload: AccessTokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign({ ...payload }, JWT_SECRET, { expiresIn: "15m" });
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
-  return jwt.verify(token, JWT_SECRET) as AccessTokenPayload;
+  const decoded = jwt.verify(token, JWT_SECRET);
+  return decoded as unknown as AccessTokenPayload;
 }
 
 export function generateRefreshToken(): string {

@@ -53,7 +53,7 @@ describe("JWT utilities", () => {
 
     it("should include iat and exp claims", () => {
       const token = signAccessToken(payload);
-      const decoded = verifyAccessToken(token) as Record<string, unknown>;
+      const decoded = verifyAccessToken(token) as unknown as Record<string, unknown>;
       expect(decoded).toHaveProperty("iat");
       expect(decoded).toHaveProperty("exp");
     });
