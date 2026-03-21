@@ -87,6 +87,11 @@ export async function authRoutes(app: FastifyInstance) {
       data: { email, username, passwordHash },
     });
 
+    // Auto-create Favorites collection
+    await prisma.collection.create({
+      data: { userId: user.id, name: "Favorites" },
+    });
+
     const { accessToken, rawRefreshToken } = await createTokens(user);
 
     reply.setCookie(

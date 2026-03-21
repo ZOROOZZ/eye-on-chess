@@ -41,6 +41,13 @@ async function main() {
     },
   });
 
+  // Create Favorites collection for admin
+  await prisma.collection.upsert({
+    where: { userId_name: { userId: user.id, name: "Favorites" } },
+    update: {},
+    create: { userId: user.id, name: "Favorites" },
+  });
+
   console.log(`Seeded admin: ${user.username} (${user.email})`);
 }
 

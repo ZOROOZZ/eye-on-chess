@@ -85,6 +85,7 @@ model User {
   friendshipsReceived  Friendship[]  @relation("Addressee")
   refreshTokens       RefreshToken[]
   auditLogs           AuditLog[]
+  collections         Collection[]
 }
 
 model RefreshToken {
@@ -134,10 +135,11 @@ model Game {
   startedAt     DateTime?
   endedAt       DateTime?
 
-  white    User?          @relation("WhitePlayer", fields: [whiteId], references: [id])
-  black    User?          @relation("BlackPlayer", fields: [blackId], references: [id])
-  moves    Move[]
-  analysis GameAnalysis?
+  white           User?            @relation("WhitePlayer", fields: [whiteId], references: [id])
+  black           User?            @relation("BlackPlayer", fields: [blackId], references: [id])
+  moves           Move[]
+  analysis        GameAnalysis?
+  gameCollections GameCollection[]
 }
 
 model Move {
@@ -206,4 +208,29 @@ model AuditLog {
 
   @@index([adminId])
   @@index([createdAt])
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  games GameCollection[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model GameCollection {
+  id           String @id @default(cuid())
+  gameId       String
+  collectionId String
+
+  game       Game       @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, collectionId])
+  @@index([collectionId])
 }

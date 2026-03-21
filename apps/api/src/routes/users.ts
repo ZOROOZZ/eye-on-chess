@@ -31,59 +31,120 @@ export async function userRoutes(app: FastifyInstance) {
     }
   );
 
-  // Public profile
-  app.get<{ Params: { username: string } }>("/api/users/:username", async (request, reply) => {
-    const { username } = request.params;
+  // Public profile with optional H2H
+  app.get<{ Params: { username: string }; Querystring: { vsUserId?: string } }>(
+    "/api/users/:username",
+    async (request, reply) => {
+      const { username } = request.params;
+      const { vsUserId } = request.query;
 
-    const user = await prisma.user.findUnique({
-      where: { username },
-      select: {
-        id: true,
-        username: true,
-        rating: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
-    });
+      const user = await prisma.user.findUnique({
+        where: { username },
+        select: {
+          id: true,
+          username: true,
+          rating: true,
+          avatarUrl: true,
+          createdAt: true,
+        },
+      });
 
-    if (!user) {
-      return reply.status(404).send({ error: "User not found" });
+      if (!user) {
+        return reply.status(404).send({ error: "User not found" });
+      }
+
+      // Build filter: global or H2H
+      const h2h = vsUserId && vsUserId !== user.id;
+      const baseWhere = h2h
+        ? {
+            status: "COMPLETED" as const,
+            OR: [
+              { whiteId: user.id, blackId: vsUserId },
+              { whiteId: vsUserId, blackId: user.id },
+            ],
+          }
+        : {
+            status: "COMPLETED" as const,
+            OR: [{ whiteId: user.id }, { blackId: user.id }],
+          };
+
+      const [wins, losses, draws] = await Promise.all([
+        prisma.game.count({
+          where: {
+            ...baseWhere,
+            OR: h2h
+              ? [
+                  { whiteId: user.id, blackId: vsUserId, result: "WHITE_WIN" },
+                  { blackId: user.id, whiteId: vsUserId, result: "BLACK_WIN" },
+                ]
+              : [
+                  { whiteId: user.id, result: "WHITE_WIN" },
+                  { blackId: user.id, result: "BLACK_WIN" },
+                ],
+          },
+        }),
+        prisma.game.count({
+          where: {
+            ...baseWhere,
+            OR: h2h
+              ? [
+                  { whiteId: user.id, blackId: vsUserId, result: "BLACK_WIN" },
+                  { blackId: user.id, whiteId: vsUserId, result: "WHITE_WIN" },
+                ]
+              : [
+                  { whiteId: user.id, result: "BLACK_WIN" },
+                  { blackId: user.id, result: "WHITE_WIN" },
+                ],
+          },
+        }),
+        prisma.game.count({
+          where: {
+            status: "COMPLETED",
+            result: "DRAW",
+            OR: h2h
+              ? [
+                  { whiteId: user.id, blackId: vsUserId },
+                  { whiteId: vsUserId, blackId: user.id },
+                ]
+              : [{ whiteId: user.id }, { blackId: user.id }],
+          },
+        }),
+      ]);
+
+      // Recent games (H2H or global)
+      const recentGames = await prisma.game.findMany({
+        where: {
+          status: "COMPLETED",
+          OR: h2h
+            ? [
+                { whiteId: user.id, blackId: vsUserId },
+                { whiteId: vsUserId, blackId: user.id },
+              ]
+            : [{ whiteId: user.id }, { blackId: user.id }],
+        },
+        select: {
+          id: true,
+          result: true,
+          termination: true,
+          timeControl: true,
+          createdAt: true,
+          whiteId: true,
+          blackId: true,
+          white: { select: { username: true } },
+          black: { select: { username: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
+
+      return {
+        user: {
+          ...user,
+          stats: { wins, losses, draws, total: wins + losses + draws },
+          recentGames,
+          isH2H: !!h2h,
+        },
+      };
     }
-
-    // Game stats from completed games
-    const [wins, losses, draws] = await Promise.all([
-      prisma.game.count({
-        where: {
-          status: "COMPLETED",
-          OR: [
-            { whiteId: user.id, result: "WHITE_WIN" },
-            { blackId: user.id, result: "BLACK_WIN" },
-          ],
-        },
-      }),
-      prisma.game.count({
-        where: {
-          status: "COMPLETED",
-          OR: [
-            { whiteId: user.id, result: "BLACK_WIN" },
-            { blackId: user.id, result: "WHITE_WIN" },
-          ],
-        },
-      }),
-      prisma.game.count({
-        where: {
-          status: "COMPLETED",
-          result: "DRAW",
-          OR: [{ whiteId: user.id }, { blackId: user.id }],
-        },
-      }),
-    ]);
-
-    return {
-      user: {
-        ...user,
-        stats: { wins, losses, draws, total: wins + losses + draws },
-      },
-    };
-  });
+  );
 }

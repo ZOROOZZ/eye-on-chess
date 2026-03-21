@@ -2,8 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../stores/auth";
+import CollectionPicker from "../../../components/CollectionPicker";
+
+interface RecentGame {
+  id: string;
+  result: string | null;
+  termination: string | null;
+  timeControl: string;
+  createdAt: string;
+  whiteId: string | null;
+  blackId: string | null;
+  white: { username: string } | null;
+  black: { username: string } | null;
+}
 
 interface UserProfile {
   id: string;
@@ -12,6 +26,8 @@ interface UserProfile {
   avatarUrl: string | null;
   createdAt: string;
   stats: { wins: number; losses: number; draws: number; total: number };
+  recentGames: RecentGame[];
+  isH2H: boolean;
 }
 
 type FriendshipState = "none" | "pending" | "friends" | "incoming";
@@ -28,24 +44,29 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
+  const [h2hMode, setH2hMode] = useState(true);
+  const [favoriteGameId, setFavoriteGameId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMe();
   }, [fetchMe]);
 
+  const isOwnProfile = currentUser?.username === username;
+
   useEffect(() => {
     async function load() {
+      setLoading(true);
       try {
-        const { data } = await api.get(`/api/users/${username}`);
+        const isOther = currentUser && currentUser.username !== username;
+        const vsParam = isOther && h2hMode ? `?vsUserId=${currentUser.id}` : "";
+        const { data } = await api.get(`/api/users/${username}${vsParam}`);
         setProfile(data.user);
 
-        // Check friendship status if logged in
         if (currentUser && data.user.id !== currentUser.id) {
           const [friendsRes, requestsRes] = await Promise.all([
             api.get("/api/friends"),
             api.get("/api/friends/requests"),
           ]);
-
           const friend = friendsRes.data.friends.find(
             (f: { id: string; friendshipId: string }) => f.id === data.user.id
           );
@@ -54,7 +75,6 @@ export default function ProfilePage() {
             setFriendshipId(friend.friendshipId);
             return;
           }
-
           const incoming = requestsRes.data.requests.find(
             (r: { id: string; friendshipId: string }) => r.id === data.user.id
           );
@@ -63,9 +83,6 @@ export default function ProfilePage() {
             setFriendshipId(incoming.friendshipId);
             return;
           }
-
-          // Could also be outgoing pending — we just show "pending" state
-          // For simplicity, we'll set none and let the server reject duplicates
           setFriendState("none");
         }
       } catch {
@@ -75,7 +92,7 @@ export default function ProfilePage() {
       }
     }
     load();
-  }, [username, currentUser]);
+  }, [username, currentUser, h2hMode]);
 
   async function sendRequest() {
     setActionLoading(true);
@@ -86,7 +103,6 @@ export default function ProfilePage() {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
         "Failed to send request";
-      // If already pending, show that state
       if (msg.includes("pending")) setFriendState("pending");
       else setError(msg);
     } finally {
@@ -101,7 +117,7 @@ export default function ProfilePage() {
       await api.post("/api/friends/accept", { friendshipId });
       setFriendState("friends");
     } catch {
-      setError("Failed to accept request");
+      setError("Failed to accept");
     } finally {
       setActionLoading(false);
     }
@@ -115,7 +131,7 @@ export default function ProfilePage() {
       setFriendState("none");
       setFriendshipId(null);
     } catch {
-      setError("Failed to remove friend");
+      setError("Failed to remove");
     } finally {
       setActionLoading(false);
     }
@@ -137,12 +153,11 @@ export default function ProfilePage() {
     );
   }
 
-  const isOwnProfile = currentUser?.id === profile.id;
-
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen p-4">
-      <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full">
-        <div className="text-center mb-6">
+    <main className="flex flex-col items-center min-h-screen p-4 pt-12">
+      <div className="max-w-lg w-full space-y-4">
+        {/* Header */}
+        <div className="bg-gray-900 rounded-lg p-6 text-center">
           <div className="w-20 h-20 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold">
             {profile.username[0].toUpperCase()}
           </div>
@@ -152,32 +167,55 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-gray-800 rounded p-3 text-center">
+        {/* H2H toggle (only when viewing other profile while logged in) */}
+        {currentUser && !isOwnProfile && (
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={() => setH2hMode(true)}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                h2hMode ? "bg-blue-600" : "bg-gray-800 hover:bg-gray-700"
+              }`}
+            >
+              vs Me
+            </button>
+            <button
+              onClick={() => setH2hMode(false)}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                !h2hMode ? "bg-blue-600" : "bg-gray-800 hover:bg-gray-700"
+              }`}
+            >
+              All Games
+            </button>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-gray-900 rounded p-3 text-center">
             <p className="text-2xl font-bold">{profile.rating}</p>
             <p className="text-gray-400 text-xs">Rating</p>
           </div>
-          <div className="bg-gray-800 rounded p-3 text-center">
+          <div className="bg-gray-900 rounded p-3 text-center">
             <p className="text-2xl font-bold">{profile.stats.total}</p>
             <p className="text-gray-400 text-xs">Games</p>
           </div>
         </div>
-
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="bg-gray-800 rounded p-3 text-center">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-gray-900 rounded p-3 text-center">
             <p className="text-lg font-bold text-green-400">{profile.stats.wins}</p>
             <p className="text-gray-400 text-xs">Wins</p>
           </div>
-          <div className="bg-gray-800 rounded p-3 text-center">
+          <div className="bg-gray-900 rounded p-3 text-center">
             <p className="text-lg font-bold text-red-400">{profile.stats.losses}</p>
             <p className="text-gray-400 text-xs">Losses</p>
           </div>
-          <div className="bg-gray-800 rounded p-3 text-center">
+          <div className="bg-gray-900 rounded p-3 text-center">
             <p className="text-lg font-bold text-gray-300">{profile.stats.draws}</p>
             <p className="text-gray-400 text-xs">Draws</p>
           </div>
         </div>
 
+        {/* Friend actions */}
         {!isOwnProfile && currentUser && (
           <div className="text-center">
             {friendState === "none" && (
@@ -213,7 +251,49 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <div className="mt-6 text-center">
+        {/* Recent games */}
+        {profile.recentGames && profile.recentGames.length > 0 && (
+          <div className="bg-gray-900 rounded-lg p-4">
+            <h2 className="text-sm font-semibold text-gray-400 mb-3">
+              {profile.isH2H ? "Games Between Us" : "Recent Games"}
+            </h2>
+            <div className="space-y-2">
+              {profile.recentGames.map((g) => (
+                <div
+                  key={g.id}
+                  className="flex items-center justify-between bg-gray-800 rounded p-2"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs">
+                      {g.white?.username || "?"} vs {g.black?.username || "?"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {g.result || "—"} &middot; {g.timeControl} &middot;{" "}
+                      {new Date(g.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 shrink-0 ml-2">
+                    <button
+                      onClick={() => setFavoriteGameId(g.id)}
+                      className="px-1.5 py-0.5 text-xs hover:text-red-400 transition-colors"
+                      title="Add to collection"
+                    >
+                      ♡
+                    </button>
+                    <Link
+                      href={`/game/${g.id}/analysis`}
+                      className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
+                    >
+                      Analyze
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="text-center">
           <button
             onClick={() => router.back()}
             className="text-gray-400 hover:text-white text-sm transition-colors"
@@ -222,6 +302,15 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Collection picker */}
+      {favoriteGameId && (
+        <CollectionPicker
+          gameId={favoriteGameId}
+          open={true}
+          onClose={() => setFavoriteGameId(null)}
+        />
+      )}
     </main>
   );
 }
