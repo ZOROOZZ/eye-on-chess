@@ -10,10 +10,11 @@ import { adminRoutes } from "./routes/admin.js";
 import { setupSocket } from "./lib/socket.js";
 import { setupGameSocket } from "./lib/gameSocket.js";
 import { getSiteSettings } from "./lib/settings.js";
+import { logger } from "./lib/logger.js";
 
 async function main() {
   const fastify = Fastify({
-    logger: true,
+    logger,
     trustProxy: true,
   });
 

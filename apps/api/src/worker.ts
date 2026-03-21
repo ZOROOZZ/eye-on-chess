@@ -2,8 +2,10 @@ import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
 import { StockfishEngine } from "./lib/stockfish.js";
 import { classifyMove, computeAccuracy } from "./lib/classify.js";
-import { lookupOpening } from "./lib/eco.js";
+import { createChildLogger } from "./lib/logger.js";
 import { Chess } from "chess.js";
+
+const log = createChildLogger("worker");
 
 const QUEUE_KEY = "analysis:queue";
 const POLL_INTERVAL = 2000;
@@ -15,7 +17,7 @@ function statusKey(gameId: string) {
 
 async function analyzeGame(gameId: string, engine: StockfishEngine) {
   await redis.set(statusKey(gameId), "processing");
-  console.log(`[Worker] Analyzing game ${gameId}`);
+  log.info({ gameId }, "analyzing game");
 
   const game = await prisma.game.findUnique({
     where: { id: gameId },
@@ -28,7 +30,7 @@ async function analyzeGame(gameId: string, engine: StockfishEngine) {
 
   if (!game || game.moves.length === 0) {
     await redis.set(statusKey(gameId), "error");
-    console.log(`[Worker] Game ${gameId} not found or has no moves`);
+    log.warn({ gameId }, "game not found or has no moves");
     return;
   }
 
@@ -52,9 +54,7 @@ async function analyzeGame(gameId: string, engine: StockfishEngine) {
     moveSans.push(move.san);
 
     // Get the position BEFORE this move
-    const chess = new Chess(move.fen);
-    // move.fen is the position AFTER the move
-    // We need the position before — reconstruct from start
+    // move.fen is the position AFTER the move — reconstruct from start
     const beforeChess = new Chess(startingFen);
     for (let i = 0; i < game.moves.indexOf(move); i++) {
       beforeChess.move(game.moves[i].san);
@@ -119,17 +119,15 @@ async function analyzeGame(gameId: string, engine: StockfishEngine) {
   });
 
   await redis.set(statusKey(gameId), "done");
-  console.log(
-    `[Worker] Analysis complete for ${gameId}: white=${whiteAccuracy}%, black=${blackAccuracy}%`
-  );
+  log.info({ gameId, whiteAccuracy, blackAccuracy }, "analysis complete");
 }
 
 async function main() {
-  console.log("[Worker] Starting analysis worker...");
+  log.info("starting analysis worker");
 
   const engine = new StockfishEngine();
   await engine.init();
-  console.log("[Worker] Stockfish initialized");
+  log.info("stockfish initialized");
 
   // Poll loop
   while (true) {
@@ -139,20 +137,20 @@ async function main() {
         try {
           await analyzeGame(gameId, engine);
         } catch (err) {
-          console.error(`[Worker] Error analyzing game ${gameId}:`, err);
+          log.error({ gameId, err }, "error analyzing game");
           await redis.set(statusKey(gameId), "error");
         }
       } else {
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
       }
     } catch (err) {
-      console.error("[Worker] Poll error:", err);
+      log.error({ err }, "poll error");
       await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
     }
   }
 }
 
 main().catch((err) => {
-  console.error("[Worker] Fatal error:", err);
+  log.fatal({ err }, "fatal error");
   process.exit(1);
 });
