@@ -37,7 +37,7 @@ export class StockfishEngine {
     await this.send("isready", "readyok");
   }
 
-  private send(command: string, waitFor: string): Promise<string[]> {
+  send(command: string, waitFor: string): Promise<string[]> {
     return new Promise((resolve, reject) => {
       if (!this.process) {
         reject(new Error("Stockfish not initialized"));

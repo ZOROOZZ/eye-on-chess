@@ -1,5 +1,7 @@
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 
+RUN apt-get update && apt-get install -y --no-install-recommends stockfish openssl && rm -rf /var/lib/apt/lists/*
+ENV PATH="/usr/games:${PATH}"
 RUN npm install -g pnpm@10.32.1
 
 WORKDIR /app
