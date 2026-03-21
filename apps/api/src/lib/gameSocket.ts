@@ -1,0 +1,249 @@
+import { Server as SocketServer, Socket } from "socket.io";
+import { Chess } from "chess.js";
+import { prisma } from "./prisma.js";
+import { computeElo } from "./elo.js";
+import {
+  initClocks,
+  getClocksRealtime,
+  onMove as clockOnMove,
+  isTimeout,
+  removeActiveGame,
+  getActiveGameIds,
+} from "./gameClock.js";
+
+async function getFullGameState(gameId: string) {
+  const game = await prisma.game.findUnique({
+    where: { id: gameId },
+    include: {
+      white: { select: { id: true, username: true, rating: true, avatarUrl: true } },
+      black: { select: { id: true, username: true, rating: true, avatarUrl: true } },
+      moves: { orderBy: { ply: "asc" } },
+    },
+  });
+  if (!game) return null;
+
+  const clocks = await getClocksRealtime(gameId);
+  return { game, clocks };
+}
+
+async function endGame(
+  io: SocketServer,
+  gameId: string,
+  result: "WHITE_WIN" | "BLACK_WIN" | "DRAW" | "ABORTED",
+  termination: "CHECKMATE" | "RESIGNATION" | "TIMEOUT" | "AGREEMENT"
+) {
+  const game = await prisma.game.update({
+    where: { id: gameId },
+    data: {
+      status: result === "ABORTED" ? "ABORTED" : "COMPLETED",
+      result,
+      termination,
+      endedAt: new Date(),
+    },
+    include: {
+      white: { select: { id: true, rating: true } },
+      black: { select: { id: true, rating: true } },
+    },
+  });
+
+  let ratingChange = { white: 0, black: 0 };
+
+  if (result !== "ABORTED" && game.white && game.black && !game.isVsBot) {
+    const { newWhiteRating, newBlackRating } = computeElo(
+      game.white.rating,
+      game.black.rating,
+      result
+    );
+    ratingChange = {
+      white: newWhiteRating - game.white.rating,
+      black: newBlackRating - game.black.rating,
+    };
+    await prisma.user.update({
+      where: { id: game.white.id },
+      data: { rating: newWhiteRating },
+    });
+    await prisma.user.update({
+      where: { id: game.black.id },
+      data: { rating: newBlackRating },
+    });
+  }
+
+  await removeActiveGame(gameId);
+
+  io.to(`game:${gameId}`).emit("game:over", {
+    result,
+    termination,
+    ratingChange,
+  });
+}
+
+export function setupGameSocket(io: SocketServer) {
+  // Track draw offers: gameId -> offeringUserId
+  const drawOffers = new Map<string, string>();
+
+  io.on("connection", (socket: Socket) => {
+    const userId = socket.data.userId as string;
+
+    // Join game room
+    socket.on("game:join", async (gameId: string) => {
+      socket.join(`game:${gameId}`);
+
+      const state = await getFullGameState(gameId);
+      if (state) {
+        socket.emit("game:state", state);
+      }
+    });
+
+    // Make a move
+    socket.on(
+      "game:move",
+      async (data: { gameId: string; from: string; to: string; promotion?: string }) => {
+        const { gameId, from, to, promotion } = data;
+
+        const game = await prisma.game.findUnique({
+          where: { id: gameId },
+          include: {
+            white: { select: { id: true } },
+            black: { select: { id: true } },
+          },
+        });
+
+        if (!game || game.status !== "ACTIVE") {
+          socket.emit("game:error", { message: "Game not active" });
+          return;
+        }
+
+        // Check it's this player's turn
+        const chess = new Chess(game.fen);
+        const isWhiteTurn = chess.turn() === "w";
+        const isPlayerWhite = game.whiteId === userId;
+        const isPlayerBlack = game.blackId === userId;
+
+        if ((isWhiteTurn && !isPlayerWhite) || (!isWhiteTurn && !isPlayerBlack)) {
+          socket.emit("game:error", { message: "Not your turn" });
+          return;
+        }
+
+        // Check for timeout before processing move
+        const timedOut = await isTimeout(gameId);
+        if (timedOut) {
+          const result = timedOut === "white" ? "BLACK_WIN" : "WHITE_WIN";
+          await endGame(io, gameId, result, "TIMEOUT");
+          return;
+        }
+
+        // Validate and apply move
+        const move = chess.move({ from, to, promotion: promotion || undefined });
+        if (!move) {
+          socket.emit("game:error", { message: "Invalid move" });
+          return;
+        }
+
+        const ply = game.moves ? (await prisma.move.count({ where: { gameId } })) + 1 : 1;
+
+        // Persist move
+        await prisma.move.create({
+          data: {
+            gameId,
+            ply,
+            san: move.san,
+            uci: `${from}${to}${promotion || ""}`,
+            fen: chess.fen(),
+          },
+        });
+
+        // Update game state
+        await prisma.game.update({
+          where: { id: gameId },
+          data: {
+            fen: chess.fen(),
+            pgn: chess.pgn(),
+          },
+        });
+
+        // Update clocks
+        const isUnlimited = game.timeControl === "UNLIMITED";
+        const clocks = await clockOnMove(gameId, isUnlimited);
+
+        // Clear any draw offers
+        drawOffers.delete(gameId);
+
+        // Broadcast move to room
+        io.to(`game:${gameId}`).emit("game:moved", {
+          from,
+          to,
+          promotion,
+          san: move.san,
+          fen: chess.fen(),
+          ply,
+          clocks,
+        });
+
+        // Check for game end conditions
+        if (chess.isCheckmate()) {
+          const result = chess.turn() === "w" ? "BLACK_WIN" : "WHITE_WIN";
+          await endGame(io, gameId, result, "CHECKMATE");
+        } else if (
+          chess.isDraw() ||
+          chess.isStalemate() ||
+          chess.isThreefoldRepetition() ||
+          chess.isInsufficientMaterial()
+        ) {
+          await endGame(io, gameId, "DRAW", "AGREEMENT");
+        }
+      }
+    );
+
+    // Resign
+    socket.on("game:resign", async (gameId: string) => {
+      const game = await prisma.game.findUnique({ where: { id: gameId } });
+      if (!game || game.status !== "ACTIVE") return;
+
+      const result = game.whiteId === userId ? "BLACK_WIN" : "WHITE_WIN";
+      await endGame(io, gameId, result, "RESIGNATION");
+    });
+
+    // Draw offer
+    socket.on("game:draw:offer", async (gameId: string) => {
+      const game = await prisma.game.findUnique({ where: { id: gameId } });
+      if (!game || game.status !== "ACTIVE") return;
+
+      drawOffers.set(gameId, userId);
+      socket.to(`game:${gameId}`).emit("game:draw:offered", { by: userId });
+    });
+
+    // Accept draw
+    socket.on("game:draw:accept", async (gameId: string) => {
+      const offerer = drawOffers.get(gameId);
+      if (!offerer || offerer === userId) return;
+
+      drawOffers.delete(gameId);
+      await endGame(io, gameId, "DRAW", "AGREEMENT");
+    });
+
+    // Decline draw
+    socket.on("game:draw:decline", async (gameId: string) => {
+      drawOffers.delete(gameId);
+      socket.to(`game:${gameId}`).emit("game:draw:declined");
+    });
+  });
+
+  // Timeout check loop — every 1 second
+  setInterval(async () => {
+    try {
+      const activeIds = await getActiveGameIds();
+      for (const gameId of activeIds) {
+        const timedOut = await isTimeout(gameId);
+        if (timedOut) {
+          const game = await prisma.game.findUnique({ where: { id: gameId } });
+          if (game && game.status === "ACTIVE" && game.timeControl !== "UNLIMITED") {
+            const result = timedOut === "white" ? "BLACK_WIN" : "WHITE_WIN";
+            await endGame(io, gameId, result, "TIMEOUT");
+          }
+        }
+      }
+    } catch {
+      // Silently continue
+    }
+  }, 1000);
+}
