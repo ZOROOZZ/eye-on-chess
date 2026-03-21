@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "../../stores/auth";
 import { connectSocket, disconnectSocket } from "../../lib/socket";
+import { useOnlineStatus } from "../../lib/useOnlineStatus";
+import { useInstallPrompt } from "../../lib/useInstallPrompt";
 import ChallengePopup from "../../components/ChallengePopup";
 
 export default function PlayPage() {
   const router = useRouter();
   const { user, isLoading, fetchMe, logout } = useAuthStore();
+  const isOnline = useOnlineStatus();
+  const { canInstall, install } = useInstallPrompt();
 
   useEffect(() => {
     if (!user) fetchMe();
@@ -55,6 +59,13 @@ export default function PlayPage() {
             className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium transition-colors"
           >
             Play vs Bot
+          </Link>
+          <Link
+            href="/play/bot/offline"
+            className="px-4 py-2 bg-green-800 hover:bg-green-700 rounded font-medium transition-colors"
+          >
+            Play Offline
+            <span className="text-xs text-green-300 ml-1">(no internet needed)</span>
           </Link>
           <Link
             href="/play/friend"
@@ -110,6 +121,22 @@ export default function PlayPage() {
         >
           Log Out
         </button>
+
+        {/* Online indicator */}
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-400" : "bg-red-400"}`} />
+          <span className="text-xs text-gray-500">{isOnline ? "Online" : "Offline"}</span>
+        </div>
+
+        {/* Install PWA */}
+        {canInstall && (
+          <button
+            onClick={install}
+            className="mt-3 w-full py-2 bg-purple-600 hover:bg-purple-700 rounded font-medium text-sm transition-colors"
+          >
+            Install App
+          </button>
+        )}
       </div>
       <ChallengePopup />
     </main>
