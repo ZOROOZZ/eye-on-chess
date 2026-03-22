@@ -1,73 +1,96 @@
 import { describe, it, expect } from "vitest";
 import { computeCustomMove, getStockfishConfig } from "./engine";
-import { getBotById, BOT_PERSONALITIES } from "./personalities";
+import type { BotPersonality } from "./types";
+
+const AMIR: BotPersonality = {
+  id: "amir",
+  name: "Amir",
+  elo: 200,
+  description: "Test",
+  avatar: "T",
+  tier: "custom",
+  category: "beginner",
+  randomMoveChance: 0.45,
+  blunderChance: 0.3,
+  captureGreed: 0.2,
+  aggressionBias: 0,
+  maxDepth: 1,
+  queenEarly: false,
+  pawnPusher: true,
+};
+
+const HANA: BotPersonality = {
+  id: "hana",
+  name: "Hana",
+  elo: 2000,
+  description: "Test",
+  avatar: "T",
+  tier: "engine",
+  category: "expert",
+  randomMoveChance: 0,
+  blunderChance: 0,
+  captureGreed: 0.35,
+  aggressionBias: 0,
+  maxDepth: 12,
+  queenEarly: false,
+  pawnPusher: false,
+};
+
+const VIKTOR: BotPersonality = {
+  id: "viktor",
+  name: "Viktor",
+  elo: 1300,
+  description: "Test",
+  avatar: "T",
+  tier: "hybrid",
+  category: "advanced",
+  randomMoveChance: 0.05,
+  blunderChance: 0.12,
+  captureGreed: 0.5,
+  aggressionBias: 0.9,
+  maxDepth: 4,
+  queenEarly: false,
+  pawnPusher: false,
+};
 
 describe("computeCustomMove", () => {
   const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   const checkmatedFen = "rnb1kbnr/pppp1ppp/4p3/8/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3";
 
-  it("returns a valid UCI move string (4-5 chars) from the starting position", () => {
-    const bot = getBotById("amir")!;
-    const move = computeCustomMove(startFen, bot);
+  it("returns a valid UCI move string from the starting position", () => {
+    const move = computeCustomMove(startFen, AMIR);
     expect(move).not.toBeNull();
     expect(move!.length).toBeGreaterThanOrEqual(4);
     expect(move!.length).toBeLessThanOrEqual(5);
   });
 
   it("returns null for a checkmate position", () => {
-    const bot = getBotById("amir")!;
-    const move = computeCustomMove(checkmatedFen, bot);
+    const move = computeCustomMove(checkmatedFen, AMIR);
     expect(move).toBeNull();
   });
 
-  it("returns different moves for different personalities over multiple runs", () => {
-    // Use a bot with high randomMoveChance for variability
-    const bot = getBotById("amir")!;
+  it("returns different moves over multiple runs with high randomness", () => {
     const moves = new Set<string>();
     for (let i = 0; i < 30; i++) {
-      const move = computeCustomMove(startFen, bot);
+      const move = computeCustomMove(startFen, AMIR);
       if (move) moves.add(move);
     }
-    // With 0.45 randomMoveChance, we should see multiple distinct moves
     expect(moves.size).toBeGreaterThan(1);
   });
 });
 
 describe("getStockfishConfig", () => {
-  it("returns correct config for engine tier (uciElo matches elo)", () => {
-    const bot = getBotById("hana")!;
-    expect(bot.tier).toBe("engine");
-
-    const config = getStockfishConfig(bot);
-    expect(config.uciElo).toBe(bot.elo);
+  it("returns correct config for engine tier", () => {
+    const config = getStockfishConfig(HANA);
+    expect(config.uciElo).toBe(2000);
     expect(config.blunderChance).toBe(0);
-    expect(config.depth).toBe(bot.maxDepth);
+    expect(config.depth).toBe(12);
   });
 
-  it("returns correct config for hybrid tier (uciElo is 0, blunderChance > 0)", () => {
-    const bot = getBotById("viktor")!;
-    expect(bot.tier).toBe("hybrid");
-
-    const config = getStockfishConfig(bot);
+  it("returns correct config for hybrid tier", () => {
+    const config = getStockfishConfig(VIKTOR);
     expect(config.uciElo).toBe(0);
     expect(config.blunderChance).toBeGreaterThan(0);
-    expect(config.depth).toBe(bot.maxDepth);
-  });
-
-  it("returns appropriate depth per tier", () => {
-    // Engine tier bots should have higher depth
-    const engineBots = BOT_PERSONALITIES.filter((b) => b.tier === "engine");
-    for (const bot of engineBots) {
-      const config = getStockfishConfig(bot);
-      expect(config.depth).toBeGreaterThanOrEqual(12);
-    }
-
-    // Hybrid tier bots should have moderate depth
-    const hybridBots = BOT_PERSONALITIES.filter((b) => b.tier === "hybrid");
-    for (const bot of hybridBots) {
-      const config = getStockfishConfig(bot);
-      expect(config.depth).toBeGreaterThanOrEqual(4);
-      expect(config.depth).toBeLessThanOrEqual(9);
-    }
+    expect(config.depth).toBe(4);
   });
 });

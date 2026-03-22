@@ -58,27 +58,18 @@ async function main() {
 
   const bots = loadBotsFromYaml();
 
+  let created = 0;
+  let skipped = 0;
+
   for (let i = 0; i < bots.length; i++) {
     const bot = bots[i];
-    await prisma.botProfile.upsert({
-      where: { botId: bot.id },
-      update: {
-        name: bot.name,
-        elo: bot.elo,
-        description: bot.description,
-        avatar: bot.avatar,
-        category: bot.category,
-        tier: bot.tier,
-        randomMoveChance: bot.randomMoveChance,
-        blunderChance: bot.blunderChance,
-        captureGreed: bot.captureGreed,
-        aggressionBias: bot.aggressionBias,
-        maxDepth: bot.maxDepth,
-        queenEarly: bot.queenEarly,
-        pawnPusher: bot.pawnPusher,
-        sortOrder: i,
-      },
-      create: {
+    const existing = await prisma.botProfile.findUnique({ where: { botId: bot.id } });
+    if (existing) {
+      skipped++;
+      continue;
+    }
+    await prisma.botProfile.create({
+      data: {
         botId: bot.id,
         name: bot.name,
         elo: bot.elo,
@@ -96,10 +87,11 @@ async function main() {
         sortOrder: i,
       },
     });
-    console.log(`  ${bot.avatar} ${bot.name} (${bot.elo}) — ${bot.category}`);
+    created++;
+    console.log(`  + ${bot.avatar} ${bot.name} (${bot.elo}) — ${bot.category}`);
   }
 
-  console.log(`\nSeeded ${bots.length} bot profiles from YAML.`);
+  console.log(`\nBot seed complete: ${created} created, ${skipped} already existed (untouched).`);
 }
 
 main()

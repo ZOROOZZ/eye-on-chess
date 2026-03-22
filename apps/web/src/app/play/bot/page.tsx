@@ -32,8 +32,7 @@ import MoveList from "../../../components/MoveList";
 import CapturedPieces from "../../../components/CapturedPieces";
 import MoveFeedbackPopup from "../../../components/MoveFeedbackPopup";
 import ConfirmModal from "../../../components/ConfirmModal";
-import { BOT_PERSONALITIES, type BotPersonality } from "@eyeonchess/chess";
-import type { MoveRecord } from "@eyeonchess/chess";
+import type { BotPersonality, MoveRecord } from "@eyeonchess/chess";
 import BotSelector from "../../../components/BotSelector";
 
 const TIME_PRESETS = [
@@ -62,14 +61,15 @@ export default function PlayBotPage() {
   const sound = useSound();
   const isOnline = useOnlineStatus();
 
-  // Bot list (fetch from API → cache to localStorage → fallback to hardcoded)
+  // Bot list (fetch from API → cache to localStorage → empty until loaded)
   const [botList, setBotList] = useState<BotPersonality[]>(() => {
     try {
       const cached = localStorage.getItem("eyeonchess-bots");
       if (cached) return JSON.parse(cached);
     } catch {}
-    return BOT_PERSONALITIES;
+    return [];
   });
+  const [_botsLoading, setBotsLoading] = useState(botList.length === 0);
   useEffect(() => {
     if (isOnline) {
       api
@@ -82,7 +82,9 @@ export default function PlayBotPage() {
             } catch {}
           }
         })
-        .catch(() => {});
+        .finally(() => setBotsLoading(false));
+    } else {
+      setBotsLoading(false);
     }
   }, [isOnline]);
 

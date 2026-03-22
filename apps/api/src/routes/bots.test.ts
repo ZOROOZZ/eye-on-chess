@@ -1,6 +1,28 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createApp, type FastifyInstance } from "../test/setup.js";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from "vitest";
+import { createApp, getPrisma, type FastifyInstance } from "../test/setup.js";
 import { botRoutes } from "./bots.js";
+
+const MOCK_BOTS = [
+  {
+    id: "1",
+    botId: "amir",
+    name: "Amir",
+    elo: 200,
+    description: "Test bot",
+    avatar: "T",
+    tier: "custom",
+    category: "beginner",
+    enabled: true,
+    randomMoveChance: 0.45,
+    blunderChance: 0.3,
+    captureGreed: 0.2,
+    aggressionBias: 0,
+    maxDepth: 1,
+    queenEarly: false,
+    pawnPusher: true,
+    sortOrder: 0,
+  },
+];
 
 describe("botRoutes", () => {
   let app: FastifyInstance;
@@ -13,25 +35,26 @@ describe("botRoutes", () => {
 
   afterAll(() => app.close());
 
-  describe("GET /api/bots", () => {
-    it("returns 200 with array of bots", async () => {
-      const res = await app.inject({
-        method: "GET",
-        url: "/api/bots",
-      });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
+  describe("GET /api/bots", () => {
+    it("returns 200 with bots from database", async () => {
+      getPrisma().botProfile.findMany.mockResolvedValue(MOCK_BOTS);
+
+      const res = await app.inject({ method: "GET", url: "/api/bots" });
       expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.body);
       expect(Array.isArray(body.bots)).toBe(true);
-      expect(body.bots.length).toBe(31);
+      expect(body.bots.length).toBe(1);
+      expect(body.bots[0].id).toBe("amir");
     });
 
-    it("has correct structure (id, name, elo, description, avatar)", async () => {
-      const res = await app.inject({
-        method: "GET",
-        url: "/api/bots",
-      });
+    it("has correct structure", async () => {
+      getPrisma().botProfile.findMany.mockResolvedValue(MOCK_BOTS);
 
+      const res = await app.inject({ method: "GET", url: "/api/bots" });
       const body = JSON.parse(res.body);
       const bot = body.bots[0];
       expect(bot).toHaveProperty("id");
@@ -39,16 +62,24 @@ describe("botRoutes", () => {
       expect(bot).toHaveProperty("elo");
       expect(bot).toHaveProperty("description");
       expect(bot).toHaveProperty("avatar");
+      expect(bot).toHaveProperty("tier");
+      expect(bot).toHaveProperty("category");
     });
 
     it("requires no auth", async () => {
-      // No authorization header — should still succeed
-      const res = await app.inject({
-        method: "GET",
-        url: "/api/bots",
-      });
+      getPrisma().botProfile.findMany.mockResolvedValue(MOCK_BOTS);
 
+      const res = await app.inject({ method: "GET", url: "/api/bots" });
       expect(res.statusCode).toBe(200);
+    });
+
+    it("returns empty array when no bots in DB", async () => {
+      getPrisma().botProfile.findMany.mockResolvedValue([]);
+
+      const res = await app.inject({ method: "GET", url: "/api/bots" });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.bots).toEqual([]);
     });
   });
 });

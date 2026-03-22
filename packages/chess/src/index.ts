@@ -58,9 +58,6 @@ export {
   ELO_BAND_COLORS,
   getBotCategory,
   BOT_CATEGORY_LABELS,
-  BOT_PERSONALITIES,
-  getBotById,
-  getAllBots,
   computeCustomMove,
   getStockfishConfig,
 } from "./bots/index";

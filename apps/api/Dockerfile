@@ -19,4 +19,4 @@ RUN pnpm --filter @eyeonchess/api run db:generate
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "pnpm --filter @eyeonchess/api run db:migrate && pnpm --filter @eyeonchess/api run db:seed && pnpm --filter @eyeonchess/api dev"]
+CMD ["sh", "-c", "pnpm --filter @eyeonchess/api run db:migrate && pnpm --filter @eyeonchess/api run db:seed && pnpm --filter @eyeonchess/api run db:seed-bots && pnpm --filter @eyeonchess/api dev"]
