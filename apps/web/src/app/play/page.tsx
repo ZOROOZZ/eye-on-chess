@@ -75,6 +75,12 @@ export default function PlayPage() {
             Game History
           </Link>
           <Link
+            href="/stats"
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
+          >
+            Stats
+          </Link>
+          <Link
             href="/collections"
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
           >

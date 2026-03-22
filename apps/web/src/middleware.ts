@@ -10,6 +10,7 @@ const protectedRoutes = [
   "/history",
   "/collections",
   "/invites",
+  "/stats",
 ];
 const authRoutes = ["/login", "/register"];
 
@@ -40,6 +41,7 @@ export const config = {
     "/history",
     "/collections/:path*",
     "/invites",
+    "/stats",
     "/login",
     "/register",
   ],
