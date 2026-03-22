@@ -3,12 +3,12 @@ import { prisma } from "../lib/prisma.js";
 import { redis } from "../lib/redis.js";
 import { authMiddleware } from "../middleware/auth.js";
 import {
-  type GameResult,
-  didPlayerWin,
-  didPlayerLose,
-  isDrawResult,
-  lookupOpening,
-} from "@eyeonchess/chess";
+  computeRecord,
+  computeRatingHistory,
+  computeOpeningStats,
+  computeStreaks,
+  computeActivity,
+} from "../lib/statsCompute.js";
 
 export async function statsRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -46,85 +46,13 @@ export async function statsRoutes(app: FastifyInstance) {
     });
 
     // ── Record ──────────────────────────────────────────
-    const record = { wins: 0, losses: 0, draws: 0 };
-    const vsHuman = { wins: 0, losses: 0, draws: 0 };
-    const vsBot = { wins: 0, losses: 0, draws: 0 };
-
-    for (const g of games) {
-      const isWhite = g.whiteId === userId;
-      const result = g.result as GameResult;
-      const won = didPlayerWin(isWhite, result);
-      const lost = didPlayerLose(isWhite, result);
-      const drew = isDrawResult(result);
-      const target = g.isVsBot ? vsBot : vsHuman;
-
-      if (won) {
-        record.wins++;
-        target.wins++;
-      } else if (lost) {
-        record.losses++;
-        target.losses++;
-      } else if (drew) {
-        record.draws++;
-        target.draws++;
-      }
-    }
+    const record = computeRecord(games, userId);
 
     // ── Rating History ──────────────────────────────────
-    // Replay Elo forward from 1200
-    const K = 32;
-    let rating = 1200;
-    const ratingHistory: { date: string; rating: number }[] = [
-      {
-        date:
-          games[0]?.createdAt.toISOString().split("T")[0] || new Date().toISOString().split("T")[0],
-        rating: 1200,
-      },
-    ];
-
-    for (const g of games) {
-      if (g.isVsBot) continue; // Bot games don't affect rating
-      const isWhite = g.whiteId === userId;
-      const opponentRating = isWhite ? g.black?.rating || 1200 : g.white?.rating || 1200;
-      const expected = 1 / (1 + Math.pow(10, (opponentRating - rating) / 400));
-      const actual = didPlayerWin(isWhite, g.result as GameResult)
-        ? 1
-        : isDrawResult(g.result as GameResult)
-          ? 0.5
-          : 0;
-      rating = Math.round(rating + K * (actual - expected));
-      ratingHistory.push({
-        date: g.createdAt.toISOString().split("T")[0],
-        rating,
-      });
-    }
+    const ratingHistory = computeRatingHistory(games, userId);
 
     // ── Openings ────────────────────────────────────────
-    const openingCounts: Record<
-      string,
-      { name: string; eco: string; wins: number; losses: number; draws: number }
-    > = {};
-
-    for (const g of games) {
-      const sans = g.moves.map((m) => m.san);
-      const opening = lookupOpening(sans);
-      if (!opening) continue;
-      const key = opening.eco;
-      if (!openingCounts[key]) {
-        openingCounts[key] = { name: opening.name, eco: opening.eco, wins: 0, losses: 0, draws: 0 };
-      }
-      const isWhite = g.whiteId === userId;
-      const won = didPlayerWin(isWhite, g.result as GameResult);
-      const lost = didPlayerLose(isWhite, g.result as GameResult);
-      if (won) openingCounts[key].wins++;
-      else if (lost) openingCounts[key].losses++;
-      else openingCounts[key].draws++;
-    }
-
-    const openings = Object.values(openingCounts)
-      .map((o) => ({ ...o, count: o.wins + o.losses + o.draws }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+    const openings = computeOpeningStats(games, userId);
 
     // ── Accuracy ────────────────────────────────────────
     const analyses = await prisma.gameAnalysis.findMany({
@@ -160,53 +88,14 @@ export async function statsRoutes(app: FastifyInstance) {
     }
 
     // ── Streaks ─────────────────────────────────────────
-    const currentStreak = { type: "none" as "win" | "loss" | "none", count: 0 };
-    let bestWinStreak = 0;
-    let tempWinStreak = 0;
-
-    for (let i = games.length - 1; i >= 0; i--) {
-      const g = games[i];
-      const isWhite = g.whiteId === userId;
-      const won = didPlayerWin(isWhite, g.result as GameResult);
-      const lost = didPlayerLose(isWhite, g.result as GameResult);
-
-      if (i === games.length - 1) {
-        currentStreak.type = won ? "win" : lost ? "loss" : "none";
-        currentStreak.count = 1;
-      } else if ((won && currentStreak.type === "win") || (lost && currentStreak.type === "loss")) {
-        currentStreak.count++;
-      } else {
-        break;
-      }
-    }
-
-    // Best win streak (forward scan)
-    for (const g of games) {
-      const isWhite = g.whiteId === userId;
-      const won = didPlayerWin(isWhite, g.result as GameResult);
-      if (won) {
-        tempWinStreak++;
-        bestWinStreak = Math.max(bestWinStreak, tempWinStreak);
-      } else {
-        tempWinStreak = 0;
-      }
-    }
+    const streaks = computeStreaks(games, userId);
 
     // ── Activity (last 30 days) ─────────────────────────
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const activityMap: Record<string, number> = {};
-    for (const g of games) {
-      if (g.createdAt < thirtyDaysAgo) continue;
-      const day = g.createdAt.toISOString().split("T")[0];
-      activityMap[day] = (activityMap[day] || 0) + 1;
-    }
-    const activity = Object.entries(activityMap)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const activity = computeActivity(games);
 
     const result = {
       rating: { current: user?.rating || 1200, history: ratingHistory },
-      record: { ...record, vsHuman, vsBot },
+      record,
       openings,
       accuracy: {
         average: avgAccuracy,
@@ -214,7 +103,7 @@ export async function statsRoutes(app: FastifyInstance) {
         worst: worstAccuracy,
         gamesAnalyzed: analyses.length,
       },
-      streaks: { current: currentStreak, bestWin: bestWinStreak },
+      streaks,
       activity,
       totalGames: games.length,
     };
