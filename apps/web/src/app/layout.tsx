@@ -6,6 +6,12 @@ export const metadata: Metadata = {
   title: "EyeOnChess",
   description: "Self-hostable chess platform — play, analyze, compete",
   manifest: "/manifest.json",
+  openGraph: {
+    title: "EyeOnChess",
+    description: "Self-hostable chess platform — play, analyze, compete",
+    images: [{ url: "/logo.png", width: 1200, height: 1200 }],
+    type: "website",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -24,8 +30,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <head>
-        <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icons/icon.svg" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
       </head>
       <body className="bg-gray-950 text-white min-h-screen dark:bg-gray-950 dark:text-white light:bg-white light:text-gray-900">
         <ClientProviders>{children}</ClientProviders>
