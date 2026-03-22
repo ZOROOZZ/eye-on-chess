@@ -15,7 +15,7 @@ export function connectSocket() {
     socket.disconnect();
   }
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost";
 
   socket = io(apiUrl, {
     auth: { token },

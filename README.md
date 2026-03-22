@@ -101,12 +101,7 @@ Open **http://localhost** and log in with the admin credentials from your `.env`
 docker compose -f deployment/docker-compose.dev.yml up --build
 ```
 
-| Service  | URL                   |
-| -------- | --------------------- |
-| Web      | http://localhost:3000 |
-| API      | http://localhost:3001 |
-| Postgres | localhost:5432        |
-| Redis    | localhost:6379        |
+All traffic goes through Nginx on **http://localhost** (port 80). No other ports are exposed.
 
 Source files are volume-mounted — changes hot-reload automatically.
 
@@ -124,13 +119,13 @@ All configuration is done via environment variables in `.env`. See [`.env.exampl
 
 ### Site
 
-| Variable              | Default                 | Description                            |
-| --------------------- | ----------------------- | -------------------------------------- |
-| `SITE_NAME`           | `EyeOnChess`            | Display name (white-label)             |
-| `SITE_URL`            | `http://localhost`      | Public URL                             |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | API URL for the browser                |
-| `API_URL`             | `http://api:3001`       | Internal API URL (Docker network)      |
-| `NODE_ENV`            | `development`           | Set to `production` for secure cookies |
+| Variable              | Default            | Description                            |
+| --------------------- | ------------------ | -------------------------------------- |
+| `SITE_NAME`           | `EyeOnChess`       | Display name (white-label)             |
+| `SITE_URL`            | `http://localhost` | Public URL                             |
+| `NEXT_PUBLIC_API_URL` | `http://localhost` | Public URL (routed through Nginx)      |
+| `API_URL`             | `http://api:3001`  | Internal API URL (Docker network)      |
+| `NODE_ENV`            | `development`      | Set to `production` for secure cookies |
 
 ### Registration
 
