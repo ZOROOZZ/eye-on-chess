@@ -203,6 +203,78 @@ export async function gameRoutes(app: FastifyInstance) {
     return { game };
   });
 
+  // Export PGN
+  app.get<{ Params: { id: string } }>("/api/games/:id/pgn", async (request, reply) => {
+    const { id } = request.params;
+
+    const game = await prisma.game.findUnique({
+      where: { id },
+      include: {
+        white: { select: { username: true, rating: true } },
+        black: { select: { username: true, rating: true } },
+        moves: { orderBy: { ply: "asc" }, select: { san: true } },
+      },
+    });
+
+    if (!game) {
+      return reply.status(404).send({ error: "Game not found" });
+    }
+
+    const date = game.createdAt.toISOString().split("T")[0].replace(/-/g, ".");
+    const whiteName =
+      game.white?.username || (game.isVsBot && !game.whiteId ? `Bot (${game.botElo})` : "?");
+    const blackName =
+      game.black?.username || (game.isVsBot && !game.blackId ? `Bot (${game.botElo})` : "?");
+    const whiteElo = game.white?.rating?.toString() || game.botElo?.toString() || "?";
+    const blackElo = game.black?.rating?.toString() || game.botElo?.toString() || "?";
+
+    const resultMap: Record<string, string> = {
+      WHITE_WIN: "1-0",
+      BLACK_WIN: "0-1",
+      DRAW: "1/2-1/2",
+    };
+    const result = game.result ? resultMap[game.result] || "*" : "*";
+
+    const timeStr =
+      game.timeControl === "UNLIMITED" ? "-" : `${game.initialTime}+${game.increment}`;
+    const termination = game.termination?.toLowerCase() || "unknown";
+
+    // Build PGN text
+    let pgn = "";
+    pgn += `[Event "EyeOnChess"]\n`;
+    pgn += `[Site "${process.env.SITE_URL || "http://localhost"}"]\n`;
+    pgn += `[Date "${date}"]\n`;
+    pgn += `[Round "-"]\n`;
+    pgn += `[White "${whiteName}"]\n`;
+    pgn += `[Black "${blackName}"]\n`;
+    pgn += `[Result "${result}"]\n`;
+    pgn += `[WhiteElo "${whiteElo}"]\n`;
+    pgn += `[BlackElo "${blackElo}"]\n`;
+    pgn += `[TimeControl "${timeStr}"]\n`;
+    pgn += `[Termination "${termination}"]\n`;
+    pgn += `\n`;
+
+    // Use stored PGN or reconstruct from moves
+    if (game.pgn && game.pgn.trim()) {
+      pgn += game.pgn;
+    } else {
+      const sans = game.moves.map((m) => m.san);
+      for (let i = 0; i < sans.length; i++) {
+        if (i % 2 === 0) pgn += `${Math.floor(i / 2) + 1}. `;
+        pgn += sans[i] + " ";
+      }
+    }
+
+    if (result !== "*") pgn += ` ${result}`;
+
+    reply.header("Content-Type", "text/plain; charset=utf-8");
+    reply.header(
+      "Content-Disposition",
+      `attachment; filename="${whiteName}_vs_${blackName}_${date}.pgn"`
+    );
+    return reply.send(pgn);
+  });
+
   // Get user's active game (if any)
   app.get("/api/games/active", async (request) => {
     const userId = request.user.userId;
