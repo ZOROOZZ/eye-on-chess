@@ -68,6 +68,72 @@ Game clock with optimistic countdown.
 - Red background when < 30 seconds
 - Synced on each server move event
 
+## Reaction Components
+
+### `ReactionPicker`
+
+Emoji reaction buttons for live games. Displays a row of selectable reaction emojis that are broadcast to the opponent via WebSocket.
+
+### `ReactionOverlay`
+
+Floating animated reaction bubbles. Renders incoming and outgoing reactions as animated overlays that float up and fade out over the board.
+
+## Game Components
+
+### `GameOverModal`
+
+Game result display with rematch flow. Shows the outcome (win/loss/draw), termination reason, rating changes, and a rematch button.
+
+### `GameNoteEditor`
+
+Per-game note editor with auto-save. Allows players to write and persist notes for any game, with debounced auto-save to the server.
+
+### `ExportPGN`
+
+PGN export button. Provides copy-to-clipboard and file download options for the game in standard PGN format.
+
+### `MoveFeedbackPopup`
+
+Move classification popup during bot games. Displays a brief animated popup showing the classification (brilliant, great, good, inaccuracy, mistake, blunder) after each move.
+
+### `ActivityFeed`
+
+Recent activity feed component. Displays a chronological list of recent user actions (games played, friends added, achievements).
+
+### `CollectionPicker`
+
+Collection selection dropdown. Lets users pick from existing game collections or create a new one when saving a game.
+
+### `TosGate`
+
+Terms of Service acceptance gate. Blocks access to the app until the user accepts the current Terms of Service.
+
+## Stats Components
+
+### `RatingChart`
+
+Line chart showing rating history over time. Supports filtering by time control category.
+
+### `RecordBar`
+
+Horizontal stacked bar showing win/loss/draw record with counts and percentages.
+
+### `OpeningsTable`
+
+Sortable table of most-played openings with win rate and average accuracy per opening.
+
+### `AccuracyCard`
+
+Card displaying overall and per-time-control average move accuracy percentages.
+
+### `StreakBadge`
+
+Badge showing current and best win/loss streaks.
+
+### `ActivityChart`
+
+Heatmap or bar chart of games played per day/week, similar to a contribution graph.
+
 ## UI Components
 
 ### `ChallengePopup`

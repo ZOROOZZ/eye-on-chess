@@ -29,18 +29,20 @@ Authentication state.
 
 User preferences (theme, board, pieces).
 
-| Field        | Type         | Default     | Description       |
-| ------------ | ------------ | ----------- | ----------------- |
-| `darkMode`   | `boolean`    | `true`      | Dark/light mode   |
-| `boardTheme` | `BoardTheme` | `"classic"` | Board color theme |
-| `pieceSet`   | `PieceSet`   | `"classic"` | Piece style       |
+| Field          | Type         | Default     | Description                |
+| -------------- | ------------ | ----------- | -------------------------- |
+| `darkMode`     | `boolean`    | `true`      | Dark/light mode            |
+| `boardTheme`   | `BoardTheme` | `"classic"` | Board color theme          |
+| `pieceSet`     | `PieceSet`   | `"classic"` | Piece style                |
+| `soundEnabled` | `boolean`    | `true`      | Enable/disable game sounds |
 
-| Method                 | Description                              |
-| ---------------------- | ---------------------------------------- |
-| `setDarkMode(dark)`    | Update + save to API                     |
-| `setBoardTheme(theme)` | Update + save to API                     |
-| `setPieceSet(set)`     | Update + save to API                     |
-| `loadFromUser(prefs)`  | Load from user profile (called on login) |
+| Method                     | Description                              |
+| -------------------------- | ---------------------------------------- |
+| `setDarkMode(dark)`        | Update + save to API                     |
+| `setBoardTheme(theme)`     | Update + save to API                     |
+| `setPieceSet(set)`         | Update + save to API                     |
+| `setSoundEnabled(enabled)` | Update + save to API                     |
+| `loadFromUser(prefs)`      | Load from user profile (called on login) |
 
 Changes are:
 
@@ -58,6 +60,13 @@ Toast notification state.
 | `clear()`              | Dismiss toast                         |
 
 Auto-dismisses after 3 seconds.
+
+## Page-Level State (not global stores)
+
+Some features use local component state rather than Zustand stores:
+
+- **Reactions** — The live game page (`game/[id]/page.tsx`) manages reaction state locally. Incoming reactions arrive via WebSocket (`reaction` event) and are rendered by `ReactionOverlay` as transient animations. No global store is needed since reactions are ephemeral and scoped to a single game session.
+- **Game modes** — Bot game settings (Elo, time control, hints, takeback) are managed as local state within the bot page (`play/bot/page.tsx`) and reset between games.
 
 ## API Client (`lib/api.ts`)
 
