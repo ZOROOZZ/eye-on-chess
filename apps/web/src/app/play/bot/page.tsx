@@ -62,6 +62,19 @@ export default function PlayBotPage() {
   const sound = useSound();
   const isOnline = useOnlineStatus();
 
+  // Bot list (fetch from API, fallback to hardcoded)
+  const [botList, setBotList] = useState<BotPersonality[]>(BOT_PERSONALITIES);
+  useEffect(() => {
+    if (isOnline) {
+      api
+        .get("/api/bots")
+        .then(({ data }) => {
+          if (data.bots && data.bots.length > 0) setBotList(data.bots);
+        })
+        .catch(() => {});
+    }
+  }, [isOnline]);
+
   // Selection
   const [phase, setPhase] = useState<"select" | "game" | "ended">("select");
   const [selectedBot, setSelectedBot] = useState<BotPersonality | null>(null);
@@ -722,7 +735,7 @@ export default function PlayBotPage() {
               </>
             ) : (
               <BotSelector
-                bots={BOT_PERSONALITIES}
+                bots={botList}
                 selected={selectedBot}
                 onSelect={(bot) => {
                   setSelectedBot(bot);
