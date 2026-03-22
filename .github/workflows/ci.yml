@@ -61,8 +61,55 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @eyeonchess/api run db:generate
 
-      - name: Run tests
-        run: pnpm test
+      - name: Run tests with coverage
+        run: |
+          pnpm --filter @eyeonchess/chess exec vitest run --coverage
+          pnpm --filter @eyeonchess/api exec vitest run --coverage
+          pnpm --filter @eyeonchess/web exec vitest run --coverage
+
+      - name: Upload coverage artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            packages/chess/coverage/lcov.info
+            apps/api/coverage/lcov.info
+            apps/web/coverage/lcov.info
+          retention-days: 1
+
+  codacy-coverage:
+    name: Codacy Coverage
+    needs: [test]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+
+      - name: Upload chess coverage to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r packages/chess/coverage/lcov.info --partial
+
+      - name: Upload API coverage to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r apps/api/coverage/lcov.info --partial
+
+      - name: Upload web coverage to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r apps/web/coverage/lcov.info --partial
+
+      - name: Finalize Codacy coverage
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) final
 
   build-api:
     name: Build API
