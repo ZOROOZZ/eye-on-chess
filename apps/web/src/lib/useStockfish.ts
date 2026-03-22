@@ -12,6 +12,9 @@ interface StockfishHook {
  * Hook that initializes a Stockfish Web Worker and provides methods
  * to get bot moves (with Elo-limited strength) and evaluate positions.
  *
+ * Loads stockfish.js directly as a Web Worker — it auto-initializes in
+ * worker context and communicates via raw UCI string messages.
+ *
  * @returns An object with `ready` state, `getBotMove`, and `evaluate` functions.
  */
 export function useStockfish(): StockfishHook {
@@ -24,22 +27,33 @@ export function useStockfish(): StockfishHook {
   } | null>(null);
 
   useEffect(() => {
-    const worker = new Worker("/stockfish/worker.js");
+    // stockfish.js auto-detects worker context and sets up its own onmessage/postMessage
+    // It communicates with raw UCI strings, not structured objects
+    const worker = new Worker("/stockfish/stockfish.js");
     workerRef.current = worker;
 
+    let initialized = false;
+
     worker.onmessage = (e) => {
-      if (e.data.type === "ready") {
-        // Initialize UCI
-        worker.postMessage({ type: "cmd", cmd: "uci" });
-        // Wait briefly for uciok
-        setTimeout(() => {
-          worker.postMessage({ type: "cmd", cmd: "isready" });
-          setReady(true);
-        }, 100);
+      const line = typeof e.data === "string" ? e.data : String(e.data);
+
+      // Stockfish outputs "uciok" after receiving "uci" — that means it's ready
+      if (!initialized && line.includes("uciok")) {
+        initialized = true;
+        worker.postMessage("isready");
+      }
+      if (!initialized && line.includes("readyok")) {
+        // fallback: some builds send readyok without uci first
+        initialized = true;
+        setReady(true);
+        return;
+      }
+      if (initialized && line.includes("readyok") && !ready) {
+        setReady(true);
       }
 
-      if (e.data.type === "uci" && resolverRef.current) {
-        const line = e.data.data;
+      // Feed lines to the active resolver
+      if (resolverRef.current) {
         resolverRef.current.lines.push(line);
         if (line.includes(resolverRef.current.waitFor)) {
           const r = resolverRef.current;
@@ -48,6 +62,9 @@ export function useStockfish(): StockfishHook {
         }
       }
     };
+
+    // Send initial UCI handshake
+    worker.postMessage("uci");
 
     return () => {
       worker.terminate();
@@ -63,7 +80,7 @@ export function useStockfish(): StockfishHook {
           return;
         }
         resolverRef.current = { resolve, lines: [], waitFor };
-        workerRef.current.postMessage({ type: "cmd", cmd });
+        workerRef.current.postMessage(cmd);
 
         setTimeout(() => {
           if (resolverRef.current?.resolve === resolve) {
@@ -77,7 +94,7 @@ export function useStockfish(): StockfishHook {
   );
 
   const sendRaw = useCallback((cmd: string) => {
-    workerRef.current?.postMessage({ type: "cmd", cmd });
+    workerRef.current?.postMessage(cmd);
   }, []);
 
   const getBotMove = useCallback(
