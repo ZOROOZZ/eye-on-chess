@@ -6,3 +6,4 @@
 - [Theming](theming.md) — Dark/light mode, board themes, piece sets
 - [Keyboard Shortcuts](keyboard-shortcuts.md) — Keyboard shortcuts for all pages
 - [PWA](pwa.md) — Progressive Web App and offline features
+- [Bot Personalities](bots.md) — 31 bot personalities with unique playstyles and behavior parameters

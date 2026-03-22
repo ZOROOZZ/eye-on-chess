@@ -85,7 +85,8 @@ See the full step-by-step walkthrough in the [`screenshots/`](screenshots/README
 
 - Real-time multiplayer via Socket.io
 - Challenge friends directly
-- Play vs Bot with adjustable Elo (200-3200) using Stockfish WASM (runs in Web Worker, off main thread)
+- 31 bot personalities from Amir (200) to Erfan (3200) — each with unique playstyle and behavior
+- Three bot tiers: custom JS engine (200-1200), Stockfish hybrid (1300-1900), full Stockfish (2000+)
 - Game mode presets: Challenge (no help), Friendly (hints + takebacks), Assisted (all tools), Custom
 - Time controls: Bullet, Blitz, Rapid, Classical, Unlimited, or custom
 - Elo rating system (K=32) with automatic updates
