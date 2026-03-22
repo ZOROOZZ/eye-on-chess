@@ -1,5 +1,5 @@
 import { Chess } from "chess.js";
-import type { MoveClassification } from "@prisma/client";
+import type { MoveClassification } from "@eyeonchess/chess";
 
 export interface ClassifiedMove {
   classification: MoveClassification;

@@ -1,18 +1,12 @@
 import { redis } from "./redis.js";
+import type { ClockState } from "@eyeonchess/chess";
+export type { ClockState } from "@eyeonchess/chess";
 
 function clockKey(gameId: string) {
   return `clock:${gameId}`;
 }
 
 const ACTIVE_GAMES_KEY = "active_games";
-
-export interface ClockState {
-  whiteTimeLeft: number; // ms
-  blackTimeLeft: number; // ms
-  lastMoveTimestamp: number; // epoch ms
-  turn: "white" | "black";
-  increment: number; // ms
-}
 
 export async function initClocks(gameId: string, initialTimeMs: number, incrementMs: number) {
   const state: ClockState = {

@@ -1,3 +1,5 @@
+import type { GameResult } from "@eyeonchess/chess";
+
 const K = 32;
 
 function expectedScore(ratingA: number, ratingB: number): number {
@@ -7,7 +9,7 @@ function expectedScore(ratingA: number, ratingB: number): number {
 export function computeElo(
   whiteRating: number,
   blackRating: number,
-  result: "WHITE_WIN" | "BLACK_WIN" | "DRAW"
+  result: GameResult
 ): { newWhiteRating: number; newBlackRating: number } {
   const expectedWhite = expectedScore(whiteRating, blackRating);
   const expectedBlack = expectedScore(blackRating, whiteRating);

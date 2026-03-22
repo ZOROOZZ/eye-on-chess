@@ -2,14 +2,7 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma.js";
 import { redis } from "../lib/redis.js";
 import { authMiddleware } from "../middleware/auth.js";
-
-interface ActivityEvent {
-  type: "game_won" | "game_lost" | "game_draw" | "game_analyzed" | "friend_added";
-  message: string;
-  timestamp: string;
-  link: string | null;
-  usernames: string[];
-}
+import type { ActivityEvent } from "@eyeonchess/chess";
 
 export async function activityRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);

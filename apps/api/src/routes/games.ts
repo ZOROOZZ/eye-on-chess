@@ -5,22 +5,14 @@ import { authMiddleware } from "../middleware/auth.js";
 import { initClocks, onMove as clockOnMove } from "../lib/gameClock.js";
 import { getIO } from "../lib/socket.js";
 import { getBotMove } from "../lib/botEngine.js";
-import type { TimeControl } from "@prisma/client";
-
-const TIME_CONTROL_MAP: Record<
-  string,
-  { timeControl: TimeControl; initialTime: number; increment: number }
-> = {
-  bullet_1_0: { timeControl: "BULLET", initialTime: 60, increment: 0 },
-  bullet_2_1: { timeControl: "BULLET", initialTime: 120, increment: 1 },
-  blitz_3_0: { timeControl: "BLITZ", initialTime: 180, increment: 0 },
-  blitz_5_0: { timeControl: "BLITZ", initialTime: 300, increment: 0 },
-  blitz_5_3: { timeControl: "BLITZ", initialTime: 300, increment: 3 },
-  rapid_10_0: { timeControl: "RAPID", initialTime: 600, increment: 0 },
-  rapid_15_10: { timeControl: "RAPID", initialTime: 900, increment: 10 },
-  classical_30_0: { timeControl: "CLASSICAL", initialTime: 1800, increment: 0 },
-  unlimited: { timeControl: "UNLIMITED", initialTime: 0, increment: 0 },
-};
+import {
+  type TimeControl,
+  type GameResult,
+  type Termination,
+  TIME_CONTROL_PRESETS,
+  categorizeTimeControl,
+  RESULT_PGN,
+} from "@eyeonchess/chess";
 
 export async function gameRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -65,20 +57,15 @@ export async function gameRoutes(app: FastifyInstance) {
     let initialTime: number;
     let increment: number;
 
-    if (preset && TIME_CONTROL_MAP[preset]) {
-      const p = TIME_CONTROL_MAP[preset];
+    if (preset && TIME_CONTROL_PRESETS[preset]) {
+      const p = TIME_CONTROL_PRESETS[preset];
       timeControl = p.timeControl;
       initialTime = p.initialTime;
       increment = p.increment;
     } else if (customTime !== undefined) {
       initialTime = customTime;
       increment = customIncrement ?? 0;
-      // Categorize
-      const totalSeconds = initialTime + increment * 40;
-      if (totalSeconds < 180) timeControl = "BULLET";
-      else if (totalSeconds < 480) timeControl = "BLITZ";
-      else if (totalSeconds < 1500) timeControl = "RAPID";
-      else timeControl = "CLASSICAL";
+      timeControl = categorizeTimeControl(initialTime, increment);
     } else {
       return reply.status(400).send({ error: "Must provide preset or custom time" });
     }
@@ -228,12 +215,7 @@ export async function gameRoutes(app: FastifyInstance) {
     const whiteElo = game.white?.rating?.toString() || game.botElo?.toString() || "?";
     const blackElo = game.black?.rating?.toString() || game.botElo?.toString() || "?";
 
-    const resultMap: Record<string, string> = {
-      WHITE_WIN: "1-0",
-      BLACK_WIN: "0-1",
-      DRAW: "1/2-1/2",
-    };
-    const result = game.result ? resultMap[game.result] || "*" : "*";
+    const result = game.result ? RESULT_PGN[game.result] || "*" : "*";
 
     const timeStr =
       game.timeControl === "UNLIMITED" ? "-" : `${game.initialTime}+${game.increment}`;
@@ -369,23 +351,15 @@ export async function gameRoutes(app: FastifyInstance) {
     let initialTime: number;
     let increment: number;
 
-    if (preset && TIME_CONTROL_MAP[preset]) {
-      const p = TIME_CONTROL_MAP[preset];
+    if (preset && TIME_CONTROL_PRESETS[preset]) {
+      const p = TIME_CONTROL_PRESETS[preset];
       timeControl = p.timeControl;
       initialTime = p.initialTime;
       increment = p.increment;
     } else if (customTime !== undefined) {
       initialTime = customTime;
       increment = customIncrement ?? 0;
-      if (initialTime === 0 && increment === 0) {
-        timeControl = "UNLIMITED";
-      } else {
-        const totalSeconds = initialTime + increment * 40;
-        if (totalSeconds < 180) timeControl = "BULLET";
-        else if (totalSeconds < 480) timeControl = "BLITZ";
-        else if (totalSeconds < 1500) timeControl = "RAPID";
-        else timeControl = "CLASSICAL";
-      }
+      timeControl = categorizeTimeControl(initialTime, increment);
     } else {
       timeControl = "RAPID";
       initialTime = 600;
@@ -678,8 +652,8 @@ export async function gameRoutes(app: FastifyInstance) {
         whiteId: playerIsWhite ? userId : null,
         blackId: playerIsWhite ? null : userId,
         status: result ? "COMPLETED" : "ABORTED",
-        result: result as "WHITE_WIN" | "BLACK_WIN" | "DRAW" | null,
-        termination: termination as "CHECKMATE" | "RESIGNATION" | "TIMEOUT" | "AGREEMENT" | null,
+        result: result as GameResult | null,
+        termination: termination as Termination | null,
         fen: chess.fen(),
         pgn: chess.pgn(),
         timeControl: "UNLIMITED",

@@ -2,7 +2,13 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma.js";
 import { redis } from "../lib/redis.js";
 import { authMiddleware } from "../middleware/auth.js";
-import { lookupOpening } from "../lib/eco.js";
+import {
+  type GameResult,
+  didPlayerWin,
+  didPlayerLose,
+  isDrawResult,
+  lookupOpening,
+} from "@eyeonchess/chess";
 
 export async function statsRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -46,9 +52,10 @@ export async function statsRoutes(app: FastifyInstance) {
 
     for (const g of games) {
       const isWhite = g.whiteId === userId;
-      const won = (isWhite && g.result === "WHITE_WIN") || (!isWhite && g.result === "BLACK_WIN");
-      const lost = (isWhite && g.result === "BLACK_WIN") || (!isWhite && g.result === "WHITE_WIN");
-      const drew = g.result === "DRAW";
+      const result = g.result as GameResult;
+      const won = didPlayerWin(isWhite, result);
+      const lost = didPlayerLose(isWhite, result);
+      const drew = isDrawResult(result);
       const target = g.isVsBot ? vsBot : vsHuman;
 
       if (won) {
@@ -80,12 +87,11 @@ export async function statsRoutes(app: FastifyInstance) {
       const isWhite = g.whiteId === userId;
       const opponentRating = isWhite ? g.black?.rating || 1200 : g.white?.rating || 1200;
       const expected = 1 / (1 + Math.pow(10, (opponentRating - rating) / 400));
-      const actual =
-        (isWhite && g.result === "WHITE_WIN") || (!isWhite && g.result === "BLACK_WIN")
-          ? 1
-          : g.result === "DRAW"
-            ? 0.5
-            : 0;
+      const actual = didPlayerWin(isWhite, g.result as GameResult)
+        ? 1
+        : isDrawResult(g.result as GameResult)
+          ? 0.5
+          : 0;
       rating = Math.round(rating + K * (actual - expected));
       ratingHistory.push({
         date: g.createdAt.toISOString().split("T")[0],
@@ -108,8 +114,8 @@ export async function statsRoutes(app: FastifyInstance) {
         openingCounts[key] = { name: opening.name, eco: opening.eco, wins: 0, losses: 0, draws: 0 };
       }
       const isWhite = g.whiteId === userId;
-      const won = (isWhite && g.result === "WHITE_WIN") || (!isWhite && g.result === "BLACK_WIN");
-      const lost = (isWhite && g.result === "BLACK_WIN") || (!isWhite && g.result === "WHITE_WIN");
+      const won = didPlayerWin(isWhite, g.result as GameResult);
+      const lost = didPlayerLose(isWhite, g.result as GameResult);
       if (won) openingCounts[key].wins++;
       else if (lost) openingCounts[key].losses++;
       else openingCounts[key].draws++;
@@ -161,8 +167,8 @@ export async function statsRoutes(app: FastifyInstance) {
     for (let i = games.length - 1; i >= 0; i--) {
       const g = games[i];
       const isWhite = g.whiteId === userId;
-      const won = (isWhite && g.result === "WHITE_WIN") || (!isWhite && g.result === "BLACK_WIN");
-      const lost = (isWhite && g.result === "BLACK_WIN") || (!isWhite && g.result === "WHITE_WIN");
+      const won = didPlayerWin(isWhite, g.result as GameResult);
+      const lost = didPlayerLose(isWhite, g.result as GameResult);
 
       if (i === games.length - 1) {
         currentStreak.type = won ? "win" : lost ? "loss" : "none";
@@ -177,7 +183,7 @@ export async function statsRoutes(app: FastifyInstance) {
     // Best win streak (forward scan)
     for (const g of games) {
       const isWhite = g.whiteId === userId;
-      const won = (isWhite && g.result === "WHITE_WIN") || (!isWhite && g.result === "BLACK_WIN");
+      const won = didPlayerWin(isWhite, g.result as GameResult);
       if (won) {
         tempWinStreak++;
         bestWinStreak = Math.max(bestWinStreak, tempWinStreak);

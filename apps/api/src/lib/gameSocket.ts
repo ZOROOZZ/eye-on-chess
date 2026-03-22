@@ -3,7 +3,7 @@ import { Chess } from "chess.js";
 import { prisma } from "./prisma.js";
 import { computeElo } from "./elo.js";
 import { checkReactionRateLimit } from "./redis.js";
-import { VALID_REACTIONS } from "@eyeonchess/chess";
+import { VALID_REACTIONS, type GameResult, type Termination } from "@eyeonchess/chess";
 import {
   initClocks,
   getClocksRealtime,
@@ -31,8 +31,8 @@ async function getFullGameState(gameId: string) {
 async function endGame(
   io: SocketServer,
   gameId: string,
-  result: "WHITE_WIN" | "BLACK_WIN" | "DRAW" | "ABORTED",
-  termination: "CHECKMATE" | "RESIGNATION" | "TIMEOUT" | "AGREEMENT"
+  result: GameResult,
+  termination: Termination
 ) {
   const game = await prisma.game.update({
     where: { id: gameId },
