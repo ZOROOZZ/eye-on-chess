@@ -45,6 +45,18 @@ export { REACTIONS, VALID_REACTIONS } from "./reactions/index";
 // ── Activity ──────────────────────────────────────────────
 export type { ActivityEventType, ActivityEvent } from "./activity/index";
 
+// ── Bots ──────────────────────────────────────────────────
+export type { BotPersonality, BotTier, EloBand, StockfishBotConfig } from "./bots/index";
+export {
+  getEloBand,
+  ELO_BAND_COLORS,
+  BOT_PERSONALITIES,
+  getBotById,
+  getAllBots,
+  computeCustomMove,
+  getStockfishConfig,
+} from "./bots/index";
+
 // ── Legacy types (kept for backwards compat) ─────────────
 /** @deprecated Use specific types from their domains instead */
 export type Color = "white" | "black";
