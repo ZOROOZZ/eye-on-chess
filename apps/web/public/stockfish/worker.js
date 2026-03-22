@@ -3,19 +3,13 @@
 
 let engine = null;
 
-// Load Stockfish — set the correct WASM path before importing
-self.Module = {
-  locateFile: function (path) {
-    if (path.endsWith(".wasm")) {
-      return "/stockfish/stockfish.wasm";
-    }
-    return "/stockfish/" + path;
-  },
-};
-
 importScripts("/stockfish/stockfish.js");
 
-Stockfish().then((sf) => {
+Stockfish({
+  locateFile: function (path) {
+    return "/stockfish/" + path;
+  },
+}).then((sf) => {
   engine = sf;
 
   engine.addMessageListener((line) => {
