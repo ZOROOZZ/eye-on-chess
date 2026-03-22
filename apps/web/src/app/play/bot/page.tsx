@@ -138,7 +138,6 @@ export default function PlayBotPage() {
       setConfirmResign(false);
       setConfirmStart(false);
       setShowShortcuts(false);
-      setShowOverlayMenu(false);
     },
     "?": () => setShowShortcuts((s) => !s),
   });
