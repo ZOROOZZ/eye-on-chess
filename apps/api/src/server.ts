@@ -14,6 +14,7 @@ import { setupGameSocket } from "./lib/gameSocket.js";
 import { getSiteSettings } from "./lib/settings.js";
 import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
+import { registerRequestLogger } from "./middleware/requestLogger.js";
 
 async function main() {
   const fastify = Fastify({
@@ -29,6 +30,9 @@ async function main() {
   });
 
   await fastify.register(cookie);
+
+  // Request logging (redacts sensitive fields)
+  registerRequestLogger(fastify);
 
   // Prometheus metrics at /metrics
   await fastify.register(metricsPlugin, {
