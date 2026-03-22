@@ -10,6 +10,7 @@ import { gameRoutes } from "./routes/games.js";
 import { analysisRoutes } from "./routes/analysis.js";
 import { adminRoutes } from "./routes/admin.js";
 import { collectionRoutes } from "./routes/collections.js";
+import { inviteRoutes } from "./routes/invites.js";
 import { setupSocket } from "./lib/socket.js";
 import { setupGameSocket } from "./lib/gameSocket.js";
 import { getSiteSettings } from "./lib/settings.js";
@@ -76,6 +77,7 @@ async function main() {
   await fastify.register(analysisRoutes);
   await fastify.register(adminRoutes);
   await fastify.register(collectionRoutes);
+  await fastify.register(inviteRoutes);
 
   fastify.get("/health", async () => {
     return { status: "ok", timestamp: new Date().toISOString() };

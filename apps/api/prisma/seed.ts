@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { randomUUID } from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -49,6 +50,18 @@ async function main() {
     update: {},
     create: { userId: user.id, name: "Favorites" },
   });
+
+  // Create initial invite codes for admin (if none exist)
+  const existingInvites = await prisma.invite.count({ where: { creatorId: user.id } });
+  if (existingInvites === 0) {
+    const codes: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const code = randomUUID();
+      await prisma.invite.create({ data: { code, creatorId: user.id } });
+      codes.push(code);
+    }
+    console.log(`Created 10 invite codes for admin. First code: ${codes[0]}`);
+  }
 
   console.log(`Seeded admin: ${user.username} (${user.email})`);
 }

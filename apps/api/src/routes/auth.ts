@@ -44,12 +44,21 @@ async function createTokens(user: { id: string; email: string; username: string;
 export async function authRoutes(app: FastifyInstance) {
   // ── Register ──────────────────────────────────────
   app.post<{
-    Body: { email: string; username: string; password: string };
+    Body: { email: string; username: string; password: string; inviteCode: string };
   }>("/api/auth/register", async (request, reply) => {
-    const { email, username, password } = request.body;
+    const { email, username, password, inviteCode } = request.body;
 
-    if (!email || !username || !password) {
-      return reply.status(400).send({ error: "All fields are required" });
+    if (!email || !username || !password || !inviteCode) {
+      return reply.status(400).send({ error: "All fields are required (including invite code)" });
+    }
+
+    // Validate invite code
+    const invite = await prisma.invite.findUnique({ where: { code: inviteCode } });
+    if (!invite) {
+      return reply.status(400).send({ error: "Invalid invite code" });
+    }
+    if (invite.usedById) {
+      return reply.status(410).send({ error: "Invite code has already been used" });
     }
 
     // Check registration flags from DB settings
@@ -85,6 +94,12 @@ export async function authRoutes(app: FastifyInstance) {
 
     const user = await prisma.user.create({
       data: { email, username, passwordHash },
+    });
+
+    // Mark invite as used
+    await prisma.invite.update({
+      where: { code: inviteCode },
+      data: { usedById: user.id, usedAt: new Date() },
     });
 
     // Auto-create Favorites collection
