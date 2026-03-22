@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuthStore } from "../../stores/auth";
 import { connectSocket, disconnectSocket } from "../../lib/socket";
 import { useOnlineStatus } from "../../lib/useOnlineStatus";
@@ -47,6 +48,7 @@ export default function PlayPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full text-center">
+        <Image src="/logo.png" alt="EyeOnChess" width={64} height={64} className="mx-auto mb-3" />
         <h1 className="text-3xl font-bold mb-4">Play</h1>
         <p className="text-gray-300 mb-2">
           Welcome, <span className="font-semibold">{user.username}</span>

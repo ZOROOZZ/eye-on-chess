@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuthStore } from "../../stores/auth";
 
 export default function LoginPage() {
@@ -33,6 +34,9 @@ export default function LoginPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full">
+        <div className="flex justify-center mb-4">
+          <Image src="/logo.png" alt="EyeOnChess" width={80} height={80} priority />
+        </div>
         <h1 className="text-2xl font-bold mb-6 text-center">Log In</h1>
         {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,7 +1,8 @@
 <p align="center">
-  <h1 align="center">EyeOnChess</h1>
-  <p align="center">A fully self-hostable, open source chess platform.<br/>Play, analyze, and compete — on your own server.</p>
+  <img src="logo.png" alt="EyeOnChess" width="200">
 </p>
+<h1 align="center">EyeOnChess</h1>
+<p align="center">A fully self-hostable, open source chess platform.<br/>Play, analyze, and compete — on your own server.</p>
 
 <p align="center">
   <a href="https://github.com/amiwrpremium/eye-on-chess/actions/workflows/ci.yml"><img src="https://github.com/amiwrpremium/eye-on-chess/actions/workflows/ci.yml/badge.svg" alt="CI"></a>

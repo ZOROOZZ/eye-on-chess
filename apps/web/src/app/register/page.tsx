@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuthStore } from "../../stores/auth";
 import api from "../../lib/api";
 
@@ -70,6 +71,9 @@ export default function RegisterPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full">
+        <div className="flex justify-center mb-4">
+          <Image src="/logo.png" alt="EyeOnChess" width={80} height={80} priority />
+        </div>
         <h1 className="text-2xl font-bold mb-6 text-center">Register</h1>
         <p className="text-sm text-gray-400 text-center mb-4">
           EyeOnChess is invite-only. You need an invite code to register.
