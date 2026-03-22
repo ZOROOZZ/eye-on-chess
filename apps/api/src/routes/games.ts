@@ -13,6 +13,7 @@ import {
   categorizeTimeControl,
   RESULT_PGN,
 } from "@eyeonchess/chess";
+import { detectGameEnd } from "../lib/gameHelpers.js";
 
 export async function gameRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
@@ -477,25 +478,16 @@ export async function gameRoutes(app: FastifyInstance) {
     }
 
     // Check if game ended after player move
-    if (chess.isGameOver()) {
-      let result: "WHITE_WIN" | "BLACK_WIN" | "DRAW";
-      let termination: "CHECKMATE" | "AGREEMENT";
-      if (chess.isCheckmate()) {
-        result = chess.turn() === "w" ? "BLACK_WIN" : "WHITE_WIN";
-        termination = "CHECKMATE";
-      } else {
-        result = "DRAW";
-        termination = "AGREEMENT";
-      }
-
+    const ended = detectGameEnd(chess);
+    if (ended) {
       await prisma.game.update({
         where: { id: gameId },
         data: {
           fen: chess.fen(),
           pgn: chess.pgn(),
           status: "COMPLETED",
-          result,
-          termination,
+          result: ended.result,
+          termination: ended.termination,
           endedAt: new Date(),
         },
       });
@@ -503,7 +495,7 @@ export async function gameRoutes(app: FastifyInstance) {
       return {
         playerMove: { from, to, promotion, san: playerMove.san, fen: chess.fen(), ply: currentPly },
         botMove: null,
-        gameOver: { result, termination },
+        gameOver: { result: ended.result, termination: ended.termination },
         clocks,
       };
     }
@@ -542,27 +534,20 @@ export async function gameRoutes(app: FastifyInstance) {
     }
 
     // Check if game ended after bot move
-    let gameOver = null;
-    if (chess.isGameOver()) {
-      let result: "WHITE_WIN" | "BLACK_WIN" | "DRAW";
-      let termination: "CHECKMATE" | "AGREEMENT";
-      if (chess.isCheckmate()) {
-        result = chess.turn() === "w" ? "BLACK_WIN" : "WHITE_WIN";
-        termination = "CHECKMATE";
-      } else {
-        result = "DRAW";
-        termination = "AGREEMENT";
-      }
-      gameOver = { result, termination };
+    const botEnded = detectGameEnd(chess);
+    const gameOver = botEnded
+      ? { result: botEnded.result, termination: botEnded.termination }
+      : null;
 
+    if (botEnded) {
       await prisma.game.update({
         where: { id: gameId },
         data: {
           fen: chess.fen(),
           pgn: chess.pgn(),
           status: "COMPLETED",
-          result,
-          termination,
+          result: botEnded.result,
+          termination: botEnded.termination,
           endedAt: new Date(),
         },
       });
