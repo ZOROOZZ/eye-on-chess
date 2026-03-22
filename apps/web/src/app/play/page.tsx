@@ -59,13 +59,7 @@ export default function PlayPage() {
             className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium transition-colors"
           >
             Play vs Bot
-          </Link>
-          <Link
-            href="/play/bot/offline"
-            className="px-4 py-2 bg-green-800 hover:bg-green-700 rounded font-medium transition-colors"
-          >
-            Play Offline
-            <span className="text-xs text-green-300 ml-1">(no internet needed)</span>
+            {!isOnline && <span className="text-xs text-green-300 ml-1">(offline)</span>}
           </Link>
           <Link
             href="/play/friend"

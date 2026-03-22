@@ -6,12 +6,12 @@ import Link from "next/link";
 import { Chess } from "chess.js";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../stores/auth";
-import { useEngineEval } from "../../../lib/useEngineEval";
+import { useStockfish } from "../../../lib/useStockfish";
+import { useOnlineStatus } from "../../../lib/useOnlineStatus";
 import { lookupOpeningClient } from "../../../lib/openings";
 import ChessBoard from "../../../components/ChessBoard";
 import EvaluationBar from "../../../components/EvaluationBar";
 import MoveList from "../../../components/MoveList";
-import PlayerClock from "../../../components/PlayerClock";
 import CapturedPieces from "../../../components/CapturedPieces";
 import MoveFeedbackPopup from "../../../components/MoveFeedbackPopup";
 import ConfirmModal from "../../../components/ConfirmModal";
@@ -44,31 +44,18 @@ function eloLabel(elo: number): string {
 function classifyMoveFast(fenBefore: string, fenAfter: string, moveSans: string[]): string | null {
   const opening = lookupOpeningClient(moveSans);
   if (opening) return "BOOK";
-
-  const pieceValues: Record<string, number> = {
-    p: 100,
-    n: 320,
-    b: 330,
-    r: 500,
-    q: 900,
-    k: 0,
-  };
-  function evalFen(f: string): number {
-    const chess = new Chess(f);
-    let score = 0;
-    for (const row of chess.board()) {
-      for (const sq of row) {
-        if (sq) score += (sq.color === "w" ? 1 : -1) * (pieceValues[sq.type] || 0);
-      }
-    }
-    return score;
+  const pv: Record<string, number> = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
+  function ev(f: string): number {
+    const c = new Chess(f);
+    let s = 0;
+    for (const row of c.board())
+      for (const sq of row) if (sq) s += (sq.color === "w" ? 1 : -1) * (pv[sq.type] || 0);
+    return s;
   }
-  const before = evalFen(fenBefore);
-  const after = evalFen(fenAfter);
+  const before = ev(fenBefore);
+  const after = ev(fenAfter);
   const isWhite = fenBefore.split(" ")[1] === "w";
   const cpLoss = isWhite ? before - after : after - before;
-
-  if (cpLoss <= 0) return null;
   if (cpLoss <= 50) return null;
   if (cpLoss <= 100) return "INACCURACY";
   if (cpLoss <= 200) return "MISTAKE";
@@ -78,12 +65,14 @@ function classifyMoveFast(fenBefore: string, fenAfter: string, moveSans: string[
 export default function PlayBotPage() {
   const router = useRouter();
   const { user, isLoading, fetchMe } = useAuthStore();
+  const stockfish = useStockfish();
+  const isOnline = useOnlineStatus();
 
   // Selection
   const [phase, setPhase] = useState<"select" | "game" | "ended">("select");
   const [botElo, setBotElo] = useState(800);
   const [colorChoice, setColorChoice] = useState<"white" | "black" | "random">("white");
-  const [selectedPreset, setSelectedPreset] = useState("rapid_10_0");
+  const [selectedPreset, setSelectedPreset] = useState("unlimited");
   const [showCustom, setShowCustom] = useState(false);
   const [customMinutes, setCustomMinutes] = useState(10);
   const [customIncrement, setCustomIncrement] = useState(0);
@@ -98,38 +87,28 @@ export default function PlayBotPage() {
   const [hintSource, setHintSource] = useState<string | null>(null);
   const [hintDest, setHintDest] = useState<string | null>(null);
 
-  // Game
-  const [gameId, setGameId] = useState<string | null>(null);
-  const [fen, setFen] = useState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+  // Game state (all client-side via chess.js + stockfish wasm)
+  const [gameId, setGameId] = useState<string | null>(null); // server game id (if online)
+  const [game, setGame] = useState(() => new Chess());
   const [moves, setMoves] = useState<MoveRecord[]>([]);
   const [allSans, setAllSans] = useState<string[]>([]);
   const [currentPly, setCurrentPly] = useState(0);
   const [lastMove, setLastMove] = useState<[string, string] | undefined>();
   const [playerIsWhite, setPlayerIsWhite] = useState(true);
-  const [gameOver, setGameOver] = useState<{
-    result: string;
-    termination: string;
-  } | null>(null);
+  const [gameOver, setGameOver] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [clocks, setClocks] = useState<{
-    whiteTimeLeft: number;
-    blackTimeLeft: number;
-    turn: string;
-  } | null>(null);
-  const [timeControl, setTimeControl] = useState("RAPID");
+  const [evalScore, setEvalScore] = useState(0);
   const [error, setError] = useState("");
   const [confirmResign, setConfirmResign] = useState(false);
   const [confirmStart, setConfirmStart] = useState(false);
 
+  // Active game check
   const [activeGame, setActiveGame] = useState<{
     id: string;
     botElo: number | null;
-    isVsBot: boolean;
   } | null>(null);
   const [showActivePrompt, setShowActivePrompt] = useState(false);
-
-  const engineEval = useEngineEval(fen, showEvalBar && phase === "game");
 
   useEffect(() => {
     if (!user) fetchMe();
@@ -138,9 +117,9 @@ export default function PlayBotPage() {
     if (!isLoading && !user) router.push("/login");
   }, [isLoading, user, router]);
 
-  // Check for active game on mount
+  // Check for active game on mount (only when online)
   useEffect(() => {
-    if (!user || phase !== "select") return;
+    if (!user || phase !== "select" || !isOnline) return;
     async function checkActive() {
       try {
         const { data } = await api.get("/api/games/active");
@@ -149,22 +128,22 @@ export default function PlayBotPage() {
           setShowActivePrompt(true);
         }
       } catch {
-        // ignore
+        // offline or error — ignore
       }
     }
     checkActive();
-  }, [user, phase]);
+  }, [user, phase, isOnline]);
 
   async function resumeGame() {
     if (!activeGame) return;
     try {
       const { data } = await api.get(`/api/games/${activeGame.id}`);
       const g = data.game;
+      const chess = new Chess(g.fen);
+      setGame(chess);
       setGameId(g.id);
       setPlayerIsWhite(g.whiteId === user?.id);
       setBotElo(g.botElo || 800);
-      setTimeControl(g.timeControl);
-      setFen(g.fen);
       if (g.moves && g.moves.length > 0) {
         const records = g.moves.map((m: { ply: number; san: string; fen: string }) => ({
           ply: m.ply,
@@ -175,9 +154,8 @@ export default function PlayBotPage() {
         setAllSans(g.moves.map((m: { san: string }) => m.san));
         setCurrentPly(records.length);
         const last = g.moves[g.moves.length - 1];
-        if (last.uci && last.uci.length >= 4) {
+        if (last.uci && last.uci.length >= 4)
           setLastMove([last.uci.slice(0, 2), last.uci.slice(2, 4)]);
-        }
       }
       setPhase("game");
       setShowActivePrompt(false);
@@ -199,138 +177,223 @@ export default function PlayBotPage() {
 
   async function startGame() {
     setError("");
-    try {
-      const body: Record<string, unknown> = { botElo, color: colorChoice };
-      if (showCustom) {
-        body.initialTime = customMinutes * 60;
-        body.increment = customIncrement;
-      } else {
-        body.preset = selectedPreset;
-      }
-      const { data } = await api.post("/api/games/bot", body);
-      setGameId(data.game.id);
-      setPlayerIsWhite(data.playerIsWhite);
-      setTimeControl(data.game.timeControl);
-      setClocks({
-        whiteTimeLeft: data.game.whiteTimeLeft,
-        blackTimeLeft: data.game.blackTimeLeft,
-        turn: "white",
-      });
-      if (data.botFirstMove) {
-        setFen(data.botFirstMove.fen);
-        setMoves([{ ply: 1, san: data.botFirstMove.san, fen: data.botFirstMove.fen }]);
-        setAllSans([data.botFirstMove.san]);
-        setCurrentPly(1);
-        setLastMove([data.botFirstMove.from, data.botFirstMove.to]);
-      } else {
-        setFen(data.game.fen);
-      }
-      setPhase("game");
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        "Failed to start game";
-      setError(msg);
-    }
-  }
+    setConfirmStart(false);
 
-  const handleMove = useCallback(
-    async (from: string, to: string, promotion?: string) => {
-      if (!gameId || thinking || gameOver) return;
-      const fenBefore = fen;
-      setThinking(true);
-      setHintStep(0);
-      setHintSource(null);
-      setHintDest(null);
-      try {
-        const { data } = await api.post(`/api/games/${gameId}/move`, { from, to, promotion });
-        if (data.playerMove) {
-          const newSans = [...allSans, data.playerMove.san];
-          setMoves((prev) => [
-            ...prev,
-            { ply: data.playerMove.ply, san: data.playerMove.san, fen: data.playerMove.fen },
-          ]);
-          setAllSans(newSans);
-          setCurrentPly(data.playerMove.ply);
-          setLastMove([from, to]);
-          setFen(data.playerMove.fen);
-          if (showMoveFeedback) {
-            const cls = classifyMoveFast(fenBefore, data.playerMove.fen, newSans);
-            setFeedback(cls);
-          } else {
-            setFeedback(null);
-          }
-        }
-        if (data.clocks) setClocks(data.clocks);
-        if (data.botMove) {
-          await new Promise((r) => setTimeout(r, 350));
-          setMoves((prev) => [
-            ...prev,
-            { ply: data.botMove.ply, san: data.botMove.san, fen: data.botMove.fen },
-          ]);
-          setAllSans((prev) => [...prev, data.botMove.san]);
-          setCurrentPly(data.botMove.ply);
-          setLastMove([data.botMove.from, data.botMove.to]);
-          setFen(data.botMove.fen);
-          if (data.clocks) setClocks(data.clocks);
-        }
-        if (data.gameOver) {
-          setGameOver(data.gameOver);
-          setPhase("ended");
-        }
-      } catch (err: unknown) {
-        const msg =
-          (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-          "Move failed";
-        setError(msg);
-      } finally {
-        setThinking(false);
-      }
-    },
-    [gameId, thinking, gameOver, fen, allSans, showMoveFeedback]
-  );
+    const isWhite =
+      colorChoice === "white" ? true : colorChoice === "black" ? false : Math.random() < 0.5;
+    const chess = new Chess();
 
-  function handleHint() {
-    if (!engineEval.bestMove) return;
-    if (hintStep === 0) {
-      setHintSource(engineEval.bestMove.slice(0, 2));
-      setHintDest(null);
-      setHintStep(1);
-    } else if (hintStep === 1) {
-      setHintDest(engineEval.bestMove.slice(2, 4));
-      setHintStep(2);
-    } else {
-      setHintStep(0);
-      setHintSource(null);
-      setHintDest(null);
-    }
-  }
-
-  async function resign() {
-    if (!gameId) return;
-    try {
-      const { data } = await api.post(`/api/games/${gameId}/resign`);
-      setGameOver(data);
-      setPhase("ended");
-    } catch {
-      // ignore
-    }
-    setConfirmResign(false);
-  }
-
-  function playAgain() {
-    setPhase("select");
-    setGameId(null);
-    setFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    setGame(chess);
+    setPlayerIsWhite(isWhite);
     setMoves([]);
     setAllSans([]);
     setCurrentPly(0);
     setLastMove(undefined);
     setGameOver(null);
-    setClocks(null);
+    setFeedback(null);
+    setHintStep(0);
+    setGameId(null);
+
+    // Create server record if online
+    if (isOnline) {
+      try {
+        const body: Record<string, unknown> = {
+          botElo,
+          color: isWhite ? "white" : "black",
+        };
+        if (showCustom) {
+          body.initialTime = customMinutes * 60;
+          body.increment = customIncrement;
+        } else {
+          body.preset = selectedPreset;
+        }
+        const { data } = await api.post("/api/games/bot", body);
+        setGameId(data.game.id);
+      } catch {
+        // Failed to create server game — play without persistence
+      }
+    }
+
+    setPhase("game");
+
+    // Bot plays first if player is black
+    if (!isWhite) {
+      makeBotMove(chess, []);
+    }
+  }
+
+  async function makeBotMove(chess: Chess, currentMoves: MoveRecord[]) {
+    setThinking(true);
+    try {
+      const moveUci = await stockfish.getBotMove(chess.fen(), botElo);
+      if (!moveUci) {
+        setThinking(false);
+        return;
+      }
+      const from = moveUci.slice(0, 2);
+      const to = moveUci.slice(2, 4);
+      const promotion = moveUci[4] || undefined;
+      const move = chess.move({ from, to, promotion });
+      if (!move) {
+        setThinking(false);
+        return;
+      }
+
+      const ply = currentMoves.length + 1;
+      const newMoves = [...currentMoves, { ply, san: move.san, fen: chess.fen() }];
+      const newSans = [...currentMoves.map((m) => m.san), move.san];
+      setGame(new Chess(chess.fen()));
+      setMoves(newMoves);
+      setAllSans(newSans);
+      setCurrentPly(ply);
+      setLastMove([from, to]);
+
+      // Update eval
+      if (showEvalBar) {
+        const ev = await stockfish.evaluate(chess.fen());
+        setEvalScore(ev.score);
+      }
+
+      // Persist bot move to server if online
+      if (gameId && isOnline) {
+        // Server already knows about the move if we used the move endpoint
+        // But since we're doing client-side bot, we just record it
+      }
+
+      if (chess.isGameOver()) {
+        const result = chess.isCheckmate()
+          ? chess.turn() === "w"
+            ? "Black wins by checkmate"
+            : "White wins by checkmate"
+          : "Draw";
+        setGameOver(result);
+        setPhase("ended");
+      }
+    } finally {
+      setThinking(false);
+    }
+  }
+
+  const handleMove = useCallback(
+    async (from: string, to: string, promotion?: string) => {
+      if (thinking || gameOver || !stockfish.ready) return;
+
+      const fenBefore = game.fen();
+      const chess = new Chess(game.fen());
+      const move = chess.move({ from, to, promotion: promotion || undefined });
+      if (!move) return;
+
+      const ply = moves.length + 1;
+      const newMoves = [...moves, { ply, san: move.san, fen: chess.fen() }];
+      const newSans = [...allSans, move.san];
+      setGame(new Chess(chess.fen()));
+      setMoves(newMoves);
+      setAllSans(newSans);
+      setCurrentPly(ply);
+      setLastMove([from, to]);
+      setHintStep(0);
+      setHintSource(null);
+      setHintDest(null);
+
+      // Move feedback
+      if (showMoveFeedback) {
+        const cls = classifyMoveFast(fenBefore, chess.fen(), newSans);
+        setFeedback(cls);
+      } else {
+        setFeedback(null);
+      }
+
+      // Update eval
+      if (showEvalBar) {
+        const ev = await stockfish.evaluate(chess.fen());
+        setEvalScore(ev.score);
+      }
+
+      // Persist to server if online
+      if (gameId && isOnline) {
+        try {
+          await api.post(`/api/games/${gameId}/move`, { from, to, promotion });
+        } catch {
+          // Server save failed — game continues locally
+        }
+      }
+
+      if (chess.isGameOver()) {
+        const result = chess.isCheckmate()
+          ? chess.turn() === "w"
+            ? "Black wins by checkmate"
+            : "White wins by checkmate"
+          : "Draw";
+        setGameOver(result);
+        setPhase("ended");
+        return;
+      }
+
+      // Bot responds
+      makeBotMove(chess, newMoves);
+    },
+    [
+      game,
+      moves,
+      allSans,
+      thinking,
+      gameOver,
+      stockfish,
+      showMoveFeedback,
+      showEvalBar,
+      gameId,
+      isOnline,
+      botElo,
+    ]
+  );
+
+  function handleHint() {
+    if (!stockfish.ready) return;
+    // Use eval's bestMove
+    stockfish.evaluate(game.fen()).then((ev) => {
+      if (!ev.bestMove) return;
+      if (hintStep === 0) {
+        setHintSource(ev.bestMove.slice(0, 2));
+        setHintDest(null);
+        setHintStep(1);
+      } else if (hintStep === 1) {
+        setHintDest(ev.bestMove.slice(2, 4));
+        setHintStep(2);
+      } else {
+        setHintStep(0);
+        setHintSource(null);
+        setHintDest(null);
+      }
+    });
+  }
+
+  async function resign() {
+    const result = playerIsWhite ? "Black wins by resignation" : "White wins by resignation";
+    setGameOver(result);
+    setPhase("ended");
+    setConfirmResign(false);
+    if (gameId && isOnline) {
+      try {
+        await api.post(`/api/games/${gameId}/resign`);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  function playAgain() {
+    setPhase("select");
+    setGame(new Chess());
+    setGameId(null);
+    setMoves([]);
+    setAllSans([]);
+    setCurrentPly(0);
+    setLastMove(undefined);
+    setGameOver(null);
     setFeedback(null);
     setError("");
     setHintStep(0);
+    setEvalScore(0);
   }
 
   if (isLoading || !user) {
@@ -346,24 +409,20 @@ export default function PlayBotPage() {
     phase === "game" &&
     !thinking &&
     !gameOver &&
-    ((fen.split(" ")[1] === "w" && playerIsWhite) || (fen.split(" ")[1] === "b" && !playerIsWhite));
+    ((game.turn() === "w" && playerIsWhite) || (game.turn() === "b" && !playerIsWhite));
   const isViewingLatest = currentPly === moves.length;
   const displayFen =
     currentPly === 0
       ? moves.length > 0
         ? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-        : fen
-      : moves.find((m) => m.ply === currentPly)?.fen || fen;
-  const isUnlimited = timeControl === "UNLIMITED";
+        : game.fen()
+      : moves.find((m) => m.ply === currentPly)?.fen || game.fen();
 
   const arrows: { from: string; to: string; color: string }[] = [];
-  if (hintStep === 2 && hintSource && hintDest) {
+  if (hintStep === 2 && hintSource && hintDest)
     arrows.push({ from: hintSource, to: hintDest, color: "green" });
-  }
   const highlightedSquares: { square: string; color: string }[] = [];
-  if (hintStep >= 1 && hintSource) {
-    highlightedSquares.push({ square: hintSource, color: "green" });
-  }
+  if (hintStep >= 1 && hintSource) highlightedSquares.push({ square: hintSource, color: "green" });
 
   // ── Selection Screen ─────────────────────────────────
   if (phase === "select") {
@@ -371,9 +430,19 @@ export default function PlayBotPage() {
       <main className="flex flex-col items-center min-h-screen p-4 pt-12">
         <div className="max-w-lg w-full space-y-6">
           <h1 className="text-2xl font-bold text-center">Play vs Bot</h1>
+          {!isOnline && (
+            <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-2 text-center text-xs text-yellow-300">
+              Offline mode — game won&apos;t be saved to server
+            </div>
+          )}
+          {!stockfish.ready && (
+            <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3 text-center">
+              <p className="text-sm text-blue-300">Loading Stockfish engine...</p>
+              <p className="text-xs text-blue-400 mt-1">First load downloads ~7MB (cached after)</p>
+            </div>
+          )}
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
-          {/* Active game prompt */}
           {showActivePrompt && activeGame && (
             <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 text-center">
               <p className="text-sm text-yellow-300 mb-3">
@@ -424,9 +493,7 @@ export default function PlayBotPage() {
                 <button
                   key={c}
                   onClick={() => setColorChoice(c)}
-                  className={`py-2 rounded text-sm font-medium transition-colors ${
-                    colorChoice === c ? "bg-blue-600" : "bg-gray-800 hover:bg-gray-700"
-                  }`}
+                  className={`py-2 rounded text-sm font-medium transition-colors ${colorChoice === c ? "bg-blue-600" : "bg-gray-800 hover:bg-gray-700"}`}
                 >
                   {c.charAt(0).toUpperCase() + c.slice(1)}
                 </button>
@@ -444,11 +511,7 @@ export default function PlayBotPage() {
                     setSelectedPreset(p.key);
                     setShowCustom(false);
                   }}
-                  className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                    !showCustom && selectedPreset === p.key
-                      ? "bg-blue-600"
-                      : "bg-gray-800 hover:bg-gray-700"
-                  }`}
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors ${!showCustom && selectedPreset === p.key ? "bg-blue-600" : "bg-gray-800 hover:bg-gray-700"}`}
                 >
                   {p.label}
                 </button>
@@ -490,9 +553,10 @@ export default function PlayBotPage() {
 
           <button
             onClick={() => setConfirmStart(true)}
-            className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg text-lg font-bold transition-colors"
+            disabled={!stockfish.ready}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-wait rounded-lg text-lg font-bold transition-colors"
           >
-            Start Game
+            {stockfish.ready ? "Start Game" : "Loading Engine..."}
           </button>
 
           <div className="text-center">
@@ -504,13 +568,10 @@ export default function PlayBotPage() {
           <ConfirmModal
             open={confirmStart}
             title="Start Game?"
-            message={`Bot: ${botElo} Elo (${eloLabel(botElo)})\nColor: ${colorChoice}\nTime: ${showCustom ? `${customMinutes}+${customIncrement}` : PRESETS.find((p) => p.key === selectedPreset)?.label || selectedPreset}`}
+            message={`Bot: ${botElo} Elo (${eloLabel(botElo)})\nColor: ${colorChoice}\nTime: ${showCustom ? `${customMinutes}+${customIncrement}` : PRESETS.find((p) => p.key === selectedPreset)?.label || selectedPreset}${!isOnline ? "\n\nOffline — game won't be saved" : ""}`}
             confirmLabel="Start"
             confirmVariant="primary"
-            onConfirm={() => {
-              setConfirmStart(false);
-              startGame();
-            }}
+            onConfirm={startGame}
             onCancel={() => setConfirmStart(false)}
           />
         </div>
@@ -519,18 +580,6 @@ export default function PlayBotPage() {
   }
 
   // ── Game / Ended Screen ──────────────────────────────
-  const resultLabels: Record<string, string> = {
-    WHITE_WIN: "White wins",
-    BLACK_WIN: "Black wins",
-    DRAW: "Draw",
-  };
-  const termLabels: Record<string, string> = {
-    CHECKMATE: "by checkmate",
-    RESIGNATION: "by resignation",
-    TIMEOUT: "on time",
-    AGREEMENT: "by agreement",
-  };
-
   return (
     <main className="flex flex-col items-center min-h-screen p-4 pt-4">
       <div className="w-full max-w-6xl">
@@ -538,25 +587,21 @@ export default function PlayBotPage() {
           <div className="flex gap-2 flex-1 min-w-0">
             {showEvalBar && (
               <div className="h-auto flex">
-                <EvaluationBar evalCP={engineEval.score} mate={null} />
+                <EvaluationBar evalCP={evalScore} mate={null} />
               </div>
             )}
             <div className="flex flex-col gap-1 flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-gray-700 rounded-full flex items-center justify-center text-xs font-bold">
-                    B
-                  </div>
-                  <span className="text-sm font-medium">
-                    Bot ({botElo}) <span className="text-gray-500">{eloLabel(botElo)}</span>
-                  </span>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-gray-700 rounded-full flex items-center justify-center text-xs font-bold">
+                  B
                 </div>
-                {!isUnlimited && clocks && (
-                  <PlayerClock
-                    timeMs={playerIsWhite ? clocks.blackTimeLeft : clocks.whiteTimeLeft}
-                    isActive={!isMyTurn && phase === "game"}
-                    isRunning={phase === "game" && !gameOver}
-                  />
+                <span className="text-sm font-medium">
+                  Bot ({botElo}) <span className="text-gray-500">{eloLabel(botElo)}</span>
+                </span>
+                {!isOnline && (
+                  <span className="text-xs text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded">
+                    OFFLINE
+                  </span>
                 )}
               </div>
               <CapturedPieces fen={displayFen} color={playerIsWhite ? "white" : "black"} />
@@ -583,20 +628,11 @@ export default function PlayBotPage() {
               </div>
 
               <CapturedPieces fen={displayFen} color={playerIsWhite ? "black" : "white"} />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-gray-700 rounded-full flex items-center justify-center text-xs font-bold">
-                    {user.username[0].toUpperCase()}
-                  </div>
-                  <span className="text-sm font-medium">{user.username}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-gray-700 rounded-full flex items-center justify-center text-xs font-bold">
+                  {user.username[0].toUpperCase()}
                 </div>
-                {!isUnlimited && clocks && (
-                  <PlayerClock
-                    timeMs={playerIsWhite ? clocks.whiteTimeLeft : clocks.blackTimeLeft}
-                    isActive={isMyTurn}
-                    isRunning={phase === "game" && !gameOver}
-                  />
-                )}
+                <span className="text-sm font-medium">{user.username}</span>
               </div>
             </div>
           </div>
@@ -634,7 +670,7 @@ export default function PlayBotPage() {
               <div className="flex gap-2">
                 <button
                   onClick={handleHint}
-                  disabled={!isMyTurn || !engineEval.bestMove}
+                  disabled={!isMyTurn || !stockfish.ready}
                   className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm font-medium transition-colors"
                 >
                   {hintStep === 0 ? "Hint" : hintStep === 1 ? "Show Move" : "Hide Hint"}
@@ -696,10 +732,7 @@ export default function PlayBotPage() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-gray-900 rounded-lg p-6 max-w-sm w-full mx-4 text-center">
             <h2 className="text-xl font-bold mb-2">Game Over</h2>
-            <p className="text-gray-300 mb-4">
-              {resultLabels[gameOver.result] || gameOver.result}{" "}
-              {termLabels[gameOver.termination] || ""}
-            </p>
+            <p className="text-gray-300 mb-4">{gameOver}</p>
             <div className="flex gap-3">
               <button
                 onClick={playAgain}
@@ -707,7 +740,7 @@ export default function PlayBotPage() {
               >
                 Play Again
               </button>
-              {gameId && (
+              {gameId && isOnline && (
                 <button
                   onClick={() => router.push(`/game/${gameId}/analysis`)}
                   className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
