@@ -63,6 +63,42 @@ On `disconnect`: removes Redis key
 | `game:draw:declined` | —                                                         | Draw was declined                         |
 | `game:error`         | `{ message }`                                             | Error (not your turn, invalid move, etc.) |
 
+## Rematch Events
+
+### Client -> Server
+
+| Event                 | Payload           | Description      |
+| --------------------- | ----------------- | ---------------- |
+| `game:rematch:offer`  | `gameId` (string) | Offer a rematch  |
+| `game:rematch:accept` | `gameId` (string) | Accept a rematch |
+
+### Server -> Client (room broadcast)
+
+| Event                  | Payload                                               | Description                       |
+| ---------------------- | ----------------------------------------------------- | --------------------------------- |
+| `game:rematch:offered` | `{ by, gameId, timeControl, initialTime, increment }` | A rematch was offered             |
+| `game:rematch:started` | `{ newGameId }`                                       | New game created (colors swapped) |
+
+The original game must be `COMPLETED`. The new game uses the same time control with colors swapped.
+
+## Emoji Reactions
+
+### Client -> Server
+
+| Event           | Payload                | Description     |
+| --------------- | ---------------------- | --------------- |
+| `game:reaction` | `{ gameId, reaction }` | Send a reaction |
+
+### Server -> Client (room broadcast)
+
+| Event           | Payload                | Description         |
+| --------------- | ---------------------- | ------------------- |
+| `game:reaction` | `{ userId, reaction }` | A reaction was sent |
+
+**Valid reactions:** `good_move`, `brilliant`, `blunder`, `thinking`, `gg`, `takeback`
+
+**Rate limiting:** 5 reactions per 10 seconds per user per game. Excess reactions are silently dropped. Only active game participants can send reactions.
+
 ## Game Flow
 
 ```
