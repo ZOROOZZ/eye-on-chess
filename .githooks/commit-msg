@@ -21,7 +21,6 @@ TYPES=(
 SCOPES=(
   api         # Backend (Fastify, routes, middleware)
   web         # Frontend (Next.js, components, pages)
-  chess       # Shared chess package
   db          # Database schema, migrations, seed
   auth        # Authentication, JWT, sessions
   game        # Game logic, clocks, Socket.io events
