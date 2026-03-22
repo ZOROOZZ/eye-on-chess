@@ -102,7 +102,7 @@ vi.mock("../lib/prisma.js", () => ({
 }));
 
 // ── Mock Redis ──────────────────────────────────────────
-const mockRedis = {
+const mockRedis: Record<string, ReturnType<typeof vi.fn>> = {
   get: vi.fn(),
   set: vi.fn(),
   setex: vi.fn(),
@@ -239,7 +239,7 @@ function getPrisma() {
   return mockPrismaClient as Record<string, Record<string, ReturnType<typeof vi.fn>>>;
 }
 
-function getRedis() {
+function getRedis(): Record<string, ReturnType<typeof vi.fn>> {
   return mockRedis;
 }
 
