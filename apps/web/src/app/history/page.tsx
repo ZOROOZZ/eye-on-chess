@@ -7,6 +7,7 @@ import api from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
 import { Skeleton } from "../../components/Skeleton";
 import GameNoteEditor from "../../components/GameNoteEditor";
+import ExportPGN from "../../components/ExportPGN";
 
 interface GameRecord {
   id: string;
@@ -138,6 +139,7 @@ export default function HistoryPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <ExportPGN gameId={g.id} compact />
                       <GameNoteEditor gameId={g.id} compact />
                       <Link
                         href={`/game/${g.id}/analysis`}

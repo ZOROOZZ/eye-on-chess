@@ -6,6 +6,7 @@ import Link from "next/link";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../stores/auth";
 import GameNoteEditor from "../../../components/GameNoteEditor";
+import ExportPGN from "../../../components/ExportPGN";
 
 interface GameRecord {
   id: string;
@@ -90,6 +91,7 @@ export default function CollectionDetailPage() {
                     {new Date(g.createdAt).toLocaleDateString()}
                   </p>
                 </div>
+                <ExportPGN gameId={g.id} compact />
                 <GameNoteEditor gameId={g.id} compact />
                 <Link
                   href={`/game/${g.id}/analysis`}

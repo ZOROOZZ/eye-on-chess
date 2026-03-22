@@ -26,6 +26,7 @@ import { useSound } from "../../../lib/useSound";
 import { useKeyboardShortcuts } from "../../../lib/useKeyboardShortcuts";
 import ChessBoard from "../../../components/ChessBoard";
 import KeyboardShortcutsHelp from "../../../components/KeyboardShortcutsHelp";
+import ExportPGN from "../../../components/ExportPGN";
 import EvaluationBar from "../../../components/EvaluationBar";
 import MoveList from "../../../components/MoveList";
 import CapturedPieces from "../../../components/CapturedPieces";
@@ -904,12 +905,15 @@ export default function PlayBotPage() {
                 New Game
               </button>
               {gameId && isOnline && (
-                <button
-                  onClick={() => router.push(`/game/${gameId}/analysis`)}
-                  className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
-                >
-                  Analyze
-                </button>
+                <>
+                  <button
+                    onClick={() => router.push(`/game/${gameId}/analysis`)}
+                    className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
+                  >
+                    Analyze
+                  </button>
+                  <ExportPGN gameId={gameId} compact />
+                </>
               )}
             </div>
           </div>

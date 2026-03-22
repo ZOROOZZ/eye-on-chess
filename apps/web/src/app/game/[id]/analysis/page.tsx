@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import GameNoteEditor from "../../../../components/GameNoteEditor";
+import ExportPGN from "../../../../components/ExportPGN";
 import KeyboardShortcutsHelp from "../../../../components/KeyboardShortcutsHelp";
 import { useKeyboardShortcuts } from "../../../../lib/useKeyboardShortcuts";
 import api from "../../../../lib/api";
@@ -402,6 +403,8 @@ export default function AnalysisPage() {
                 ))}
               </div>
             </div>
+
+            <ExportPGN gameId={gameId} />
 
             <GameNoteEditor gameId={gameId} />
 
