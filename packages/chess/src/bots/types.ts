@@ -8,6 +8,44 @@
 export type BotTier = "custom" | "hybrid" | "engine";
 
 /**
+ * Skill category for grouping bots in the UI.
+ */
+export type BotCategory =
+  | "beginner"
+  | "novice"
+  | "intermediate"
+  | "advanced"
+  | "expert"
+  | "master"
+  | "grandmaster";
+
+/**
+ * Display labels for bot categories.
+ */
+export const BOT_CATEGORY_LABELS: Record<BotCategory, { name: string; eloRange: string }> = {
+  beginner: { name: "Beginner", eloRange: "200-400" },
+  novice: { name: "Novice", eloRange: "500-800" },
+  intermediate: { name: "Intermediate", eloRange: "900-1200" },
+  advanced: { name: "Advanced", eloRange: "1300-1600" },
+  expert: { name: "Expert", eloRange: "1700-2000" },
+  master: { name: "Master", eloRange: "2100-2500" },
+  grandmaster: { name: "Grandmaster", eloRange: "2600-3200" },
+};
+
+/**
+ * Get the category for an Elo rating.
+ */
+export function getBotCategory(elo: number): BotCategory {
+  if (elo <= 400) return "beginner";
+  if (elo <= 800) return "novice";
+  if (elo <= 1200) return "intermediate";
+  if (elo <= 1600) return "advanced";
+  if (elo <= 2000) return "expert";
+  if (elo <= 2500) return "master";
+  return "grandmaster";
+}
+
+/**
  * Elo color band for UI display.
  */
 export type EloBand = "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "gold";
@@ -28,6 +66,8 @@ export interface BotPersonality {
   avatar: string;
   /** Engine tier */
   tier: BotTier;
+  /** Skill category for UI grouping */
+  category: BotCategory;
 
   // ── Behavior parameters ────────────────────────────────
 

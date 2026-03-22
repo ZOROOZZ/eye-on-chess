@@ -272,3 +272,28 @@ model GameNote {
   @@index([userId])
   @@index([gameId])
 }
+
+model BotProfile {
+  id               String  @id @default(cuid())
+  botId            String  @unique
+  name             String
+  elo              Int
+  description      String
+  avatar           String
+  category         String  @default("beginner")
+  tier             String  @default("custom")
+  enabled          Boolean @default(true)
+  randomMoveChance Float   @default(0)
+  blunderChance    Float   @default(0)
+  captureGreed     Float   @default(0)
+  aggressionBias   Float   @default(0)
+  maxDepth         Int     @default(3)
+  queenEarly       Boolean @default(false)
+  pawnPusher       Boolean @default(false)
+  sortOrder        Int     @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([elo])
+  @@index([category])
+}

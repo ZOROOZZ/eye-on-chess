@@ -46,10 +46,18 @@ export { REACTIONS, VALID_REACTIONS } from "./reactions/index";
 export type { ActivityEventType, ActivityEvent } from "./activity/index";
 
 // ── Bots ──────────────────────────────────────────────────
-export type { BotPersonality, BotTier, EloBand, StockfishBotConfig } from "./bots/index";
+export type {
+  BotPersonality,
+  BotTier,
+  EloBand,
+  BotCategory,
+  StockfishBotConfig,
+} from "./bots/index";
 export {
   getEloBand,
   ELO_BAND_COLORS,
+  getBotCategory,
+  BOT_CATEGORY_LABELS,
   BOT_PERSONALITIES,
   getBotById,
   getAllBots,

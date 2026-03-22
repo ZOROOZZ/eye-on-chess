@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
+import { BOT_PERSONALITIES } from "@eyeonchess/chess";
 
 const prisma = new PrismaClient();
 
@@ -64,6 +65,34 @@ async function main() {
   }
 
   console.log(`Seeded admin: ${user.username} (${user.email})`);
+
+  // Seed bot profiles
+  const existingBots = await prisma.botProfile.count();
+  if (existingBots === 0) {
+    for (let i = 0; i < BOT_PERSONALITIES.length; i++) {
+      const bot = BOT_PERSONALITIES[i];
+      await prisma.botProfile.create({
+        data: {
+          botId: bot.id,
+          name: bot.name,
+          elo: bot.elo,
+          description: bot.description,
+          avatar: bot.avatar,
+          category: bot.category,
+          tier: bot.tier,
+          randomMoveChance: bot.randomMoveChance,
+          blunderChance: bot.blunderChance,
+          captureGreed: bot.captureGreed,
+          aggressionBias: bot.aggressionBias,
+          maxDepth: bot.maxDepth,
+          queenEarly: bot.queenEarly,
+          pawnPusher: bot.pawnPusher,
+          sortOrder: i,
+        },
+      });
+    }
+    console.log(`Seeded ${BOT_PERSONALITIES.length} bot profiles`);
+  }
 }
 
 main()
