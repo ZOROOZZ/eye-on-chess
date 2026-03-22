@@ -3,8 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Chess } from "chess.js";
-import { getOfflineBotMove } from "../../../../lib/offlineBot";
-import { useEngineEval } from "../../../../lib/useEngineEval";
+import { useStockfish } from "../../../../lib/useStockfish";
 import ChessBoard from "../../../../components/ChessBoard";
 import EvaluationBar from "../../../../components/EvaluationBar";
 import MoveList from "../../../../components/MoveList";
@@ -44,8 +43,14 @@ export default function OfflineBotPage() {
   const [thinking, setThinking] = useState(false);
   const [confirmResign, setConfirmResign] = useState(false);
   const [confirmStart, setConfirmStart] = useState(false);
+  const [evalScore, setEvalScore] = useState(0);
 
-  const engineEval = useEngineEval(game.fen(), showEvalBar && phase === "game");
+  const stockfish = useStockfish();
+
+  // Run eval when position changes
+  const currentFen = game.fen();
+  const evalEnabled = showEvalBar && phase === "game" && stockfish.ready;
+  // We'll update eval after each move instead of continuous polling
 
   function startGame() {
     const g = new Chess();
@@ -61,53 +66,57 @@ export default function OfflineBotPage() {
 
     // Bot plays first if player is black
     if (!isWhite) {
-      setTimeout(() => makeBotMove(g, []), 300);
+      setTimeout(() => makeBotMove(g, []), 500);
     }
   }
 
-  function makeBotMove(chess: Chess, currentMoves: MoveRecord[]) {
+  async function makeBotMove(chess: Chess, currentMoves: MoveRecord[]) {
     setThinking(true);
-    setTimeout(
-      () => {
-        const moveUci = getOfflineBotMove(chess.fen(), botElo);
-        if (!moveUci) {
-          setThinking(false);
-          return;
-        }
-        const from = moveUci.slice(0, 2);
-        const to = moveUci.slice(2, 4);
-        const promotion = moveUci[4] || undefined;
-        const move = chess.move({ from, to, promotion });
-        if (!move) {
-          setThinking(false);
-          return;
-        }
-
-        const ply = currentMoves.length + 1;
-        const newMoves = [...currentMoves, { ply, san: move.san, fen: chess.fen() }];
-        setGame(new Chess(chess.fen()));
-        setMoves(newMoves);
-        setCurrentPly(ply);
-        setLastMove([from, to]);
+    try {
+      const moveUci = await stockfish.getBotMove(chess.fen(), botElo);
+      if (!moveUci) {
         setThinking(false);
+        return;
+      }
+      const from = moveUci.slice(0, 2);
+      const to = moveUci.slice(2, 4);
+      const promotion = moveUci[4] || undefined;
+      const move = chess.move({ from, to, promotion });
+      if (!move) {
+        setThinking(false);
+        return;
+      }
 
-        if (chess.isGameOver()) {
-          const result = chess.isCheckmate()
-            ? chess.turn() === "w"
-              ? "Black wins by checkmate"
-              : "White wins by checkmate"
-            : "Draw";
-          setGameOver(result);
-          setPhase("ended");
-        }
-      },
-      200 + Math.random() * 300
-    );
+      const ply = currentMoves.length + 1;
+      const newMoves = [...currentMoves, { ply, san: move.san, fen: chess.fen() }];
+      setGame(new Chess(chess.fen()));
+      setMoves(newMoves);
+      setCurrentPly(ply);
+      setLastMove([from, to]);
+
+      // Update eval
+      if (evalEnabled) {
+        const ev = await stockfish.evaluate(chess.fen());
+        setEvalScore(ev.score);
+      }
+
+      if (chess.isGameOver()) {
+        const result = chess.isCheckmate()
+          ? chess.turn() === "w"
+            ? "Black wins by checkmate"
+            : "White wins by checkmate"
+          : "Draw";
+        setGameOver(result);
+        setPhase("ended");
+      }
+    } finally {
+      setThinking(false);
+    }
   }
 
   const handleMove = useCallback(
-    (from: string, to: string, promotion?: string) => {
-      if (thinking || gameOver) return;
+    async (from: string, to: string, promotion?: string) => {
+      if (thinking || gameOver || !stockfish.ready) return;
 
       const chess = new Chess(game.fen());
       const move = chess.move({ from, to, promotion: promotion || undefined });
@@ -119,6 +128,12 @@ export default function OfflineBotPage() {
       setMoves(newMoves);
       setCurrentPly(ply);
       setLastMove([from, to]);
+
+      // Update eval after player move
+      if (evalEnabled) {
+        const ev = await stockfish.evaluate(chess.fen());
+        setEvalScore(ev.score);
+      }
 
       if (chess.isGameOver()) {
         const result = chess.isCheckmate()
@@ -134,7 +149,7 @@ export default function OfflineBotPage() {
       // Bot responds
       makeBotMove(chess, newMoves);
     },
-    [game, moves, thinking, gameOver, botElo]
+    [game, moves, thinking, gameOver, botElo, stockfish, evalEnabled]
   );
 
   const orientation = playerIsWhite ? "white" : "black";
@@ -158,6 +173,13 @@ export default function OfflineBotPage() {
         <div className="max-w-lg w-full space-y-6">
           <h1 className="text-2xl font-bold text-center">Offline Bot</h1>
           <p className="text-gray-400 text-sm text-center">No internet required</p>
+
+          {!stockfish.ready && (
+            <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3 text-center">
+              <p className="text-sm text-blue-300">Loading Stockfish engine...</p>
+              <p className="text-xs text-blue-400 mt-1">First load downloads ~7MB (cached after)</p>
+            </div>
+          )}
 
           <div className="bg-gray-900 rounded-lg p-4">
             <h2 className="text-sm font-semibold text-gray-400 mb-2">Bot Difficulty</h2>
@@ -195,7 +217,8 @@ export default function OfflineBotPage() {
 
           <button
             onClick={() => setConfirmStart(true)}
-            className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-lg text-lg font-bold transition-colors"
+            disabled={!stockfish.ready}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-wait rounded-lg text-lg font-bold transition-colors"
           >
             Start Offline Game
           </button>
@@ -228,7 +251,7 @@ export default function OfflineBotPage() {
           <div className="flex gap-2 flex-1 min-w-0">
             {showEvalBar && (
               <div className="h-auto flex">
-                <EvaluationBar evalCP={engineEval.score} mate={null} />
+                <EvaluationBar evalCP={evalScore} mate={null} />
               </div>
             )}
             <div className="flex flex-col gap-1 flex-1 min-w-0">

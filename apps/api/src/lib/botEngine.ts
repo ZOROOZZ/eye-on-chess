@@ -24,22 +24,34 @@ export async function getBotMove(
   const proc = eng["process"];
   if (!proc) throw new Error("Engine not initialized");
 
-  // Set UCI_Elo if changed
-  if (currentElo !== elo) {
+  const clampedElo = Math.max(200, Math.min(3200, elo));
+
+  // Set UCI_Elo and Skill Level if changed
+  if (currentElo !== clampedElo) {
     proc.stdin.write("setoption name UCI_LimitStrength value true\n");
-    proc.stdin.write(`setoption name UCI_Elo value ${Math.max(200, Math.min(3200, elo))}\n`);
+    proc.stdin.write(`setoption name UCI_Elo value ${clampedElo}\n`);
+
+    // Skill Level 0-20 mapped from elo (additional weakness control)
+    // Stockfish Skill Level adds random errors at low levels
+    const skillLevel = Math.min(20, Math.max(0, Math.floor((clampedElo - 200) / 150)));
+    proc.stdin.write(`setoption name Skill Level value ${skillLevel}\n`);
+
     await eng.send("isready", "readyok");
-    currentElo = elo;
+    currentElo = clampedElo;
   }
 
   proc.stdin.write("ucinewgame\n");
   proc.stdin.write(`position fen ${fen}\n`);
   await eng.send("isready", "readyok");
 
-  // Think time scales with elo for natural feel
-  const thinkTime = Math.min(maxTimeMs, Math.max(200, Math.floor(elo / 3)));
+  // Think time: very short at low elo, longer at high elo
+  // Low elo bots should think less (fewer nodes = weaker)
+  const thinkTime = Math.min(maxTimeMs, Math.max(100, Math.floor(clampedElo / 4)));
 
-  const lines = await eng.send(`go movetime ${thinkTime}`, "bestmove");
+  // Also limit depth at low elos
+  const maxDepth = clampedElo < 600 ? 3 : clampedElo < 1200 ? 6 : clampedElo < 2000 ? 10 : 18;
+
+  const lines = await eng.send(`go movetime ${thinkTime} depth ${maxDepth}`, "bestmove");
 
   let bestMove = "";
   for (const line of lines) {
@@ -50,7 +62,7 @@ export async function getBotMove(
   }
 
   if (!bestMove) {
-    log.error({ fen, elo }, "bot engine returned no move");
+    log.error({ fen, elo: clampedElo }, "bot engine returned no move");
     throw new Error("Bot engine returned no move");
   }
 
