@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { didPlayerWin, didPlayerLose, isDrawResult } from "./helpers.js";
-import type { GameResult } from "./types.js";
+import { didPlayerWin, didPlayerLose, isDrawResult } from "./helpers";
+import type { GameResult } from "./types";
 
 describe("didPlayerWin", () => {
   it("returns true when white player wins with WHITE_WIN", () => {

@@ -1,4 +1,4 @@
-import type { ReactionDef, ReactionType } from "./types.js";
+import type { ReactionDef, ReactionType } from "./types";
 
 /**
  * All available emoji reactions for live games.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { lookupOpening } from "./helpers.js";
+import { lookupOpening } from "./helpers";
 
 describe("lookupOpening", () => {
   it("returns Ruy Lopez for e4 e5 Nf3 Nc6 Bb5", () => {

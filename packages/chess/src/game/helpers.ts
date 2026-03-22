@@ -1,4 +1,4 @@
-import type { GameResult } from "./types.js";
+import type { GameResult } from "./types";
 
 /**
  * Determine if the player won based on their color and the game result.

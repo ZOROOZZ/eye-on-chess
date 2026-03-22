@@ -13,7 +13,7 @@
  */
 
 // ── Game ──────────────────────────────────────────────────
-export type { GameResult, GameStatus, Termination } from "./game/index.js";
+export type { GameResult, GameStatus, Termination } from "./game/index";
 export {
   RESULT_PGN,
   RESULT_LABELS,
@@ -21,29 +21,29 @@ export {
   didPlayerWin,
   didPlayerLose,
   isDrawResult,
-} from "./game/index.js";
+} from "./game/index";
 
 // ── Time Control ──────────────────────────────────────────
-export type { TimeControl, TimeControlPreset } from "./time-control/index.js";
-export { TIME_CONTROL_PRESETS, categorizeTimeControl } from "./time-control/index.js";
+export type { TimeControl, TimeControlPreset } from "./time-control/index";
+export { TIME_CONTROL_PRESETS, categorizeTimeControl } from "./time-control/index";
 
 // ── Moves ─────────────────────────────────────────────────
-export type { MoveClassification, MoveRecord } from "./moves/index.js";
-export { CLASSIFICATION_COLORS, CLASSIFICATION_SYMBOLS } from "./moves/index.js";
+export type { MoveClassification, MoveRecord } from "./moves/index";
+export { CLASSIFICATION_COLORS, CLASSIFICATION_SYMBOLS } from "./moves/index";
 
 // ── Player ────────────────────────────────────────────────
-export type { UserRole, FriendshipStatus, Player, ClockState } from "./player/index.js";
+export type { UserRole, FriendshipStatus, Player, ClockState } from "./player/index";
 
 // ── Openings ──────────────────────────────────────────────
-export type { OpeningEntry, Opening } from "./openings/index.js";
-export { ECO_DATABASE, lookupOpening } from "./openings/index.js";
+export type { OpeningEntry, Opening } from "./openings/index";
+export { ECO_DATABASE, lookupOpening } from "./openings/index";
 
 // ── Reactions ─────────────────────────────────────────────
-export type { ReactionDef, ReactionType } from "./reactions/index.js";
-export { REACTIONS, VALID_REACTIONS } from "./reactions/index.js";
+export type { ReactionDef, ReactionType } from "./reactions/index";
+export { REACTIONS, VALID_REACTIONS } from "./reactions/index";
 
 // ── Activity ──────────────────────────────────────────────
-export type { ActivityEventType, ActivityEvent } from "./activity/index.js";
+export type { ActivityEventType, ActivityEvent } from "./activity/index";
 
 // ── Legacy types (kept for backwards compat) ─────────────
 /** @deprecated Use specific types from their domains instead */

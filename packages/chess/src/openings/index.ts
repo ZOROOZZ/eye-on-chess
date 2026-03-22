@@ -1,3 +1,3 @@
-export type { OpeningEntry, Opening } from "./types.js";
-export { ECO_DATABASE } from "./data.js";
-export { lookupOpening } from "./helpers.js";
+export type { OpeningEntry, Opening } from "./types";
+export { ECO_DATABASE } from "./data";
+export { lookupOpening } from "./helpers";

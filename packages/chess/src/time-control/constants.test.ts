@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { categorizeTimeControl, TIME_CONTROL_PRESETS } from "./constants.js";
+import { categorizeTimeControl, TIME_CONTROL_PRESETS } from "./constants";
 
 describe("categorizeTimeControl", () => {
   it("returns UNLIMITED for 0+0", () => {

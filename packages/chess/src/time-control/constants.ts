@@ -1,4 +1,4 @@
-import type { TimeControlPreset, TimeControl } from "./types.js";
+import type { TimeControlPreset, TimeControl } from "./types";
 
 /**
  * Standard time control presets available throughout the app.

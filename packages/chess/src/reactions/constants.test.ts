@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { REACTIONS, VALID_REACTIONS } from "./constants.js";
+import { REACTIONS, VALID_REACTIONS } from "./constants";
 
 const ALL_REACTION_KEYS = ["good_move", "brilliant", "blunder", "thinking", "gg", "takeback"];
 

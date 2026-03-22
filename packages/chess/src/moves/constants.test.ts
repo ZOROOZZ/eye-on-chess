@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CLASSIFICATION_COLORS, CLASSIFICATION_SYMBOLS } from "./constants.js";
+import { CLASSIFICATION_COLORS, CLASSIFICATION_SYMBOLS } from "./constants";
 
 const ALL_CLASSIFICATIONS = [
   "BRILLIANT",

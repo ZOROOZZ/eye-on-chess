@@ -1,5 +1,5 @@
-import type { Opening } from "./types.js";
-import { ECO_DATABASE } from "./data.js";
+import type { Opening } from "./types";
+import { ECO_DATABASE } from "./data";
 
 /**
  * Look up the opening name and ECO code from a sequence of SAN moves.

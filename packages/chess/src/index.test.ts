@@ -20,7 +20,7 @@ import {
   // Reactions
   REACTIONS,
   VALID_REACTIONS,
-} from "./index.js";
+} from "./index";
 
 describe("barrel exports: game", () => {
   it("exports RESULT_PGN as an object", () => {

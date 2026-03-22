@@ -1,1 +1,1 @@
-export type { ActivityEventType, ActivityEvent } from "./types.js";
+export type { ActivityEventType, ActivityEvent } from "./types";

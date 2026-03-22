@@ -1,2 +1,2 @@
-export type { ReactionDef, ReactionType } from "./types.js";
-export { REACTIONS, VALID_REACTIONS } from "./constants.js";
+export type { ReactionDef, ReactionType } from "./types";
+export { REACTIONS, VALID_REACTIONS } from "./constants";

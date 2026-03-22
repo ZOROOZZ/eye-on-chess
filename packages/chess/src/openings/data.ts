@@ -1,4 +1,4 @@
-import type { OpeningEntry } from "./types.js";
+import type { OpeningEntry } from "./types";
 
 /**
  * ECO opening database — common openings mapped by SAN move sequence.

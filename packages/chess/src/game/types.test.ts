@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { RESULT_PGN, RESULT_LABELS, TERMINATION_LABELS } from "./types.js";
+import { RESULT_PGN, RESULT_LABELS, TERMINATION_LABELS } from "./types";
 
 describe("RESULT_PGN", () => {
   it("maps WHITE_WIN to 1-0", () => {
