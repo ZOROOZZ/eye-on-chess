@@ -13,6 +13,14 @@ const withPWA = require("next-pwa")({
       },
     },
     {
+      urlPattern: /^https?.*\.wasm$/,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "wasm",
+        expiration: { maxEntries: 5, maxAgeSeconds: 90 * 24 * 60 * 60 },
+      },
+    },
+    {
       urlPattern: /^https?.*\.(js|css)$/,
       handler: "StaleWhileRevalidate",
       options: {
