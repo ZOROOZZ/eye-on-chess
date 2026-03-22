@@ -203,11 +203,11 @@ All configuration is done via environment variables in `.env`. See [`.env.exampl
 
 ### Observability (Grafana)
 
-| Variable                 | Default | Description            |
-| ------------------------ | ------- | ---------------------- |
-| `GRAFANA_ADMIN_USER`     | `admin` | Grafana admin username |
-| `GRAFANA_ADMIN_PASSWORD` | `admin` | Grafana admin password |
-| `GRAFANA_PORT`           | `3003`  | Grafana UI port        |
+| Variable                 | Default | Description                                     |
+| ------------------------ | ------- | ----------------------------------------------- |
+| `GRAFANA_ADMIN_USER`     | `admin` | Grafana admin username                          |
+| `GRAFANA_ADMIN_PASSWORD` | `admin` | Grafana admin password                          |
+| `GRAFANA_PORT`           | —       | Removed — use `grafana.{your-domain}` subdomain |
 
 ## Architecture
 

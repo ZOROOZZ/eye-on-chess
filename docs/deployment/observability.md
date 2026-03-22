@@ -4,12 +4,12 @@ EyeOnChess includes a full observability stack in the production Docker Compose 
 
 ## Stack
 
-| Tool           | Version | Purpose                                               | Port                    |
-| -------------- | ------- | ----------------------------------------------------- | ----------------------- |
-| **Prometheus** | 3.4.1   | Metrics collection — scrapes API `/metrics` every 15s | internal (9090)         |
-| **Loki**       | 3.5.0   | Log aggregation — receives logs from Promtail         | internal (3100)         |
-| **Promtail**   | 3.5.0   | Log shipper — reads Docker container logs via socket  | internal                |
-| **Grafana**    | 11.6.0  | Dashboards and log viewer                             | **3003** (configurable) |
+| Tool           | Version | Purpose                                               | Port                         |
+| -------------- | ------- | ----------------------------------------------------- | ---------------------------- |
+| **Prometheus** | 3.4.1   | Metrics collection — scrapes API `/metrics` every 15s | internal (9090)              |
+| **Loki**       | 3.5.0   | Log aggregation — receives logs from Promtail         | internal (3100)              |
+| **Promtail**   | 3.5.0   | Log shipper — reads Docker container logs via socket  | internal                     |
+| **Grafana**    | 11.6.0  | Dashboards and log viewer                             | `grafana.{domain}` subdomain |
 
 ## Quick Start
 
@@ -17,7 +17,7 @@ EyeOnChess includes a full observability stack in the production Docker Compose 
 docker compose -f deployment/docker-compose.yml up -d
 ```
 
-Open Grafana at **http://localhost:3003** (or your `GRAFANA_PORT`).
+Open Grafana at **http://grafana.localhost** (or `grafana.{your-domain}` in production).
 
 Default credentials:
 
@@ -74,7 +74,6 @@ There's also `GET /api/metrics/app` returning JSON with:
 | ------------------------ | ------- | ---------------------- |
 | `GRAFANA_ADMIN_USER`     | `admin` | Grafana admin username |
 | `GRAFANA_ADMIN_PASSWORD` | `admin` | Grafana admin password |
-| `GRAFANA_PORT`           | `3003`  | Port for Grafana UI    |
 
 ## File Structure
 
