@@ -28,7 +28,9 @@ When a page navigation fails (no network, no cache), the service worker serves `
 
 Stockfish WASM runs entirely in the browser, enabling bot games without a network connection:
 
-- The Stockfish WASM binary (~7MB) is cached after first download via the CacheFirst strategy.
+- Stockfish is loaded directly as a Web Worker (`new Worker("/stockfish/stockfish.js")`) — all engine computation runs **off the main thread**.
+- The WASM binary (~7MB) is cached after first download via the CacheFirst strategy (90 days).
+- Communication with the engine uses raw UCI string messages via `postMessage`.
 - All game logic (move validation, position evaluation) runs locally via chess.js and Stockfish.
 - No server round-trip is required during a bot game.
 - Game mode presets (Challenge, Friendly, Assisted, Custom) all work offline.

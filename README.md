@@ -56,7 +56,7 @@
 
 - Real-time multiplayer via Socket.io
 - Challenge friends directly
-- Play vs Bot with adjustable Elo (200-3200) using Stockfish WASM
+- Play vs Bot with adjustable Elo (200-3200) using Stockfish WASM (runs in Web Worker, off main thread)
 - Game mode presets: Challenge (no help), Friendly (hints + takebacks), Assisted (all tools), Custom
 - Time controls: Bullet, Blitz, Rapid, Classical, Unlimited, or custom
 - Elo rating system (K=32) with automatic updates
