@@ -242,6 +242,7 @@ export async function authRoutes(app: FastifyInstance) {
         darkMode: true,
         boardTheme: true,
         pieceSet: true,
+        soundEnabled: true,
         createdAt: true,
       },
     });
@@ -255,9 +256,9 @@ export async function authRoutes(app: FastifyInstance) {
 
   // ── Update preferences ──────────────────────────────
   app.put<{
-    Body: { darkMode?: boolean; boardTheme?: string; pieceSet?: string };
+    Body: { darkMode?: boolean; boardTheme?: string; pieceSet?: string; soundEnabled?: boolean };
   }>("/api/auth/preferences", { preHandler: authMiddleware }, async (request) => {
-    const { darkMode, boardTheme, pieceSet } = request.body;
+    const { darkMode, boardTheme, pieceSet, soundEnabled } = request.body;
 
     const VALID_BOARD_THEMES = ["classic", "wood", "green", "blue", "purple", "dark"];
     const VALID_PIECE_SETS = ["classic", "modern", "minimal"];
@@ -266,6 +267,7 @@ export async function authRoutes(app: FastifyInstance) {
     if (darkMode !== undefined) data.darkMode = darkMode;
     if (boardTheme && VALID_BOARD_THEMES.includes(boardTheme)) data.boardTheme = boardTheme;
     if (pieceSet && VALID_PIECE_SETS.includes(pieceSet)) data.pieceSet = pieceSet;
+    if (soundEnabled !== undefined) data.soundEnabled = soundEnabled;
 
     const user = await prisma.user.update({
       where: { id: request.user.userId },
@@ -274,6 +276,7 @@ export async function authRoutes(app: FastifyInstance) {
         darkMode: true,
         boardTheme: true,
         pieceSet: true,
+        soundEnabled: true,
       },
     });
 

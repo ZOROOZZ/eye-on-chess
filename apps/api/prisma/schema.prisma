@@ -78,6 +78,7 @@ model User {
   darkMode     Boolean  @default(true)
   boardTheme   String   @default("classic")
   pieceSet     String   @default("classic")
+  soundEnabled Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
