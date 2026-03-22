@@ -13,6 +13,7 @@ interface User {
   darkMode?: boolean;
   boardTheme?: string;
   pieceSet?: string;
+  soundEnabled?: boolean;
 }
 
 interface AuthState {
@@ -34,6 +35,7 @@ function syncSettings(user: User) {
   if (user.darkMode !== undefined && user.boardTheme && user.pieceSet) {
     useSettingsStore.getState().loadFromUser({
       darkMode: user.darkMode,
+      soundEnabled: user.soundEnabled,
       boardTheme: user.boardTheme,
       pieceSet: user.pieceSet,
     });

@@ -24,8 +24,16 @@ const PIECE_SETS: { key: PieceSet; label: string }[] = [
 export default function SettingsPage() {
   const router = useRouter();
   const { user, isLoading, fetchMe } = useAuthStore();
-  const { darkMode, boardTheme, pieceSet, setDarkMode, setBoardTheme, setPieceSet } =
-    useSettingsStore();
+  const {
+    darkMode,
+    boardTheme,
+    pieceSet,
+    soundEnabled,
+    setDarkMode,
+    setBoardTheme,
+    setPieceSet,
+    setSoundEnabled,
+  } = useSettingsStore();
 
   useEffect(() => {
     fetchMe();
@@ -64,6 +72,25 @@ export default function SettingsPage() {
               <span
                 className={`block w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
                   darkMode ? "translate-x-6" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </label>
+        </div>
+
+        {/* Sound */}
+        <div className="bg-gray-900 rounded-lg p-4">
+          <label className="flex items-center justify-between cursor-pointer">
+            <span>Sound Effects</span>
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className={`w-12 h-6 rounded-full transition-colors relative ${
+                soundEnabled ? "bg-blue-600" : "bg-gray-600"
+              }`}
+            >
+              <span
+                className={`block w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
+                  soundEnabled ? "translate-x-6" : "translate-x-0.5"
                 }`}
               />
             </button>

@@ -8,10 +8,17 @@ interface SettingsState {
   darkMode: boolean;
   boardTheme: BoardTheme;
   pieceSet: PieceSet;
+  soundEnabled: boolean;
   setDarkMode: (dark: boolean) => void;
   setBoardTheme: (theme: BoardTheme) => void;
   setPieceSet: (set: PieceSet) => void;
-  loadFromUser: (prefs: { darkMode: boolean; boardTheme: string; pieceSet: string }) => void;
+  setSoundEnabled: (enabled: boolean) => void;
+  loadFromUser: (prefs: {
+    darkMode: boolean;
+    boardTheme: string;
+    pieceSet: string;
+    soundEnabled?: boolean;
+  }) => void;
 }
 
 async function savePreference(data: Record<string, unknown>) {
@@ -26,6 +33,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   darkMode: true,
   boardTheme: "classic",
   pieceSet: "classic",
+  soundEnabled: true,
 
   setDarkMode: (dark) => {
     set({ darkMode: dark });
@@ -42,11 +50,17 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     savePreference({ pieceSet });
   },
 
+  setSoundEnabled: (soundEnabled) => {
+    set({ soundEnabled });
+    savePreference({ soundEnabled });
+  },
+
   loadFromUser: (prefs) => {
     set({
       darkMode: prefs.darkMode,
       boardTheme: prefs.boardTheme as BoardTheme,
       pieceSet: prefs.pieceSet as PieceSet,
+      soundEnabled: prefs.soundEnabled ?? true,
     });
   },
 }));
