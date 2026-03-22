@@ -67,49 +67,29 @@ jobs:
           pnpm --filter @eyeonchess/api exec vitest run --coverage
           pnpm --filter @eyeonchess/web exec vitest run --coverage
 
-      - name: Upload coverage artifacts
+      - name: Upload chess coverage
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
-          path: |
-            packages/chess/coverage/lcov.info
-            apps/api/coverage/lcov.info
-            apps/web/coverage/lcov.info
+          name: chess-coverage
+          path: packages/chess/coverage/lcov.info
           retention-days: 1
 
-  codacy-coverage:
-    name: Codacy Coverage
-    needs: [lint, test, compose]
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download coverage
-        uses: actions/download-artifact@v4
+      - name: Upload API coverage
+        if: success()
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage
+          name: api-coverage
+          path: apps/api/coverage/lcov.info
+          retention-days: 1
 
-      - name: Upload chess coverage to Codacy
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r packages/chess/coverage/lcov.info --partial
-
-      - name: Upload API coverage to Codacy
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r apps/api/coverage/lcov.info --partial
-
-      - name: Upload web coverage to Codacy
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r apps/web/coverage/lcov.info --partial
-
-      - name: Finalize Codacy coverage
-        env:
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) final
+      - name: Upload web coverage
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-coverage
+          path: apps/web/coverage/lcov.info
+          retention-days: 1
 
   build-api:
     name: Build API
@@ -193,3 +173,48 @@ jobs:
       - name: Stop services
         if: always()
         run: docker compose -f deployment/docker-compose.dev.yml down -v
+
+  codacy-coverage:
+    name: Codacy Coverage
+    needs: [lint, test, compose]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download chess coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: chess-coverage
+
+      - name: Download API coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: api-coverage
+          path: api-coverage/
+
+      - name: Download web coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: web-coverage
+          path: web-coverage/
+
+      - name: Upload chess coverage to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r lcov.info --partial
+
+      - name: Upload API coverage to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r api-coverage/lcov.info --partial
+
+      - name: Upload web coverage to Codacy
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r web-coverage/lcov.info --partial
+
+      - name: Finalize Codacy coverage
+        env:
+          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) final
