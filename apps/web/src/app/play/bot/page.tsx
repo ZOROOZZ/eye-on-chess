@@ -101,6 +101,12 @@ export default function PlayBotPage() {
   // Threats
   const [threatArrows, setThreatArrows] = useState<{ from: string; to: string }[]>([]);
 
+  // Suggestions (auto-shown best move arrow)
+  const [suggestionArrow, setSuggestionArrow] = useState<{ from: string; to: string } | null>(null);
+
+  // Engine line (principal variation text)
+  const [engineLine, setEngineLine] = useState<string | null>(null);
+
   // Game state
   const [gameId, setGameId] = useState<string | null>(null);
   const [game, setGame] = useState(() => new Chess());
@@ -320,17 +326,36 @@ export default function PlayBotPage() {
         sound.playGameOver();
         setThreatArrows([]);
         if (!gameId) saveGameOffline(newMoves, [...allUciMoves, moveUci], result);
-      } else if (activeSettings.threats) {
-        // Show opponent's best response as a threat arrow
-        stockfish.evaluate(chess.fen()).then((ev) => {
-          if (ev.bestMove) {
-            setThreatArrows([{ from: ev.bestMove.slice(0, 2), to: ev.bestMove.slice(2, 4) }]);
-          } else {
-            setThreatArrows([]);
-          }
-        });
       } else {
-        setThreatArrows([]);
+        // Compute threats, suggestions, and engine line after bot moves
+        if (activeSettings.threats || activeSettings.suggestions || activeSettings.engine) {
+          stockfish.evaluate(chess.fen()).then((ev) => {
+            if (activeSettings.threats && ev.bestMove) {
+              setThreatArrows([{ from: ev.bestMove.slice(0, 2), to: ev.bestMove.slice(2, 4) }]);
+            } else {
+              setThreatArrows([]);
+            }
+            if (activeSettings.suggestions && ev.bestMove) {
+              setSuggestionArrow({ from: ev.bestMove.slice(0, 2), to: ev.bestMove.slice(2, 4) });
+            } else {
+              setSuggestionArrow(null);
+            }
+            if (activeSettings.engine && ev.bestMove) {
+              const score = ev.score;
+              const scoreStr =
+                Math.abs(score) > 99000
+                  ? `M${Math.sign(score) > 0 ? "" : "-"}${Math.ceil(Math.abs(100000 - Math.abs(score)) / 2)}`
+                  : `${score > 0 ? "+" : ""}${(score / 100).toFixed(1)}`;
+              setEngineLine(`${scoreStr} ${ev.bestMove.slice(0, 2)}-${ev.bestMove.slice(2, 4)}`);
+            } else {
+              setEngineLine(null);
+            }
+          });
+        } else {
+          setThreatArrows([]);
+          setSuggestionArrow(null);
+          setEngineLine(null);
+        }
       }
     } finally {
       setThinking(false);
@@ -359,6 +384,8 @@ export default function PlayBotPage() {
       setHintSource(null);
       setHintDest(null);
       setThreatArrows([]);
+      setSuggestionArrow(null);
+      setEngineLine(null);
       if (activeSettings.moveFeedback) {
         setFeedback(classifyMoveFast(fenBefore, chess.fen(), newSans));
       } else {
@@ -545,6 +572,8 @@ export default function PlayBotPage() {
   if (hintStep === 2 && hintSource && hintDest)
     arrows.push({ from: hintSource, to: hintDest, color: "green" });
   for (const t of threatArrows) arrows.push({ from: t.from, to: t.to, color: "red" });
+  if (suggestionArrow)
+    arrows.push({ from: suggestionArrow.from, to: suggestionArrow.to, color: "blue" });
   const highlightedSquares: { square: string; color: string }[] = [];
   if (hintStep >= 1 && hintSource) highlightedSquares.push({ square: hintSource, color: "green" });
 
@@ -792,6 +821,11 @@ export default function PlayBotPage() {
                   }
                 />
                 {activeSettings.moveFeedback && <MoveFeedbackPopup classification={feedback} />}
+                {activeSettings.engine && engineLine && (
+                  <div className="absolute top-2 left-2 bg-gray-900/80 px-2 py-1 rounded text-xs text-blue-400 font-mono">
+                    {engineLine}
+                  </div>
+                )}
                 {thinking && (
                   <div className="absolute bottom-2 right-2 bg-gray-900/80 px-2 py-1 rounded text-xs text-gray-400">
                     Thinking...
