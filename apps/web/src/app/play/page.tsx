@@ -86,6 +86,12 @@ export default function PlayPage() {
             My Profile
           </Link>
           <Link
+            href="/invites"
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
+          >
+            Invites
+          </Link>
+          <Link
             href="/friends"
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
           >

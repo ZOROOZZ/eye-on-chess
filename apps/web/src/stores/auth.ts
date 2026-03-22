@@ -18,7 +18,12 @@ interface User {
 interface AuthState {
   user: User | null;
   isLoading: boolean;
-  register: (email: string, username: string, password: string) => Promise<void>;
+  register: (
+    email: string,
+    username: string,
+    password: string,
+    inviteCode?: string
+  ) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -42,11 +47,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: true,
 
-  register: async (email, username, password) => {
+  register: async (email, username, password, inviteCode) => {
     const { data } = await api.post("/api/auth/register", {
       email,
       username,
       password,
+      inviteCode,
     });
     setAccessToken(data.accessToken);
     set({ user: data.user });
