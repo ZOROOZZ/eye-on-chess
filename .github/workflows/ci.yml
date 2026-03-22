@@ -80,7 +80,7 @@ jobs:
 
   codacy-coverage:
     name: Codacy Coverage
-    needs: [test]
+    needs: [lint, test, compose]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
