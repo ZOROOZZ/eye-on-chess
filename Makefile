@@ -27,8 +27,14 @@ help: ## Show this help
 	@echo "Database:"
 	@grep -E '^db-[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
+	@echo "Testing:"
+	@grep -E '^test[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Linting & Formatting:"
+	@grep -E '^(lint|format)[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
 	@echo "Utilities:"
-	@grep -E '^(backup|restore|clean|install|lint|shell|help)[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^(backup|restore|clean|install|shell|help)[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
 # ── Production ───────────────────────────────────────────
@@ -39,7 +45,7 @@ down: ## Stop production
 	$(PROD_COMPOSE) down
 
 build-base: ## Build the shared base Docker image
-	docker build -f deployment/Dockerfile.base -t eyeonchess-base ..
+	docker build -f deployment/Dockerfile.base -t eyeonchess-base .
 
 build: build-base ## Build all production images
 	$(PROD_COMPOSE) build
@@ -69,7 +75,7 @@ logs-redis: ## Tail production Redis logs
 	$(PROD_COMPOSE) logs -f redis
 
 # ── Development ──────────────────────────────────────────
-dev: build-base ## Start development (hot reload, ports 3000/3001)
+dev: build-base ## Start development (hot reload, Nginx on port 80)
 	$(DEV_COMPOSE) up --build
 
 dev-up: build-base ## Start development in background
@@ -112,8 +118,8 @@ db-migrate: ## Run Prisma migrations (dev compose)
 db-seed: ## Run database seed (dev compose)
 	$(DEV_COMPOSE) exec api pnpm --filter @eyeonchess/api run db:seed
 
-db-studio: ## Open Prisma Studio (localhost:5555)
-	cd apps/api && DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eyeonchess npx prisma studio
+db-studio: ## Open Prisma Studio (requires: make dev-up)
+	DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eyeonchess pnpm --filter @eyeonchess/api exec prisma studio
 
 db-reset: ## Reset database (WARNING: destroys all data)
 	@echo "This will destroy all data. Press Ctrl+C to cancel."
