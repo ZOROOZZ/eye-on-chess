@@ -24,6 +24,12 @@ function formatTime(seconds: number, increment: number): string {
   return increment > 0 ? `${min}+${increment}` : `${min}+0`;
 }
 
+/**
+ * Renders a modal popup when an incoming game challenge is received via WebSocket.
+ * Displays the challenger's username, rating, and time control, with accept/decline buttons.
+ *
+ * @returns The challenge modal, or null when no pending challenge exists.
+ */
 export default function ChallengePopup() {
   const router = useRouter();
   const [challenge, setChallenge] = useState<Challenge | null>(null);

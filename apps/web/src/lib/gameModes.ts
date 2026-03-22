@@ -1,3 +1,4 @@
+/** Configuration flags controlling which assistance tools are available during a game. */
 export interface GameModeSettings {
   hints: boolean;
   evalBar: boolean;
@@ -8,8 +9,10 @@ export interface GameModeSettings {
   engine: boolean; // show engine eval line
 }
 
+/** Union type of available game mode preset identifiers. */
 export type GameModePreset = "challenge" | "friendly" | "assisted" | "custom";
 
+/** Predefined game mode settings for challenge, friendly, and assisted presets. */
 export const GAME_MODE_PRESETS: Record<Exclude<GameModePreset, "custom">, GameModeSettings> = {
   challenge: {
     hints: false,
@@ -40,6 +43,7 @@ export const GAME_MODE_PRESETS: Record<Exclude<GameModePreset, "custom">, GameMo
   },
 };
 
+/** Display names and short descriptions for each game mode preset. */
 export const GAME_MODE_LABELS: Record<GameModePreset, { name: string; desc: string }> = {
   challenge: { name: "Challenge", desc: "No help of any kind" },
   friendly: { name: "Friendly", desc: "Hints and takebacks allowed" },
@@ -47,6 +51,7 @@ export const GAME_MODE_LABELS: Record<GameModePreset, { name: string; desc: stri
   custom: { name: "Custom", desc: "Choose your tools" },
 };
 
+/** Default settings used when the "custom" game mode is first selected. */
 export const DEFAULT_CUSTOM: GameModeSettings = {
   hints: true,
   evalBar: true,

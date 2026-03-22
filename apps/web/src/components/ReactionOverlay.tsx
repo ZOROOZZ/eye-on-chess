@@ -15,6 +15,13 @@ interface ReactionOverlayProps {
   onExpired: (id: string) => void;
 }
 
+/**
+ * Renders floating, animated reaction emojis over the board during a live game.
+ * Each reaction fades out via CSS animation and triggers {@link ReactionOverlayProps.onExpired} when done.
+ *
+ * @param props - {@link ReactionOverlayProps}
+ * @returns A pointer-events-transparent overlay of animated reaction elements.
+ */
 export default function ReactionOverlay({ reactions, onExpired }: ReactionOverlayProps) {
   return (
     <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">

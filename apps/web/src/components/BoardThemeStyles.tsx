@@ -31,6 +31,12 @@ function generateBoardSvg(light: string, dark: string): string {
   return `url('data:image/svg+xml;base64,${btoa(svg)}')`;
 }
 
+/**
+ * Injects global CSS styles that apply the user's selected board theme colors
+ * and piece set filter to the Chessground board elements.
+ *
+ * @returns A `<style>` element with dynamically generated CSS overrides.
+ */
 export default function BoardThemeStyles() {
   const boardTheme = useSettingsStore((s) => s.boardTheme);
   const pieceSet = useSettingsStore((s) => s.pieceSet);

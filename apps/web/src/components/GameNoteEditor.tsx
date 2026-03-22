@@ -8,6 +8,14 @@ interface GameNoteEditorProps {
   compact?: boolean; // compact mode for game cards (just icon + preview)
 }
 
+/**
+ * Renders an auto-saving text editor for personal notes on a game.
+ * Supports a compact mode (icon + preview) for game cards and a full
+ * textarea mode with debounced saves to the API.
+ *
+ * @param props - {@link GameNoteEditorProps}
+ * @returns The note editor or compact toggle, or null while loading.
+ */
 export default function GameNoteEditor({ gameId, compact = false }: GameNoteEditorProps) {
   const [text, setText] = useState("");
   const [loaded, setLoaded] = useState(false);

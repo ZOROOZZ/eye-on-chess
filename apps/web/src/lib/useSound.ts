@@ -20,6 +20,12 @@ interface ChessMoveInfo {
   flags?: string;
 }
 
+/**
+ * Determines the appropriate sound effect for a chess move based on its properties.
+ *
+ * @param move - The move info containing SAN notation, capture status, and flags.
+ * @returns The sound name to play (e.g., "check", "capture", "castle", "move").
+ */
 export function detectMoveSound(move: ChessMoveInfo): SoundName {
   // Check/checkmate
   if (move.san.includes("+") || move.san.includes("#")) return "check";
@@ -32,6 +38,12 @@ export function detectMoveSound(move: ChessMoveInfo): SoundName {
   return "move";
 }
 
+/**
+ * Hook that provides cached audio playback methods for chess sound effects.
+ * Respects the user's sound-enabled setting from the settings store.
+ *
+ * @returns An object with individual play methods (playMove, playCapture, etc.) and a generic `play` function.
+ */
 export function useSound() {
   const audioCache = useRef<Map<SoundName, HTMLAudioElement>>(new Map());
 

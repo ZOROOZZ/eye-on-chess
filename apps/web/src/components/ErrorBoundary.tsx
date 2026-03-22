@@ -11,6 +11,10 @@ interface State {
   hasError: boolean;
 }
 
+/**
+ * React error boundary that catches rendering errors in its children and
+ * displays a fallback UI with a refresh button. Accepts an optional custom fallback.
+ */
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);

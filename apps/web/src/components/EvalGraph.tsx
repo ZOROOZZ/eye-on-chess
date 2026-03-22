@@ -22,6 +22,13 @@ function evalToY(cp: number, height: number): number {
   return ((500 - clamped) / 1000) * height;
 }
 
+/**
+ * Renders an SVG graph of engine evaluation over the course of a game,
+ * with filled areas for white/black advantage and a clickable ply marker.
+ *
+ * @param props - {@link EvalGraphProps}
+ * @returns The evaluation graph, or null when no data points exist.
+ */
 export default function EvalGraph({ points, currentPly, onClickPly }: EvalGraphProps) {
   if (points.length === 0) return null;
 

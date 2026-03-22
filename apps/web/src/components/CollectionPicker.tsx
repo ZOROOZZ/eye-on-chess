@@ -14,6 +14,13 @@ interface CollectionPickerProps {
   onClose: () => void;
 }
 
+/**
+ * Renders a modal with a checkbox list of the user's game collections,
+ * allowing them to add or remove a game from each collection.
+ *
+ * @param props - {@link CollectionPickerProps}
+ * @returns The collection picker modal, or null when not open.
+ */
 export default function CollectionPicker({ gameId, open, onClose }: CollectionPickerProps) {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [memberOf, setMemberOf] = useState<Set<string>>(new Set());

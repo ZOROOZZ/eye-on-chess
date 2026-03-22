@@ -32,6 +32,11 @@ function savePending(games: OfflineGame[]) {
   }
 }
 
+/**
+ * Saves or updates an offline game in localStorage for later sync.
+ *
+ * @param game - The offline game data to persist.
+ */
 export function saveOfflineGame(game: OfflineGame) {
   const pending = loadPending();
   // Replace if same id exists, otherwise append
@@ -44,10 +49,21 @@ export function saveOfflineGame(game: OfflineGame) {
   savePending(pending);
 }
 
+/**
+ * Returns the number of offline games waiting to be synced.
+ *
+ * @returns The count of pending offline games in localStorage.
+ */
 export function getPendingCount(): number {
   return loadPending().length;
 }
 
+/**
+ * Attempts to sync all pending offline games to the server.
+ * Games that fail to sync remain in localStorage for the next attempt.
+ *
+ * @returns The number of games successfully synced.
+ */
 export async function syncOfflineGames(): Promise<number> {
   const pending = loadPending();
   if (pending.length === 0) return 0;
@@ -77,6 +93,11 @@ export async function syncOfflineGames(): Promise<number> {
   return synced;
 }
 
+/**
+ * Generates a unique ID for an offline game using timestamp and random suffix.
+ *
+ * @returns A string ID prefixed with "offline-".
+ */
 export function generateOfflineGameId(): string {
   return `offline-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }

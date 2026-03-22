@@ -25,6 +25,13 @@ const PIECE_SYMBOLS: Record<string, string> = {
 
 const PIECE_ORDER = ["q", "r", "b", "n", "p"];
 
+/**
+ * Renders a row of captured piece symbols for the given color by comparing
+ * the current board position against starting piece counts.
+ *
+ * @param props - {@link CapturedPiecesProps}
+ * @returns A row of piece symbols, or null if no pieces have been captured.
+ */
 export default function CapturedPieces({ fen, color }: CapturedPiecesProps) {
   const chess = new Chess(fen);
   const board = chess.board();

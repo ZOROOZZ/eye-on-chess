@@ -53,6 +53,13 @@ function isPromotion(fen: string, from: string, to: string): boolean {
   return (piece.color === "w" && rank === "8") || (piece.color === "b" && rank === "1");
 }
 
+/**
+ * Renders an interactive chessboard using Chessground, with support for legal move
+ * highlighting, drag-and-drop, arrows, square highlights, and pawn promotion dialogs.
+ *
+ * @param props - {@link ChessBoardProps}
+ * @returns The chessboard element with an optional promotion overlay.
+ */
 export default function ChessBoard({
   fen,
   orientation,

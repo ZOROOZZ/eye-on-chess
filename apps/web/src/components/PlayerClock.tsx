@@ -15,6 +15,14 @@ function formatClock(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+/**
+ * Renders a chess clock display with optimistic client-side countdown.
+ * Shows time in mm:ss format, turns red when below 30 seconds, and
+ * dims when inactive.
+ *
+ * @param props - {@link PlayerClockProps}
+ * @returns The formatted clock element.
+ */
 export default function PlayerClock({ timeMs, isActive, isRunning }: PlayerClockProps) {
   const [display, setDisplay] = useState(timeMs);
 

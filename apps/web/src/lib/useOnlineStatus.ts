@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 
+/**
+ * Hook that tracks the browser's online/offline status via event listeners.
+ *
+ * @returns `true` if the browser is online, `false` otherwise.
+ */
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(true);
 

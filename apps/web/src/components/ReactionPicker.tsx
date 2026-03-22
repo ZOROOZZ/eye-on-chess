@@ -9,6 +9,13 @@ interface ReactionPickerProps {
 
 const reactionKeys = Object.keys(REACTIONS) as ReactionType[];
 
+/**
+ * Renders a row of emoji reaction buttons that players can use during a live game.
+ * Each button shows a tooltip label on hover.
+ *
+ * @param props - {@link ReactionPickerProps}
+ * @returns A horizontal bar of reaction emoji buttons.
+ */
 export default function ReactionPicker({ onReact, disabled }: ReactionPickerProps) {
   return (
     <div className="flex gap-2 justify-center">

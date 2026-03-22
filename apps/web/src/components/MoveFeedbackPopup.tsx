@@ -19,6 +19,13 @@ const LABELS: Record<string, { text: string; color: string }> = {
   BOOK: { text: "Book Move", color: "text-purple-400" },
 };
 
+/**
+ * Renders a briefly visible popup label classifying the last move
+ * (e.g., "Brilliant!!", "Blunder!", "Book Move") with color-coded text.
+ *
+ * @param props - {@link MoveFeedbackPopupProps}
+ * @returns A fade-in/out label overlay, or null when no classification is active.
+ */
 export default function MoveFeedbackPopup({ classification }: MoveFeedbackPopupProps) {
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<string | null>(null);

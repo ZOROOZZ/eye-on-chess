@@ -11,6 +11,13 @@ interface ConfirmModalProps {
   loading?: boolean;
 }
 
+/**
+ * Renders a modal dialog prompting the user to confirm or cancel an action,
+ * with configurable title, message, button label, and danger/primary styling.
+ *
+ * @param props - {@link ConfirmModalProps}
+ * @returns The modal overlay, or null when not open.
+ */
 export default function ConfirmModal({
   open,
   title,

@@ -78,6 +78,14 @@ function evaluatePosition(fen: string): EngineEval {
   return { score: material, bestMove, topMoves, threats };
 }
 
+/**
+ * Hook that provides a lightweight client-side position evaluation using chess.js.
+ * Debounces evaluation to avoid excessive computation on rapid FEN changes.
+ *
+ * @param fen - The FEN string of the position to evaluate.
+ * @param enabled - Whether evaluation is active.
+ * @returns An {@link EngineEval} object with score, best move, top moves, and threats.
+ */
 export function useEngineEval(fen: string, enabled: boolean) {
   const [eval_, setEval] = useState<EngineEval>({
     score: 0,

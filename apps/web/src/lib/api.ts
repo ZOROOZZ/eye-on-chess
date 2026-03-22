@@ -7,10 +7,20 @@ const api = axios.create({
 
 let accessToken: string | null = null;
 
+/**
+ * Sets the in-memory access token used for API request authorization.
+ *
+ * @param token - The JWT access token, or null to clear it.
+ */
 export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
+/**
+ * Returns the current in-memory access token.
+ *
+ * @returns The JWT access token, or null if not set.
+ */
 export function getAccessToken() {
   return accessToken;
 }
@@ -79,4 +89,5 @@ api.interceptors.response.use(
   }
 );
 
+/** Pre-configured Axios instance with auth token injection and automatic 401 refresh. */
 export default api;

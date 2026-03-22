@@ -24,6 +24,12 @@ function relativeTime(ts: string): string {
   return `${days}d ago`;
 }
 
+/**
+ * Renders a collapsible feed of recent user activity events (wins, losses, draws,
+ * analysis, friend requests) fetched from the API and auto-refreshed every 60 seconds.
+ *
+ * @returns The activity feed panel, or null while loading or when empty.
+ */
 export default function ActivityFeed() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [expanded, setExpanded] = useState(false);

@@ -13,6 +13,13 @@ interface MoveListProps {
   onGoToPly: (ply: number) => void;
 }
 
+/**
+ * Renders a scrollable list of chess moves grouped into numbered pairs (white/black),
+ * with the current ply highlighted and auto-scrolling into view.
+ *
+ * @param props - {@link MoveListProps}
+ * @returns The move list panel, or a "No moves yet" placeholder when empty.
+ */
 export default function MoveList({ moves, currentPly, onGoToPly }: MoveListProps) {
   const currentRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);

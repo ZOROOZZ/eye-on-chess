@@ -10,6 +10,7 @@ interface ToastState {
   clear: () => void;
 }
 
+/** Zustand store for managing global toast notification state. */
 export const useToast = create<ToastState>((set) => ({
   message: null,
   type: "success",
@@ -17,6 +18,12 @@ export const useToast = create<ToastState>((set) => ({
   clear: () => set({ message: null }),
 }));
 
+/**
+ * Renders a fixed-position toast notification that auto-dismisses after 3 seconds.
+ * Uses the {@link useToast} store for message state.
+ *
+ * @returns The toast element, or null when no message is active.
+ */
 export default function Toast() {
   const { message, type, clear } = useToast();
   const [visible, setVisible] = useState(false);

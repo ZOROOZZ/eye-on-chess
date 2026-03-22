@@ -4,6 +4,7 @@ import api from "../lib/api";
 export type BoardTheme = "classic" | "wood" | "green" | "blue" | "purple" | "dark";
 export type PieceSet = "classic" | "modern" | "minimal";
 
+/** Shape of the settings Zustand store, including UI preferences and their setters. */
 interface SettingsState {
   darkMode: boolean;
   boardTheme: BoardTheme;
@@ -29,6 +30,10 @@ async function savePreference(data: Record<string, unknown>) {
   }
 }
 
+/**
+ * Zustand store for user UI preferences (dark mode, board theme, piece set, sound).
+ * Each setter persists the change to the server via the preferences API.
+ */
 export const useSettingsStore = create<SettingsState>((set) => ({
   darkMode: true,
   boardTheme: "classic",

@@ -5,6 +5,13 @@ import Link from "next/link";
 import api from "../lib/api";
 import { useAuthStore } from "../stores/auth";
 
+/**
+ * Gate component that blocks the app UI until the authenticated user accepts
+ * the Terms of Service. Renders children directly if not logged in or already accepted.
+ *
+ * @param props - Children to render once TOS is accepted.
+ * @returns The TOS acceptance screen, a deactivation message, or the children.
+ */
 export default function TosGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
   const [accepting, setAccepting] = useState(false);

@@ -4,10 +4,21 @@ interface SkeletonProps {
   className?: string;
 }
 
+/**
+ * Renders a generic pulsing placeholder block used as a loading skeleton.
+ *
+ * @param props - Optional className for sizing and shape.
+ * @returns An animated placeholder div.
+ */
 export function Skeleton({ className = "" }: SkeletonProps) {
   return <div className={`animate-pulse bg-gray-700 rounded ${className}`} />;
 }
 
+/**
+ * Renders a square aspect-ratio loading skeleton placeholder for the chessboard.
+ *
+ * @returns A pulsing board-shaped placeholder.
+ */
 export function BoardSkeleton() {
   return (
     <div className="w-full aspect-square bg-gray-800 rounded animate-pulse flex items-center justify-center">
@@ -16,6 +27,11 @@ export function BoardSkeleton() {
   );
 }
 
+/**
+ * Renders a loading skeleton placeholder mimicking the move list layout.
+ *
+ * @returns A pulsing set of move-pair placeholder rows.
+ */
 export function MoveListSkeleton() {
   return (
     <div className="bg-gray-900 rounded-lg p-3 space-y-2">
@@ -30,6 +46,11 @@ export function MoveListSkeleton() {
   );
 }
 
+/**
+ * Renders a loading skeleton placeholder for the user profile card layout.
+ *
+ * @returns A pulsing avatar, name, and stats grid placeholder.
+ */
 export function ProfileSkeleton() {
   return (
     <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full">

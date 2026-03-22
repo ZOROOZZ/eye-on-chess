@@ -4,6 +4,12 @@ import { useEffect } from "react";
 
 type ShortcutMap = Record<string, () => void>;
 
+/**
+ * Hook that registers global keydown listeners for the given shortcut map.
+ * Ignores key events from input/textarea/select elements and modifier keys.
+ *
+ * @param shortcuts - A map of key names to callback functions.
+ */
 export function useKeyboardShortcuts(shortcuts: ShortcutMap) {
   useEffect(() => {
     function handler(e: KeyboardEvent) {

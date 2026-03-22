@@ -11,6 +11,13 @@ interface KeyboardShortcutsHelpProps {
   shortcuts: Shortcut[];
 }
 
+/**
+ * Renders a modal overlay listing available keyboard shortcuts as key/description pairs.
+ * Closes when clicking the backdrop or the Esc button.
+ *
+ * @param props - {@link KeyboardShortcutsHelpProps}
+ * @returns The shortcuts modal, or null when not open.
+ */
 export default function KeyboardShortcutsHelp({
   open,
   onClose,

@@ -8,6 +8,12 @@ interface StockfishHook {
   evaluate: (fen: string) => Promise<{ score: number; bestMove: string | null }>;
 }
 
+/**
+ * Hook that initializes a Stockfish Web Worker and provides methods
+ * to get bot moves (with Elo-limited strength) and evaluate positions.
+ *
+ * @returns An object with `ready` state, `getBotMove`, and `evaluate` functions.
+ */
 export function useStockfish(): StockfishHook {
   const workerRef = useRef<Worker | null>(null);
   const [ready, setReady] = useState(false);

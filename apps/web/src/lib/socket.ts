@@ -4,6 +4,10 @@ import { getAccessToken } from "./api";
 let socket: Socket | null = null;
 let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
+/**
+ * Establishes a Socket.IO connection to the API server using the current access token.
+ * Starts a heartbeat interval once connected. No-ops if already connected or no token is available.
+ */
 export function connectSocket() {
   const token = getAccessToken();
   if (!token) return;
@@ -38,6 +42,9 @@ export function connectSocket() {
   });
 }
 
+/**
+ * Disconnects the active Socket.IO connection and clears the heartbeat interval.
+ */
 export function disconnectSocket() {
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);
@@ -49,6 +56,11 @@ export function disconnectSocket() {
   }
 }
 
+/**
+ * Returns the current Socket.IO client instance, or null if not connected.
+ *
+ * @returns The active socket instance or null.
+ */
 export function getSocket(): Socket | null {
   return socket;
 }

@@ -16,6 +16,7 @@ interface User {
   soundEnabled?: boolean;
 }
 
+/** Shape of the authentication Zustand store, including user state and auth actions. */
 interface AuthState {
   user: User | null;
   isLoading: boolean;
@@ -45,6 +46,11 @@ function syncSettings(user: User) {
 // Prevent concurrent fetchMe calls
 let fetchMePromise: Promise<void> | null = null;
 
+/**
+ * Zustand store managing authentication state: current user, login, logout,
+ * registration, token refresh, and profile fetching. Syncs user preferences
+ * to the settings store on login.
+ */
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: true,

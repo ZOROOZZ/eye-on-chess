@@ -9,6 +9,13 @@ interface ExportPGNProps {
   compact?: boolean; // small button for game cards
 }
 
+/**
+ * Renders a button (or compact icon) that fetches a game's PGN from the API
+ * and offers options to copy it to the clipboard or download as a .pgn file.
+ *
+ * @param props - {@link ExportPGNProps}
+ * @returns The export button with a dropdown menu for copy/download actions.
+ */
 export default function ExportPGN({ gameId, compact = false }: ExportPGNProps) {
   const toast = useToast();
   const [loading, setLoading] = useState(false);

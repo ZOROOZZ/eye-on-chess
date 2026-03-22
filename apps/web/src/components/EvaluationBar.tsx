@@ -21,6 +21,13 @@ function formatScore(cp: number | null, mate: number | null): string {
   return score > 0 ? `+${score.toFixed(1)}` : score.toFixed(1);
 }
 
+/**
+ * Renders a vertical evaluation bar that visualizes the engine score as a
+ * white-vs-black fill ratio, with a numeric score label.
+ *
+ * @param props - {@link EvaluationBarProps}
+ * @returns A narrow vertical bar showing the positional advantage.
+ */
 export default function EvaluationBar({ evalCP, mate }: EvaluationBarProps) {
   let whitePercent: number;
   if (mate !== null) {
