@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import bcrypt from "bcrypt";
 import { prisma } from "../lib/prisma.js";
 import { redis } from "../lib/redis.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -209,6 +210,76 @@ export async function adminRoutes(app: FastifyInstance) {
     await auditLog(adminId, "user.delete", "user", id, { username: target.username }, request.ip);
 
     return { success: true };
+  });
+
+  // Create user
+  app.post<{
+    Body: {
+      email: string;
+      username: string;
+      password: string;
+      role?: string;
+      verified?: boolean;
+    };
+  }>("/api/admin/users", async (request, reply) => {
+    const adminId = request.user.userId;
+    const { email, username, password, role, verified } = request.body;
+
+    if (!email || !username || !password) {
+      return reply.status(400).send({ error: "Email, username, and password are required" });
+    }
+
+    if (password.length < 8) {
+      return reply.status(400).send({ error: "Password must be at least 8 characters" });
+    }
+
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
+      return reply.status(409).send({ error: "Email already in use" });
+    }
+
+    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    if (existingUsername) {
+      return reply.status(409).send({ error: "Username already taken" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await prisma.user.create({
+      data: {
+        email: sanitizeString(email).toLowerCase(),
+        username: sanitizeString(username),
+        passwordHash,
+        role: role === "ADMIN" ? "ADMIN" : "USER",
+        verified: verified ?? true,
+        tosAccepted: true,
+        tosAcceptedAt: new Date(),
+      },
+    });
+
+    // Create Favorites collection
+    await prisma.collection.create({
+      data: { userId: user.id, name: "Favorites" },
+    });
+
+    await auditLog(
+      adminId,
+      "user.create",
+      "user",
+      user.id,
+      { email: user.email, username: user.username, role: user.role },
+      request.ip
+    );
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        verified: user.verified,
+      },
+    };
   });
 
   // ── Games ─────────────────────────────────────────────

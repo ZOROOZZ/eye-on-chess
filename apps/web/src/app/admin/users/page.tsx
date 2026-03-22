@@ -39,6 +39,59 @@ export default function AdminUsersPage() {
   } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Create user
+  const [showCreate, setShowCreate] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState("USER");
+  const [creating, setCreating] = useState(false);
+
+  function generatePassword() {
+    const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%&*";
+    let pw = "";
+    const arr = new Uint8Array(20);
+    crypto.getRandomValues(arr);
+    for (let i = 0; i < 20; i++) pw += chars[arr[i] % chars.length];
+    setNewPassword(pw);
+  }
+
+  async function copyPassword() {
+    try {
+      await navigator.clipboard.writeText(newPassword);
+      toast.show("Password copied to clipboard");
+    } catch {
+      toast.show("Failed to copy", "error");
+    }
+  }
+
+  async function createUser() {
+    setCreating(true);
+    try {
+      await adminRequest("post", "/api/admin/users", {
+        email: newEmail,
+        username: newUsername,
+        password: newPassword,
+        role: newRole,
+        verified: true,
+      });
+      toast.show("User created");
+      setShowCreate(false);
+      setNewEmail("");
+      setNewUsername("");
+      setNewPassword("");
+      setNewRole("USER");
+      await loadUsers();
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        "Failed to create user";
+      toast.show(msg, "error");
+    } finally {
+      setCreating(false);
+    }
+  }
+
   const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
@@ -100,14 +153,105 @@ export default function AdminUsersPage() {
     <div>
       <h1 className="text-2xl font-bold mb-4">Users</h1>
 
-      {/* Search */}
-      <input
-        type="text"
-        placeholder="Search by username or email..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full max-w-md px-3 py-2 bg-gray-800 border border-gray-700 rounded mb-4 focus:outline-none focus:border-blue-500"
-      />
+      {/* Actions */}
+      <div className="flex gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="Search by username or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 max-w-md px-3 py-2 bg-gray-800 border border-gray-700 rounded focus:outline-none focus:border-blue-500"
+        />
+        <button
+          onClick={() => setShowCreate(true)}
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-sm font-medium transition-colors whitespace-nowrap"
+        >
+          + Create User
+        </button>
+      </div>
+
+      {/* Create user modal */}
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-lg font-bold mb-4">Create User</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Username</label>
+                <input
+                  type="text"
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Password</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded font-mono text-sm focus:outline-none focus:border-blue-500"
+                    placeholder="Min 8 characters"
+                  />
+                  <button
+                    onClick={generatePassword}
+                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded text-xs font-medium transition-colors"
+                    title="Generate strong password"
+                  >
+                    Generate
+                  </button>
+                  {newPassword && (
+                    <button
+                      onClick={copyPassword}
+                      className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      Copy
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Role</label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded"
+                >
+                  <option value="USER">User</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createUser}
+                disabled={creating || !newEmail || !newUsername || newPassword.length < 8}
+                className="flex-1 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded font-medium transition-colors"
+              >
+                {creating ? "Creating..." : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="space-y-2">
