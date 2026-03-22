@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import ThemeProvider from "../components/ThemeProvider";
-import BoardThemeStyles from "../components/BoardThemeStyles";
-import ErrorBoundary from "../components/ErrorBoundary";
+import ClientProviders from "../components/ClientProviders";
 
 export const metadata: Metadata = {
   title: "EyeOnChess",
@@ -30,10 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon.svg" />
       </head>
       <body className="bg-gray-950 text-white min-h-screen dark:bg-gray-950 dark:text-white light:bg-white light:text-gray-900">
-        <ThemeProvider>
-          <BoardThemeStyles />
-          <ErrorBoundary>{children}</ErrorBoundary>
-        </ThemeProvider>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

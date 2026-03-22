@@ -72,6 +72,8 @@ model User {
   rating       Int      @default(1200)
   role         UserRole @default(USER)
   active       Boolean  @default(true)
+  tosAccepted  Boolean  @default(false)
+  tosAcceptedAt DateTime?
   verified     Boolean  @default(false)
   darkMode     Boolean  @default(true)
   boardTheme   String   @default("classic")

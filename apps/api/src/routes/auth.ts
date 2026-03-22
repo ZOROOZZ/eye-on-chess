@@ -223,6 +223,7 @@ export async function authRoutes(app: FastifyInstance) {
         rating: true,
         avatarUrl: true,
         role: true,
+        tosAccepted: true,
         darkMode: true,
         boardTheme: true,
         pieceSet: true,
@@ -262,5 +263,24 @@ export async function authRoutes(app: FastifyInstance) {
     });
 
     return { preferences: user };
+  });
+
+  // ── Accept TOS ──────────────────────────────────────
+  app.post("/api/auth/accept-tos", { preHandler: authMiddleware }, async (request) => {
+    await prisma.user.update({
+      where: { id: request.user.userId },
+      data: { tosAccepted: true, tosAcceptedAt: new Date() },
+    });
+    return { success: true };
+  });
+
+  // ── Decline TOS ─────────────────────────────────────
+  app.post("/api/auth/decline-tos", { preHandler: authMiddleware }, async (request) => {
+    // Record the decline but deactivate the account
+    await prisma.user.update({
+      where: { id: request.user.userId },
+      data: { tosAccepted: false, active: false },
+    });
+    return { success: true, message: "Account deactivated" };
   });
 }

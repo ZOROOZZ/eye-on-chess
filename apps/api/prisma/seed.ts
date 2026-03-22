@@ -25,6 +25,8 @@ async function main() {
       username,
       passwordHash,
       verified: true,
+      tosAccepted: true,
+      tosAcceptedAt: new Date(),
       role: "ADMIN",
     },
   });

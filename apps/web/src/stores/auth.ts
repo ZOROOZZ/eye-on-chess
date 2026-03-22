@@ -8,6 +8,7 @@ interface User {
   username: string;
   rating: number;
   role?: string;
+  tosAccepted?: boolean;
   avatarUrl?: string | null;
   darkMode?: boolean;
   boardTheme?: string;
