@@ -12,6 +12,23 @@
 - [Notes](notes.md) — Personal game notes
 - [WebSocket Events](websocket.md) — Socket.io real-time events reference
 
+## Health Check
+
+`GET /health` pings both Postgres and Redis, returning per-service status with latency.
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-03-23T...",
+  "services": {
+    "postgres": { "status": "ok", "latencyMs": 2 },
+    "redis": { "status": "ok", "latencyMs": 1 }
+  }
+}
+```
+
+Returns **200** when all services are healthy, **503** with `"status": "degraded"` when any service is down. Used by Docker health checks and monitoring.
+
 ## ETag Support
 
 All GET endpoints with 200 responses include an `ETag` header (MD5 hash of the response body). Clients can send `If-None-Match` with the cached ETag to receive a `304 Not Modified` response with no body when content hasn't changed.
