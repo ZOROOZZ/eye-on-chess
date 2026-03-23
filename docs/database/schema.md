@@ -60,6 +60,8 @@ PostgreSQL database managed by Prisma ORM. Schema defined in `apps/api/prisma/sc
 
 **Unique constraint:** `[requesterId, addresseeId]`
 
+**Index:** `(status, addresseeId)` — compound index for friend list and pending request queries
+
 ### Game
 
 | Field           | Type          | Notes                      |
@@ -81,6 +83,8 @@ PostgreSQL database managed by Prisma ORM. Schema defined in `apps/api/prisma/sc
 | `botElo`        | Int?          |                            |
 
 **Relations:** moves, analysis
+
+**Indexes:** `status`, `whiteId`, `blackId`, `createdAt`, `endedAt`
 
 ### Move
 
@@ -106,6 +110,8 @@ PostgreSQL database managed by Prisma ORM. Schema defined in `apps/api/prisma/sc
 | `blackAccuracy` | Float?        | Percentage                        |
 
 One-to-one with Game.
+
+**Index:** `createdAt`
 
 ### MoveFeedback
 
