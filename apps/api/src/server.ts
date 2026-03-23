@@ -36,8 +36,22 @@ async function main() {
     trustProxy: true,
   });
 
+  // CORS — whitelist based on SITE_URL, permissive in development
+  const isProduction = process.env.NODE_ENV === "production";
+  const siteUrl = process.env.SITE_URL || "http://localhost";
+  const allowedOrigins = isProduction
+    ? [siteUrl]
+    : [siteUrl, "http://localhost", "http://localhost:3000", "http://localhost:3001"];
+
   await fastify.register(cors, {
-    origin: true,
+    origin: (origin, cb) => {
+      // Allow requests with no origin (server-to-server, curl, mobile apps)
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      // In dev, also allow any localhost variant
+      if (!isProduction && origin.startsWith("http://localhost")) return cb(null, true);
+      cb(new Error("CORS origin not allowed"), false);
+    },
     credentials: true,
   });
 
