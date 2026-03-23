@@ -154,11 +154,19 @@ See the full step-by-step walkthrough in the [`screenshots/`](screenshots/README
 - Settings saved to your profile (synced across devices)
 - White-label support (custom site name and URL)
 
+**API**
+
+- Versioned API (`/api/v1/`) with backward-compatible redirects
+- Zod runtime request validation with auto-generated OpenAPI schemas
+- Structured error codes (`{ code: "AUTH_INVALID_CREDENTIALS", error: "..." }`)
+- Interactive API docs at `/docs` (Swagger UI)
+
 **Self-Hosting**
 
 - Single command deploy: `docker compose up`
 - No external services or third-party APIs
-- PostgreSQL, Redis, and the app all included
+- PostgreSQL with PgBouncer connection pooling (transaction mode)
+- Redis for presence, clocks, caching, and job queue
 - Nginx reverse proxy with WebSocket support
 - Automatic database migrations on startup
 - Database backup script with rotation
@@ -267,7 +275,8 @@ scripts/        → Backup utilities
 | **API**        | Fastify REST API + Socket.io for real-time                 |
 | **Worker**     | Stockfish analysis pipeline (polls Redis queue)            |
 | **Postgres**   | Primary database (Prisma ORM)                              |
-| **Redis**      | Presence, game clocks, analysis job queue                  |
+| **PgBouncer**  | Connection pooler for PostgreSQL (transaction mode)        |
+| **Redis**      | Presence, game clocks, analysis job queue, caching         |
 | **Prometheus** | Metrics collection (scrapes API /metrics every 15s)        |
 | **Loki**       | Log aggregation                                            |
 | **Promtail**   | Ships Docker container logs to Loki                        |
@@ -280,8 +289,8 @@ scripts/        → Backup utilities
 | Frontend      | Next.js 14 (App Router), TypeScript, Tailwind CSS, Zustand |
 | Board UI      | Chessground                                                |
 | Chess Logic   | chess.js                                                   |
-| Backend       | Fastify, TypeScript                                        |
-| Database      | PostgreSQL, Prisma ORM                                     |
+| Backend       | Fastify, TypeScript, Zod                                   |
+| Database      | PostgreSQL, Prisma ORM, PgBouncer                          |
 | Real-time     | Socket.io                                                  |
 | Cache         | Redis                                                      |
 | Analysis      | Stockfish 15                                               |
