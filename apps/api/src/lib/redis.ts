@@ -3,8 +3,28 @@ import Redis from "ioredis";
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const ONLINE_TTL = 30; // seconds
 
-/** Shared Redis client instance used across the API. */
-export const redis = new Redis(REDIS_URL);
+/**
+ * Shared Redis client instance with reconnect strategy.
+ * - Retries individual commands up to 3 times before throwing.
+ * - Reconnects with exponential backoff (200ms → 5s cap).
+ * - Gives up reconnecting after 10 failed attempts.
+ * - Reconnects on READONLY errors (Redis failover).
+ */
+export const redis = new Redis(REDIS_URL, {
+  maxRetriesPerRequest: 3,
+  retryStrategy(times) {
+    if (times > 10) {
+      console.error(`Redis: giving up after ${times} reconnect attempts`);
+      return null;
+    }
+    const delay = Math.min(times * 200, 5000);
+    console.warn(`Redis: reconnecting in ${delay}ms (attempt ${times})`);
+    return delay;
+  },
+  reconnectOnError(err) {
+    return err.message.includes("READONLY");
+  },
+});
 
 function onlineKey(userId: string) {
   return `online:${userId}`;
