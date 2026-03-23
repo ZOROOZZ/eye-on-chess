@@ -25,10 +25,16 @@ Welcome to the EyeOnChess documentation. EyeOnChess is a fully self-hostable, op
 
 ### Backend API
 
+- [API Overview](api/index.md) — Versioning, error codes, validation, rate limiting, pagination
 - [Authentication](api/authentication.md) — JWT auth, login, register, refresh
 - [Users & Friends](api/users-friends.md) — User profiles, friend system, search
 - [Games](api/games.md) — Game creation, real-time play, clocks
 - [Analysis](api/analysis.md) — Stockfish post-game analysis pipeline
+- [Collections](api/collections.md) — Game collections (favorites, custom lists)
+- [Invites](api/invites.md) — Invite code generation, validation, quota system
+- [Stats](api/stats.md) — Personal stats dashboard
+- [Activity](api/activity.md) — Activity feed
+- [Notes](api/notes.md) — Personal game notes
 - [Admin](api/admin.md) — Admin panel API, CSRF, audit logging
 - [WebSocket Events](api/websocket.md) — Socket.io events reference
 

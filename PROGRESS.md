@@ -281,8 +281,43 @@ Self-hostable chess platform built with Next.js 14, Fastify, PostgreSQL, Redis, 
   - Admin link (purple) only visible to ADMIN users on play page
   - `adminApi.ts` helper — auto-fetches CSRF token for mutations
 
+### Technical Improvements (Complete)
+
+- **WebSocket reconnection resilience:**
+  - Auth as function for token refresh on each reconnect attempt
+  - Exponential backoff: 1s → 10s cap, up to 10 attempts
+  - Automatic token refresh on auth errors
+  - CORS alignment between Socket.io and API
+
+- **PgBouncer connection pooling:**
+  - PgBouncer service (edoburu/pgbouncer:1.23.1) in both compose files
+  - Transaction pooling mode, 20 default pool size, 200 max clients
+  - `?pgbouncer=true` in Prisma connection strings (disables prepared statements)
+  - `DIRECT_DATABASE_URL` for migrations bypassing PgBouncer
+  - Config files in `deployment/pgbouncer/`
+
+- **API versioning (`/api/v1/`):**
+  - All routes registered under `/api/v1` via Fastify plugin prefix
+  - Backward-compat redirect: `/api/*` → `/api/v1/*` (301)
+  - Nginx routing updated for `/api/v1/`
+  - Rate-limits config updated to `/api/v1/` paths
+
+- **Zod request validation:**
+  - `zod` + `fastify-type-provider-zod` for runtime request validation
+  - ~30 Zod schemas in `apps/api/src/lib/schemas.ts`
+  - Schemas applied to route handlers via Fastify's `schema` option
+  - Custom error handler returns `{ code, error }` for validation failures
+  - Manual `if (!field)` checks replaced by schema validation
+
+- **Structured error codes:**
+  - ~60 error code constants in `apps/api/src/lib/errorCodes.ts`
+  - `apiError(reply, status, code, message)` helper used across all routes
+  - Response format: `{ code: "AUTH_INVALID_CREDENTIALS", error: "Invalid credentials" }`
+  - Domains: AUTH, GAME, FRIEND, ADMIN, COLLECTION, INVITE, ANALYSIS, NOTE
+  - Backward compatible — `error` field preserved for existing clients
+
 ## Current Status
 
-- All phases complete: 1, 2, 3, 4, 5, 7, 8, 9 + release prep + admin panel
+- All phases complete: 1, 2, 3, 4, 5, 7, 8, 9 + release prep + admin panel + technical improvements
 - Ready for open source release
 - Note: Phase 6 was skipped (user jumped from Phase 5 to Phase 7)

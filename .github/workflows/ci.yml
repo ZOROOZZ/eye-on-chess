@@ -164,7 +164,7 @@ jobs:
         run: curl -sf http://localhost/health
 
       - name: Settings check
-        run: curl -sf http://localhost/api/settings
+        run: curl -sf http://localhost/api/v1/settings
 
       - name: Dump logs on failure
         if: failure()

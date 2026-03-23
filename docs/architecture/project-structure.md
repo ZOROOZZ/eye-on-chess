@@ -22,6 +22,8 @@ eye-on-chess/
 │   │       │   ├── jwt.ts        # JWT sign/verify, refresh token utils
 │   │       │   ├── socket.ts     # Socket.io setup + auth
 │   │       │   ├── settings.ts   # Site settings (DB with env fallback)
+│   │       │   ├── schemas.ts    # Zod request validation schemas
+│   │       │   ├── errorCodes.ts # Structured error code constants + apiError helper
 │   │       │   ├── elo.ts        # Elo rating calculation
 │   │       │   ├── gameClock.ts  # Redis-based game clock management
 │   │       │   ├── gameSocket.ts # Socket.io game event handlers
@@ -32,12 +34,18 @@ eye-on-chess/
 │   │       │   ├── auth.ts       # JWT auth middleware
 │   │       │   └── admin.ts      # Admin role check, CSRF, rate limit, audit
 │   │       └── routes/
-│   │           ├── auth.ts       # /api/auth/* (register, login, refresh, logout, me, preferences)
-│   │           ├── users.ts      # /api/users/* (profiles, search)
-│   │           ├── friends.ts    # /api/friends/* (friend system)
-│   │           ├── games.ts      # /api/games/* (create, challenge, accept/decline)
-│   │           ├── analysis.ts   # /api/games/:id/analyze, /analysis
-│   │           └── admin.ts      # /api/admin/* (dashboard, users, games, settings, audit)
+│   │           ├── auth.ts       # /auth/* (register, login, refresh, logout, me, preferences)
+│   │           ├── users.ts      # /users/* (profiles, search)
+│   │           ├── friends.ts    # /friends/* (friend system)
+│   │           ├── games.ts      # /games/* (create, challenge, bot, move, sync)
+│   │           ├── analysis.ts   # /games/:id/analyze, /analysis
+│   │           ├── collections.ts # /collections/* (game collections)
+│   │           ├── invites.ts    # /invites/* (invite codes, validation)
+│   │           ├── notes.ts      # /games/:id/notes (game annotations)
+│   │           ├── activity.ts   # /activity (activity feed)
+│   │           ├── stats.ts      # /stats (personal statistics)
+│   │           ├── bots.ts       # /bots (bot personality list)
+│   │           └── admin.ts      # /admin/* (dashboard, users, games, settings, audit)
 │   │
 │   └── web/                      # Next.js frontend
 │       ├── Dockerfile            # Development Dockerfile
@@ -105,7 +113,13 @@ eye-on-chess/
 ├── deployment/
 │   ├── docker-compose.yml        # Production compose
 │   ├── docker-compose.dev.yml    # Development compose
-│   └── nginx.conf                # Nginx reverse proxy config
+│   ├── nginx.conf                # Nginx reverse proxy config
+│   ├── pgbouncer/
+│   │   ├── pgbouncer.ini         # PgBouncer pool configuration
+│   │   └── userlist.txt          # PgBouncer auth credentials
+│   └── config/
+│       ├── rate-limits.yml       # Per-route rate limit overrides
+│       └── bots.yml              # Bot personality definitions
 │
 ├── scripts/
 │   └── backup.sh                 # PostgreSQL backup script

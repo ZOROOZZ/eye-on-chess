@@ -41,7 +41,9 @@ packages/chess/src/reactions/constants.test.ts
 ## API Tests
 
 - **Environment:** `node`
-- **Mocking:** `vi.mock` is used to mock Redis and other external dependencies
+- **Mocking:** `vi.mock` is used to mock Prisma, Redis, and other external dependencies
+- **Validation:** Zod validator compiler is registered in test setup for schema validation
+- **Error handler:** Custom error handler in test setup matches server behavior (structured error codes)
 - Route handlers are tested for correct HTTP responses, validation, and side effects
 
 ## Chess Package Tests

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-EyeOnChess is a monorepo with three packages, deployed as five Docker services behind an Nginx reverse proxy.
+EyeOnChess is a monorepo with three packages, deployed as multiple Docker services behind an Nginx reverse proxy.
 
 ## System Diagram
 
@@ -18,10 +18,14 @@ EyeOnChess is a monorepo with three packages, deployed as five Docker services b
         └──────────┘         └────┬─────┘
                               ┌───┴───┐
                               │       │
-                         ┌────▼──┐ ┌──▼────┐
-                         │Postgres│ │ Redis │
-                         │       │ │       │
-                         └───────┘ └───┬───┘
+                       ┌──────▼──┐ ┌──▼────┐
+                       │PgBouncer│ │ Redis │
+                       │  :6432  │ │       │
+                       └────┬────┘ └───┬───┘
+                       ┌────▼────┐     │
+                       │Postgres │     │
+                       │  :5432  │     │
+                       └─────────┘     │
                                        │
                               ┌────────▼────────┐
                               │     Worker      │
@@ -31,14 +35,15 @@ EyeOnChess is a monorepo with three packages, deployed as five Docker services b
 
 ## Services
 
-| Service      | Technology              | Purpose                                                                       |
-| ------------ | ----------------------- | ----------------------------------------------------------------------------- |
-| **Nginx**    | Nginx Alpine            | Reverse proxy — routes `/api` and `/socket.io` to API, everything else to Web |
-| **Web**      | Next.js 14 (App Router) | Frontend — server-side rendering, client-side navigation                      |
-| **API**      | Fastify + Socket.io     | REST API + real-time WebSocket events                                         |
-| **Worker**   | Node.js + Stockfish 15  | Background analysis — polls Redis queue, runs Stockfish on positions          |
-| **Postgres** | PostgreSQL Alpine       | Primary database — users, games, moves, analysis, settings                    |
-| **Redis**    | Redis Alpine            | Ephemeral data — online presence, game clocks, analysis queue                 |
+| Service       | Technology              | Purpose                                                                          |
+| ------------- | ----------------------- | -------------------------------------------------------------------------------- |
+| **Nginx**     | Nginx Alpine            | Reverse proxy — routes `/api/v1` and `/socket.io` to API, everything else to Web |
+| **Web**       | Next.js 14 (App Router) | Frontend — server-side rendering, client-side navigation                         |
+| **API**       | Fastify + Socket.io     | REST API (versioned `/api/v1/`) + real-time WebSocket events                     |
+| **Worker**    | Node.js + Stockfish 15  | Background analysis — polls Redis queue, runs Stockfish on positions             |
+| **Postgres**  | PostgreSQL 16 Alpine    | Primary database — users, games, moves, analysis, settings                       |
+| **PgBouncer** | edoburu/pgbouncer       | Connection pooler — transaction mode, 20 pool size, 200 max clients              |
+| **Redis**     | Redis 7 Alpine          | Ephemeral data — online presence, game clocks, analysis queue, caching           |
 
 ## Tech Stack
 
@@ -47,8 +52,9 @@ EyeOnChess is a monorepo with three packages, deployed as five Docker services b
 | Frontend        | Next.js 14, TypeScript, Tailwind CSS, Zustand |
 | Board UI        | Chessground (lichess board library)           |
 | Chess Logic     | chess.js                                      |
-| Backend         | Fastify, TypeScript                           |
+| Backend         | Fastify, TypeScript, Zod                      |
 | ORM             | Prisma 6                                      |
+| Connection Pool | PgBouncer (transaction mode)                  |
 | Real-time       | Socket.io                                     |
 | Analysis        | Stockfish 15 (depth 18)                       |
 | Auth            | Custom JWT (access + refresh token rotation)  |
