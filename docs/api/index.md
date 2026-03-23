@@ -12,6 +12,16 @@
 - [Notes](notes.md) — Personal game notes
 - [WebSocket Events](websocket.md) — Socket.io real-time events reference
 
+## CORS
+
+Cross-origin requests are restricted to the configured `SITE_URL`:
+
+- **Production** (`NODE_ENV=production`): Only the exact `SITE_URL` origin is allowed
+- **Development**: `SITE_URL` plus any `http://localhost` variant
+- Requests with no `Origin` header (server-to-server, curl, mobile apps) are always allowed
+
+Set `SITE_URL` in your `.env` to match your frontend domain (e.g. `https://chess.example.com`).
+
 ## Pagination
 
 List endpoints support standard pagination via query parameters:

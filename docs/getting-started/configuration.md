@@ -25,10 +25,10 @@ All configuration is done via environment variables in a `.env` file at the proj
 
 ## Site Configuration
 
-| Variable    | Description                                             | Default            |
-| ----------- | ------------------------------------------------------- | ------------------ |
-| `SITE_NAME` | Display name for the platform. Supports white-labeling. | `EyeOnChess`       |
-| `SITE_URL`  | Public URL of the site (used in metadata and links)     | `http://localhost` |
+| Variable    | Description                                                          | Default            |
+| ----------- | -------------------------------------------------------------------- | ------------------ |
+| `SITE_NAME` | Display name for the platform. Supports white-labeling.              | `EyeOnChess`       |
+| `SITE_URL`  | Public URL of the site (used in metadata, links, and CORS whitelist) | `http://localhost` |
 
 > **Note:** `SITE_NAME`, `REGISTRATION_OPEN`, `MAX_USERS`, and `REQUIRE_EMAIL_VERIFICATION` can also be changed at runtime from the [Admin Panel](../admin/settings.md). The env vars serve as initial defaults — database values override them.
 
