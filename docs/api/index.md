@@ -37,6 +37,15 @@ Cross-origin requests are restricted to the configured `SITE_URL`:
 
 Set `SITE_URL` in your `.env` to match your frontend domain (e.g. `https://chess.example.com`).
 
+## Rate Limiting
+
+Rate limits are enforced per user for authenticated requests and per IP for anonymous requests:
+
+- **Authenticated**: `request.user.userId` is the rate limit key — each user gets their own quota
+- **Anonymous** (login, register, public endpoints): `request.ip` is the key
+- Global defaults and per-route overrides are configured in `deployment/config/rate-limits.yml`
+- Rate limit headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`) are included in responses
+
 ## Pagination
 
 List endpoints support standard pagination via query parameters:
