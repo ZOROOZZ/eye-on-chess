@@ -632,35 +632,38 @@ export async function gameRoutes(app: FastifyInstance) {
       }
     }
 
-    // Create game record
-    const game = await prisma.game.create({
-      data: {
-        whiteId: playerIsWhite ? userId : null,
-        blackId: playerIsWhite ? null : userId,
-        status: result ? "COMPLETED" : "ABORTED",
-        result: result as GameResult | null,
-        termination: termination as Termination | null,
-        fen: chess.fen(),
-        pgn: chess.pgn(),
-        timeControl: "UNLIMITED",
-        initialTime: 0,
-        increment: 0,
-        isVsBot: true,
-        botElo,
-        startedAt: new Date(startedAt),
-        endedAt: endedAt ? new Date(endedAt) : null,
-      },
-    });
+    // Create game + moves in a transaction (atomic)
+    const game = await prisma.$transaction(async (tx) => {
+      const g = await tx.game.create({
+        data: {
+          whiteId: playerIsWhite ? userId : null,
+          blackId: playerIsWhite ? null : userId,
+          status: result ? "COMPLETED" : "ABORTED",
+          result: result as GameResult | null,
+          termination: termination as Termination | null,
+          fen: chess.fen(),
+          pgn: chess.pgn(),
+          timeControl: "UNLIMITED",
+          initialTime: 0,
+          increment: 0,
+          isVsBot: true,
+          botElo,
+          startedAt: new Date(startedAt),
+          endedAt: endedAt ? new Date(endedAt) : null,
+        },
+      });
 
-    // Create move records (batched)
-    await prisma.move.createMany({
-      data: moves.map((m) => ({
-        gameId: game.id,
-        ply: m.ply,
-        san: m.san,
-        uci: m.uci,
-        fen: m.fen,
-      })),
+      await tx.move.createMany({
+        data: moves.map((m) => ({
+          gameId: g.id,
+          ply: m.ply,
+          san: m.san,
+          uci: m.uci,
+          fen: m.fen,
+        })),
+      });
+
+      return g;
     });
 
     return { success: true, gameId: game.id };
