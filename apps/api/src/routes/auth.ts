@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { signAccessToken, generateRefreshToken, hashToken } from "../lib/jwt.js";
 import { getSiteSettings } from "../lib/settings.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { registerBodySchema, loginBodySchema, preferencesBodySchema } from "../lib/schemas.js";
 
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 const BCRYPT_ROUNDS = 12;
@@ -46,12 +47,8 @@ export async function authRoutes(app: FastifyInstance) {
   // ── Register ──────────────────────────────────────
   app.post<{
     Body: { email: string; username: string; password: string; inviteCode: string };
-  }>("/auth/register", async (request, reply) => {
+  }>("/auth/register", { schema: { body: registerBodySchema } }, async (request, reply) => {
     const { email, username, password, inviteCode } = request.body;
-
-    if (!email || !username || !password || !inviteCode) {
-      return reply.status(400).send({ error: "All fields are required (including invite code)" });
-    }
 
     // Validate invite code
     const invite = await prisma.invite.findUnique({ where: { code: inviteCode } });
@@ -73,10 +70,6 @@ export async function authRoutes(app: FastifyInstance) {
       if (userCount >= siteSettings.maxUsers) {
         return reply.status(403).send({ error: "Maximum user limit reached" });
       }
-    }
-
-    if (password.length < 8) {
-      return reply.status(400).send({ error: "Password must be at least 8 characters" });
     }
 
     const existingEmail = await prisma.user.findUnique({ where: { email } });
@@ -131,12 +124,8 @@ export async function authRoutes(app: FastifyInstance) {
   // ── Login ─────────────────────────────────────────
   app.post<{
     Body: { email: string; password: string };
-  }>("/auth/login", async (request, reply) => {
+  }>("/auth/login", { schema: { body: loginBodySchema } }, async (request, reply) => {
     const { email, password } = request.body;
-
-    if (!email || !password) {
-      return reply.status(400).send({ error: "Email and password are required" });
-    }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -258,31 +247,35 @@ export async function authRoutes(app: FastifyInstance) {
   // ── Update preferences ──────────────────────────────
   app.put<{
     Body: { darkMode?: boolean; boardTheme?: string; pieceSet?: string; soundEnabled?: boolean };
-  }>("/auth/preferences", { preHandler: authMiddleware }, async (request) => {
-    const { darkMode, boardTheme, pieceSet, soundEnabled } = request.body;
+  }>(
+    "/auth/preferences",
+    { schema: { body: preferencesBodySchema }, preHandler: authMiddleware },
+    async (request) => {
+      const { darkMode, boardTheme, pieceSet, soundEnabled } = request.body;
 
-    const VALID_BOARD_THEMES = ["classic", "wood", "green", "blue", "purple", "dark"];
-    const VALID_PIECE_SETS = ["classic", "modern", "minimal"];
+      const VALID_BOARD_THEMES = ["classic", "wood", "green", "blue", "purple", "dark"];
+      const VALID_PIECE_SETS = ["classic", "modern", "minimal"];
 
-    const data: Record<string, unknown> = {};
-    if (darkMode !== undefined) data.darkMode = darkMode;
-    if (boardTheme && VALID_BOARD_THEMES.includes(boardTheme)) data.boardTheme = boardTheme;
-    if (pieceSet && VALID_PIECE_SETS.includes(pieceSet)) data.pieceSet = pieceSet;
-    if (soundEnabled !== undefined) data.soundEnabled = soundEnabled;
+      const data: Record<string, unknown> = {};
+      if (darkMode !== undefined) data.darkMode = darkMode;
+      if (boardTheme && VALID_BOARD_THEMES.includes(boardTheme)) data.boardTheme = boardTheme;
+      if (pieceSet && VALID_PIECE_SETS.includes(pieceSet)) data.pieceSet = pieceSet;
+      if (soundEnabled !== undefined) data.soundEnabled = soundEnabled;
 
-    const user = await prisma.user.update({
-      where: { id: request.user.userId },
-      data,
-      select: {
-        darkMode: true,
-        boardTheme: true,
-        pieceSet: true,
-        soundEnabled: true,
-      },
-    });
+      const user = await prisma.user.update({
+        where: { id: request.user.userId },
+        data,
+        select: {
+          darkMode: true,
+          boardTheme: true,
+          pieceSet: true,
+          soundEnabled: true,
+        },
+      });
 
-    return { preferences: user };
-  });
+      return { preferences: user };
+    }
+  );
 
   // ── Accept TOS ──────────────────────────────────────
   app.post("/auth/accept-tos", { preHandler: authMiddleware }, async (request) => {

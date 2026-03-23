@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { sanitizeString } from "../middleware/admin.js";
+import { updateNoteBodySchema } from "../lib/schemas.js";
 
 const MAX_NOTE_LENGTH = 2000;
 
@@ -25,6 +26,7 @@ export async function noteRoutes(app: FastifyInstance) {
   // Create/update/delete my note for a game
   app.put<{ Params: { id: string }; Body: { text?: string } }>(
     "/games/:id/notes",
+    { schema: { body: updateNoteBodySchema } },
     async (request, reply) => {
       const userId = request.user.userId;
       const { id: gameId } = request.params;

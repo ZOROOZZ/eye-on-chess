@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { parsePagination, paginationMeta } from "../lib/pagination.js";
+import { createCollectionBodySchema, addGameToCollectionBodySchema } from "../lib/schemas.js";
 
 /** Register collection routes (create, update, delete, manage game collections). */
 export async function collectionRoutes(app: FastifyInstance) {
@@ -26,29 +27,29 @@ export async function collectionRoutes(app: FastifyInstance) {
   });
 
   // Create collection
-  app.post<{ Body: { name: string } }>("/collections", async (request, reply) => {
-    const userId = request.user.userId;
-    const { name } = request.body;
+  app.post<{ Body: { name: string } }>(
+    "/collections",
+    { schema: { body: createCollectionBodySchema } },
+    async (request, reply) => {
+      const userId = request.user.userId;
+      const { name } = request.body;
 
-    if (!name || !name.trim()) {
-      return reply.status(400).send({ error: "Name is required" });
+      const trimmed = name.trim().slice(0, 50);
+
+      const existing = await prisma.collection.findUnique({
+        where: { userId_name: { userId, name: trimmed } },
+      });
+      if (existing) {
+        return reply.status(409).send({ error: "Collection with this name already exists" });
+      }
+
+      const collection = await prisma.collection.create({
+        data: { userId, name: trimmed },
+      });
+
+      return { collection };
     }
-
-    const trimmed = name.trim().slice(0, 50);
-
-    const existing = await prisma.collection.findUnique({
-      where: { userId_name: { userId, name: trimmed } },
-    });
-    if (existing) {
-      return reply.status(409).send({ error: "Collection with this name already exists" });
-    }
-
-    const collection = await prisma.collection.create({
-      data: { userId, name: trimmed },
-    });
-
-    return { collection };
-  });
+  );
 
   // Delete collection
   app.delete<{ Params: { id: string } }>("/collections/:id", async (request, reply) => {

@@ -15,6 +15,15 @@ import {
   RESULT_PGN,
 } from "@eyeonchess/chess";
 import { detectGameEnd } from "../lib/gameHelpers.js";
+import {
+  createFriendGameBodySchema,
+  gameActionBodySchema,
+  createBotGameBodySchema,
+  makeMoveBodySchema,
+  syncOfflineGameBodySchema,
+  idParamSchema,
+  paginationQuerySchema,
+} from "../lib/schemas.js";
 
 /** Register game routes (create, challenge, join, move, bot games). */
 export async function gameRoutes(app: FastifyInstance) {
@@ -28,13 +37,9 @@ export async function gameRoutes(app: FastifyInstance) {
       initialTime?: number;
       increment?: number;
     };
-  }>("/games/friend", async (request, reply) => {
+  }>("/games/friend", { schema: { body: createFriendGameBodySchema } }, async (request, reply) => {
     const userId = request.user.userId;
     const { friendId, preset, initialTime: customTime, increment: customIncrement } = request.body;
-
-    if (!friendId) {
-      return reply.status(400).send({ error: "friendId is required" });
-    }
 
     if (friendId === userId) {
       return reply.status(400).send({ error: "Cannot challenge yourself" });
@@ -110,68 +115,76 @@ export async function gameRoutes(app: FastifyInstance) {
   });
 
   // Accept challenge
-  app.post<{ Body: { gameId: string } }>("/games/challenge/accept", async (request, reply) => {
-    const userId = request.user.userId;
-    const { gameId } = request.body;
+  app.post<{ Body: { gameId: string } }>(
+    "/games/challenge/accept",
+    { schema: { body: gameActionBodySchema } },
+    async (request, reply) => {
+      const userId = request.user.userId;
+      const { gameId } = request.body;
 
-    const game = await prisma.game.findUnique({ where: { id: gameId } });
-    if (!game) {
-      return reply.status(404).send({ error: "Game not found" });
+      const game = await prisma.game.findUnique({ where: { id: gameId } });
+      if (!game) {
+        return reply.status(404).send({ error: "Game not found" });
+      }
+
+      if (game.status !== "WAITING") {
+        return reply.status(400).send({ error: "Challenge already resolved" });
+      }
+
+      if (game.whiteId !== userId && game.blackId !== userId) {
+        return reply.status(403).send({ error: "Not part of this challenge" });
+      }
+
+      await prisma.game.update({
+        where: { id: gameId },
+        data: { status: "ACTIVE", startedAt: new Date() },
+      });
+
+      // Init clocks in Redis (skip for unlimited)
+      if (game.timeControl !== "UNLIMITED") {
+        await initClocks(gameId, game.initialTime * 1000, game.increment * 1000);
+      }
+
+      const io = getIO();
+      if (io) {
+        io.emit("challenge:accepted", { gameId });
+      }
+
+      return { success: true, gameId };
     }
-
-    if (game.status !== "WAITING") {
-      return reply.status(400).send({ error: "Challenge already resolved" });
-    }
-
-    if (game.whiteId !== userId && game.blackId !== userId) {
-      return reply.status(403).send({ error: "Not part of this challenge" });
-    }
-
-    await prisma.game.update({
-      where: { id: gameId },
-      data: { status: "ACTIVE", startedAt: new Date() },
-    });
-
-    // Init clocks in Redis (skip for unlimited)
-    if (game.timeControl !== "UNLIMITED") {
-      await initClocks(gameId, game.initialTime * 1000, game.increment * 1000);
-    }
-
-    const io = getIO();
-    if (io) {
-      io.emit("challenge:accepted", { gameId });
-    }
-
-    return { success: true, gameId };
-  });
+  );
 
   // Decline challenge
-  app.post<{ Body: { gameId: string } }>("/games/challenge/decline", async (request, reply) => {
-    const userId = request.user.userId;
-    const { gameId } = request.body;
+  app.post<{ Body: { gameId: string } }>(
+    "/games/challenge/decline",
+    { schema: { body: gameActionBodySchema } },
+    async (request, reply) => {
+      const userId = request.user.userId;
+      const { gameId } = request.body;
 
-    const game = await prisma.game.findUnique({ where: { id: gameId } });
-    if (!game) {
-      return reply.status(404).send({ error: "Game not found" });
+      const game = await prisma.game.findUnique({ where: { id: gameId } });
+      if (!game) {
+        return reply.status(404).send({ error: "Game not found" });
+      }
+
+      if (game.status !== "WAITING") {
+        return reply.status(400).send({ error: "Challenge already resolved" });
+      }
+
+      if (game.whiteId !== userId && game.blackId !== userId) {
+        return reply.status(403).send({ error: "Not part of this challenge" });
+      }
+
+      await prisma.game.delete({ where: { id: gameId } });
+
+      const io = getIO();
+      if (io) {
+        io.emit("challenge:declined", { gameId });
+      }
+
+      return { success: true };
     }
-
-    if (game.status !== "WAITING") {
-      return reply.status(400).send({ error: "Challenge already resolved" });
-    }
-
-    if (game.whiteId !== userId && game.blackId !== userId) {
-      return reply.status(403).send({ error: "Not part of this challenge" });
-    }
-
-    await prisma.game.delete({ where: { id: gameId } });
-
-    const io = getIO();
-    if (io) {
-      io.emit("challenge:declined", { gameId });
-    }
-
-    return { success: true };
-  });
+  );
 
   // Get game state
   app.get<{ Params: { id: string } }>("/games/:id", async (request, reply) => {
@@ -334,7 +347,7 @@ export async function gameRoutes(app: FastifyInstance) {
       initialTime?: number;
       increment?: number;
     };
-  }>("/games/bot", async (request, reply) => {
+  }>("/games/bot", { schema: { body: createBotGameBodySchema } }, async (request, reply) => {
     const userId = request.user.userId;
     const {
       botElo,
@@ -343,10 +356,6 @@ export async function gameRoutes(app: FastifyInstance) {
       initialTime: customTime,
       increment: customIncrement,
     } = request.body;
-
-    if (!botElo || botElo < 200 || botElo > 3200) {
-      return reply.status(400).send({ error: "botElo must be between 200 and 3200" });
-    }
 
     // Resolve time control
     let timeControl: TimeControl;
@@ -429,157 +438,168 @@ export async function gameRoutes(app: FastifyInstance) {
   app.post<{
     Params: { id: string };
     Body: { from: string; to: string; promotion?: string };
-  }>("/games/:id/move", async (request, reply) => {
-    const userId = request.user.userId;
-    const { id: gameId } = request.params;
-    const { from, to, promotion } = request.body;
+  }>(
+    "/games/:id/move",
+    { schema: { body: makeMoveBodySchema, params: idParamSchema } },
+    async (request, reply) => {
+      const userId = request.user.userId;
+      const { id: gameId } = request.params;
+      const { from, to, promotion } = request.body;
 
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      include: { moves: { orderBy: { ply: "desc" }, take: 1 } },
-    });
-
-    if (!game) return reply.status(404).send({ error: "Game not found" });
-    if (game.status !== "ACTIVE") return reply.status(400).send({ error: "Game not active" });
-    if (!game.isVsBot) return reply.status(400).send({ error: "Not a bot game" });
-    if (game.whiteId !== userId && game.blackId !== userId) {
-      return reply.status(403).send({ error: "Not your game" });
-    }
-
-    const chess = new Chess(game.fen);
-
-    // Verify it's the player's turn
-    const isWhiteTurn = chess.turn() === "w";
-    const playerIsWhite = game.whiteId === userId;
-    if (isWhiteTurn !== playerIsWhite) {
-      return reply.status(400).send({ error: "Not your turn" });
-    }
-
-    // Validate and apply player move
-    const playerMove = chess.move({ from, to, promotion: promotion || undefined });
-    if (!playerMove) return reply.status(400).send({ error: "Invalid move" });
-
-    const currentPly = (game.moves[0]?.ply ?? 0) + 1;
-
-    await prisma.move.create({
-      data: {
-        gameId,
-        ply: currentPly,
-        san: playerMove.san,
-        uci: `${from}${to}${promotion || ""}`,
-        fen: chess.fen(),
-      },
-    });
-
-    // Update clocks
-    const isUnlimited = game.timeControl === "UNLIMITED";
-    let clocks = null;
-    if (!isUnlimited) {
-      clocks = await clockOnMove(gameId, false);
-    }
-
-    // Check if game ended after player move
-    const ended = detectGameEnd(chess);
-    if (ended) {
-      await prisma.game.update({
+      const game = await prisma.game.findUnique({
         where: { id: gameId },
+        include: { moves: { orderBy: { ply: "desc" }, take: 1 } },
+      });
+
+      if (!game) return reply.status(404).send({ error: "Game not found" });
+      if (game.status !== "ACTIVE") return reply.status(400).send({ error: "Game not active" });
+      if (!game.isVsBot) return reply.status(400).send({ error: "Not a bot game" });
+      if (game.whiteId !== userId && game.blackId !== userId) {
+        return reply.status(403).send({ error: "Not your game" });
+      }
+
+      const chess = new Chess(game.fen);
+
+      // Verify it's the player's turn
+      const isWhiteTurn = chess.turn() === "w";
+      const playerIsWhite = game.whiteId === userId;
+      if (isWhiteTurn !== playerIsWhite) {
+        return reply.status(400).send({ error: "Not your turn" });
+      }
+
+      // Validate and apply player move
+      const playerMove = chess.move({ from, to, promotion: promotion || undefined });
+      if (!playerMove) return reply.status(400).send({ error: "Invalid move" });
+
+      const currentPly = (game.moves[0]?.ply ?? 0) + 1;
+
+      await prisma.move.create({
         data: {
+          gameId,
+          ply: currentPly,
+          san: playerMove.san,
+          uci: `${from}${to}${promotion || ""}`,
           fen: chess.fen(),
-          pgn: chess.pgn(),
-          status: "COMPLETED",
-          result: ended.result,
-          termination: ended.termination,
-          endedAt: new Date(),
         },
       });
 
-      return {
-        playerMove: { from, to, promotion, san: playerMove.san, fen: chess.fen(), ply: currentPly },
-        botMove: null,
-        gameOver: { result: ended.result, termination: ended.termination },
-        clocks,
-      };
-    }
+      // Update clocks
+      const isUnlimited = game.timeControl === "UNLIMITED";
+      let clocks = null;
+      if (!isUnlimited) {
+        clocks = await clockOnMove(gameId, false);
+      }
 
-    // Update game state before bot thinks
-    await prisma.game.update({
-      where: { id: gameId },
-      data: { fen: chess.fen(), pgn: chess.pgn() },
-    });
+      // Check if game ended after player move
+      const ended = detectGameEnd(chess);
+      if (ended) {
+        await prisma.game.update({
+          where: { id: gameId },
+          data: {
+            fen: chess.fen(),
+            pgn: chess.pgn(),
+            status: "COMPLETED",
+            result: ended.result,
+            termination: ended.termination,
+            endedAt: new Date(),
+          },
+        });
 
-    // Get bot response
-    const botMoveUci = await getBotMove(chess.fen(), game.botElo!);
-    const botFrom = botMoveUci.slice(0, 2);
-    const botTo = botMoveUci.slice(2, 4);
-    const botPromotion = botMoveUci[4] || undefined;
-    const botMove = chess.move({ from: botFrom, to: botTo, promotion: botPromotion });
+        return {
+          playerMove: {
+            from,
+            to,
+            promotion,
+            san: playerMove.san,
+            fen: chess.fen(),
+            ply: currentPly,
+          },
+          botMove: null,
+          gameOver: { result: ended.result, termination: ended.termination },
+          clocks,
+        };
+      }
 
-    if (!botMove) {
-      return reply.status(500).send({ error: "Bot produced invalid move" });
-    }
-
-    const botPly = currentPly + 1;
-
-    await prisma.move.create({
-      data: {
-        gameId,
-        ply: botPly,
-        san: botMove.san,
-        uci: botMoveUci,
-        fen: chess.fen(),
-      },
-    });
-
-    if (!isUnlimited) {
-      clocks = await clockOnMove(gameId, false);
-    }
-
-    // Check if game ended after bot move
-    const botEnded = detectGameEnd(chess);
-    const gameOver = botEnded
-      ? { result: botEnded.result, termination: botEnded.termination }
-      : null;
-
-    if (botEnded) {
-      await prisma.game.update({
-        where: { id: gameId },
-        data: {
-          fen: chess.fen(),
-          pgn: chess.pgn(),
-          status: "COMPLETED",
-          result: botEnded.result,
-          termination: botEnded.termination,
-          endedAt: new Date(),
-        },
-      });
-    } else {
+      // Update game state before bot thinks
       await prisma.game.update({
         where: { id: gameId },
         data: { fen: chess.fen(), pgn: chess.pgn() },
       });
-    }
 
-    return {
-      playerMove: {
-        from,
-        to,
-        promotion,
-        san: playerMove.san,
-        fen: playerMove.after,
-        ply: currentPly,
-      },
-      botMove: {
-        from: botFrom,
-        to: botTo,
-        promotion: botPromotion,
-        san: botMove.san,
-        fen: chess.fen(),
-        ply: botPly,
-      },
-      gameOver,
-      clocks,
-    };
-  });
+      // Get bot response
+      const botMoveUci = await getBotMove(chess.fen(), game.botElo!);
+      const botFrom = botMoveUci.slice(0, 2);
+      const botTo = botMoveUci.slice(2, 4);
+      const botPromotion = botMoveUci[4] || undefined;
+      const botMove = chess.move({ from: botFrom, to: botTo, promotion: botPromotion });
+
+      if (!botMove) {
+        return reply.status(500).send({ error: "Bot produced invalid move" });
+      }
+
+      const botPly = currentPly + 1;
+
+      await prisma.move.create({
+        data: {
+          gameId,
+          ply: botPly,
+          san: botMove.san,
+          uci: botMoveUci,
+          fen: chess.fen(),
+        },
+      });
+
+      if (!isUnlimited) {
+        clocks = await clockOnMove(gameId, false);
+      }
+
+      // Check if game ended after bot move
+      const botEnded = detectGameEnd(chess);
+      const gameOver = botEnded
+        ? { result: botEnded.result, termination: botEnded.termination }
+        : null;
+
+      if (botEnded) {
+        await prisma.game.update({
+          where: { id: gameId },
+          data: {
+            fen: chess.fen(),
+            pgn: chess.pgn(),
+            status: "COMPLETED",
+            result: botEnded.result,
+            termination: botEnded.termination,
+            endedAt: new Date(),
+          },
+        });
+      } else {
+        await prisma.game.update({
+          where: { id: gameId },
+          data: { fen: chess.fen(), pgn: chess.pgn() },
+        });
+      }
+
+      return {
+        playerMove: {
+          from,
+          to,
+          promotion,
+          san: playerMove.san,
+          fen: playerMove.after,
+          ply: currentPly,
+        },
+        botMove: {
+          from: botFrom,
+          to: botTo,
+          promotion: botPromotion,
+          san: botMove.san,
+          fen: chess.fen(),
+          ply: botPly,
+        },
+        gameOver,
+        clocks,
+      };
+    }
+  );
 
   // Resign bot game
   app.post<{ Params: { id: string } }>("/games/:id/resign", async (request, reply) => {
@@ -615,13 +635,9 @@ export async function gameRoutes(app: FastifyInstance) {
       startedAt: string;
       endedAt: string | null;
     };
-  }>("/games/sync", async (request, reply) => {
+  }>("/games/sync", { schema: { body: syncOfflineGameBodySchema } }, async (request, reply) => {
     const userId = request.user.userId;
     const { botElo, playerIsWhite, moves, result, termination, startedAt, endedAt } = request.body;
-
-    if (!moves || moves.length === 0) {
-      return reply.status(400).send({ error: "No moves to sync" });
-    }
 
     // Validate moves by replaying
     const chess = new Chess();

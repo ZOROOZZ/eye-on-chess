@@ -11,6 +11,7 @@ import {
   auditLog,
   sanitizeString,
 } from "../middleware/admin.js";
+import { adminCreateUserBodySchema } from "../lib/schemas.js";
 
 /** Register admin routes (user management, site settings, CSRF tokens). */
 export async function adminRoutes(app: FastifyInstance) {
@@ -222,17 +223,9 @@ export async function adminRoutes(app: FastifyInstance) {
       role?: string;
       verified?: boolean;
     };
-  }>("/admin/users", async (request, reply) => {
+  }>("/admin/users", { schema: { body: adminCreateUserBodySchema } }, async (request, reply) => {
     const adminId = request.user.userId;
     const { email, username, password, role, verified } = request.body;
-
-    if (!email || !username || !password) {
-      return reply.status(400).send({ error: "Email, username, and password are required" });
-    }
-
-    if (password.length < 8) {
-      return reply.status(400).send({ error: "Password must be at least 8 characters" });
-    }
 
     const existingEmail = await prisma.user.findUnique({ where: { email } });
     if (existingEmail) {
