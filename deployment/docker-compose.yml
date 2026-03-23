@@ -43,7 +43,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: eyeonchess
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -64,9 +64,12 @@ services:
     image: edoburu/pgbouncer:v1.23.1-p2
     container_name: eyeonchess-pgbouncer
     restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ["/bin/sh", "-c", "echo '\"postgres\" \"'$$POSTGRES_PASSWORD'\"' > /etc/pgbouncer/userlist.txt && exec /entrypoint.sh"]
+    command: []
     volumes:
       - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
-      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,8 +85,9 @@ services:
     image: redis:7-alpine
     container_name: eyeonchess-redis
     restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -106,8 +110,8 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:6432/eyeonchess?pgbouncer=true
-      DIRECT_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eyeonchess
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
+      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
     depends_on:
@@ -162,7 +166,7 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:6432/eyeonchess?pgbouncer=true
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
     depends_on:
       pgbouncer:
         condition: service_started

@@ -35,10 +35,10 @@ services:
     container_name: eyeonchess-dev-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: eyeonchess
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -60,10 +60,13 @@ services:
     container_name: eyeonchess-dev-pgbouncer
     restart: unless-stopped
     ports:
-      - "6432:6432"
+      - "127.0.0.1:6432:6432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ["/bin/sh", "-c", "echo '\"postgres\" \"'$$POSTGRES_PASSWORD'\"' > /etc/pgbouncer/userlist.txt && exec /entrypoint.sh"]
+    command: []
     volumes:
       - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
-      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,8 +80,9 @@ services:
     image: redis:7-alpine
     container_name: eyeonchess-dev-redis
     restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     deploy:
       resources:
         limits:
@@ -96,12 +100,12 @@ services:
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:6432/eyeonchess?pgbouncer=true
-      DIRECT_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eyeonchess
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
+      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ../apps/api/src:/app/apps/api/src
       - ../apps/api/prisma:/app/apps/api/prisma
@@ -131,8 +135,8 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:6432/eyeonchess?pgbouncer=true
-      DIRECT_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eyeonchess
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
+      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ../apps/api/src:/app/apps/api/src
       - ../apps/api/prisma:/app/apps/api/prisma
@@ -158,7 +162,7 @@ services:
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file:
       - ../.env
     volumes:

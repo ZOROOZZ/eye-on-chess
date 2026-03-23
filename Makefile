@@ -125,7 +125,7 @@ seed-bots: ## Seed/reseed bot personalities from shared definitions
 	$(DEV_COMPOSE) exec api pnpm --filter @eyeonchess/api run db:seed-bots
 
 db-studio: ## Open Prisma Studio (requires: make dev-up)
-	DATABASE_URL=postgresql://postgres:postgres@localhost:5432/eyeonchess pnpm --filter @eyeonchess/api exec prisma studio
+	DATABASE_URL=postgresql://postgres:$${POSTGRES_PASSWORD}@localhost:5432/eyeonchess pnpm --filter @eyeonchess/api exec prisma studio
 
 db-reset: ## Reset database (WARNING: destroys all data)
 	@echo "This will destroy all data. Press Ctrl+C to cancel."
@@ -211,4 +211,4 @@ shell-postgres: ## Open psql in Postgres container
 	$(DEV_COMPOSE) exec postgres psql -U postgres eyeonchess
 
 shell-redis: ## Open redis-cli in Redis container
-	$(DEV_COMPOSE) exec redis redis-cli
+	$(DEV_COMPOSE) exec redis redis-cli -a $${REDIS_PASSWORD}
