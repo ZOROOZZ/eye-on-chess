@@ -12,6 +12,13 @@
 - [Notes](notes.md) — Personal game notes
 - [WebSocket Events](websocket.md) — Socket.io real-time events reference
 
+## Interactive API Docs
+
+Swagger UI is available at **`/docs`** in development and production. The OpenAPI spec is auto-generated from route schemas at runtime.
+
+- `/docs` — Interactive Swagger UI
+- `/docs/json` — Raw OpenAPI 3.0 JSON spec
+
 ## Security Headers
 
 All API responses include security headers via `@fastify/helmet`:
