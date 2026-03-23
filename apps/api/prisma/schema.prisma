@@ -119,6 +119,7 @@ model Friendship {
   addressee User @relation("Addressee", fields: [addresseeId], references: [id])
 
   @@unique([requesterId, addresseeId])
+  @@index([status, addresseeId])
 }
 
 model Game {
@@ -147,6 +148,12 @@ model Game {
   analysis        GameAnalysis?
   gameCollections GameCollection[]
   gameNotes       GameNote[]
+
+  @@index([status])
+  @@index([whiteId])
+  @@index([blackId])
+  @@index([createdAt])
+  @@index([endedAt])
 }
 
 model Move {
@@ -174,6 +181,8 @@ model GameAnalysis {
 
   game     Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
   feedback MoveFeedback[]
+
+  @@index([createdAt])
 }
 
 model MoveFeedback {
