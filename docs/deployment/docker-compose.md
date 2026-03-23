@@ -11,14 +11,15 @@ docker compose -f deployment/docker-compose.yml up -d
 
 ### Services
 
-| Service  | Image                      | Port             | Health Check                        |
-| -------- | -------------------------- | ---------------- | ----------------------------------- |
-| nginx    | nginx:alpine               | **80** (exposed) | `wget http://localhost/health`      |
-| postgres | postgres:alpine            | internal         | `pg_isready -U postgres`            |
-| redis    | redis:alpine               | internal         | `redis-cli ping`                    |
-| api      | apps/api/Dockerfile.prod   | internal (3001)  | `wget http://localhost:3001/health` |
-| web      | apps/web/Dockerfile        | internal (3000)  | `wget http://localhost:3000`        |
-| worker   | apps/api/Dockerfile.worker | none             | —                                   |
+| Service   | Image                      | Port             | Health Check                        |
+| --------- | -------------------------- | ---------------- | ----------------------------------- |
+| nginx     | nginx:alpine               | **80** (exposed) | `wget http://localhost/health`      |
+| postgres  | postgres:16-alpine         | internal         | `pg_isready -U postgres`            |
+| pgbouncer | edoburu/pgbouncer:1.23.1   | internal (6432)  | —                                   |
+| redis     | redis:7-alpine             | internal         | `redis-cli ping`                    |
+| api       | apps/api/Dockerfile.prod   | internal (3001)  | `wget http://localhost:3001/health` |
+| web       | apps/web/Dockerfile        | internal (3000)  | `wget http://localhost:3000`        |
+| worker    | apps/api/Dockerfile.worker | none             | —                                   |
 
 ### Key Differences from Dev
 
@@ -28,13 +29,32 @@ docker compose -f deployment/docker-compose.yml up -d
 - Health checks on all services with dependency ordering
 - Production-optimized builds
 
+### Connection Pooling (PgBouncer)
+
+All application database traffic routes through PgBouncer, a lightweight connection pooler sitting between application services and PostgreSQL.
+
+- **Pool mode:** Transaction (connections returned to pool after each transaction)
+- **Default pool size:** 20 connections per database
+- **Max client connections:** 200
+- **Port:** 6432 (internal)
+
+API and worker services connect to `pgbouncer:6432` with `?pgbouncer=true` in the connection string (disables PostgreSQL prepared statements, which are incompatible with transaction pooling).
+
+Migrations, seeds, and bot seeds use `DIRECT_DATABASE_URL` to connect directly to PostgreSQL (DDL statements require a direct connection, not a pooled one).
+
+Configuration files are in `deployment/pgbouncer/`:
+
+- `pgbouncer.ini` — pool settings
+- `userlist.txt` — authentication credentials
+
 ### Startup Order
 
 1. Postgres + Redis start first
-2. Postgres must pass health check before API starts
-3. API runs migrations + seed + bot seed on startup
-4. Web starts after API
-5. Nginx starts after both Web and API are healthy
+2. Postgres must pass health check before PgBouncer starts
+3. PgBouncer starts after Postgres is healthy
+4. API runs migrations + seed + bot seed on startup (via direct Postgres connection)
+5. Web starts after API
+6. Nginx starts after both Web and API are healthy
 
 ### Graceful Shutdown
 
@@ -58,13 +78,14 @@ docker compose -f deployment/docker-compose.dev.yml up --build
 
 ### Services
 
-| Service  | Port     | Notes                       |
-| -------- | -------- | --------------------------- |
-| postgres | **5432** | Direct access               |
-| redis    | **6379** | Direct access               |
-| api      | **3001** | Hot reload via `tsx watch`  |
-| web      | **3000** | Hot reload via Next.js HMR  |
-| worker   | —        | Hot reload via volume mount |
+| Service   | Port     | Notes                       |
+| --------- | -------- | --------------------------- |
+| postgres  | **5432** | Direct access               |
+| pgbouncer | **6432** | Connection pooler           |
+| redis     | **6379** | Direct access               |
+| api       | **3001** | Hot reload via `tsx watch`  |
+| web       | **3000** | Hot reload via Next.js HMR  |
+| worker    | —        | Hot reload via volume mount |
 
 ### Volume Mounts
 

@@ -4,11 +4,12 @@ All configuration is done via environment variables in a `.env` file at the proj
 
 ## Required Variables
 
-| Variable       | Description                                                                                            | Default                                                   |
-| -------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| `DATABASE_URL` | PostgreSQL connection string                                                                           | `postgresql://postgres:postgres@postgres:5432/eyeonchess` |
-| `REDIS_URL`    | Redis connection string                                                                                | `redis://redis:6379`                                      |
-| `JWT_SECRET`   | Secret for signing JWT tokens. **Must be changed in production.** Generate with `openssl rand -hex 32` | `change-me-to-a-random-secret`                            |
+| Variable              | Description                                                                                            | Default                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `DATABASE_URL`        | PostgreSQL connection string. In Docker, points to PgBouncer for connection pooling.                   | `postgresql://postgres:postgres@postgres:5432/eyeonchess` |
+| `DIRECT_DATABASE_URL` | Direct PostgreSQL connection for migrations (bypasses PgBouncer). Set automatically by Docker Compose. | —                                                         |
+| `REDIS_URL`           | Redis connection string                                                                                | `redis://redis:6379`                                      |
+| `JWT_SECRET`          | Secret for signing JWT tokens. **Must be changed in production.** Generate with `openssl rand -hex 32` | `change-me-to-a-random-secret`                            |
 
 ## Environment
 
