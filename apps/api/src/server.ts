@@ -24,6 +24,7 @@ import { registerRequestLogger } from "./middleware/requestLogger.js";
 import { registerEtag } from "./middleware/etag.js";
 import { checkHealth } from "./lib/healthCheck.js";
 import { registerShutdown } from "./lib/shutdown.js";
+import { enterRequestContext } from "./lib/requestContext.js";
 import { initRateLimitConfig, getRouteLimit } from "./lib/rateLimit.js";
 
 async function main() {
@@ -72,6 +73,11 @@ async function main() {
 
   // ETag headers for conditional GET requests
   registerEtag(fastify);
+
+  // Propagate request ID via AsyncLocalStorage for end-to-end tracing
+  fastify.addHook("onRequest", async (request) => {
+    enterRequestContext(String(request.id));
+  });
 
   // Prometheus metrics at /metrics
   await fastify.register(metricsPlugin, {
