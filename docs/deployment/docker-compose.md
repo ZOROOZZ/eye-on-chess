@@ -32,9 +32,22 @@ docker compose -f deployment/docker-compose.yml up -d
 
 1. Postgres + Redis start first
 2. Postgres must pass health check before API starts
-3. API runs migrations + seed on startup
+3. API runs migrations + seed + bot seed on startup
 4. Web starts after API
 5. Nginx starts after both Web and API are healthy
+
+### Graceful Shutdown
+
+The API server handles `SIGTERM` and `SIGINT` for clean shutdown during `docker stop` or deployments:
+
+1. Stop accepting new connections
+2. Wait for in-flight requests to complete
+3. Close Socket.io connections
+4. Disconnect Prisma (drain DB connection pool)
+5. Disconnect Redis
+6. Exit
+
+Force exits after 10 seconds if cleanup hangs.
 
 ## Development (`docker-compose.dev.yml`)
 
