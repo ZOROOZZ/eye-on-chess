@@ -13,6 +13,7 @@ import KeyboardShortcutsHelp from "../../../components/KeyboardShortcutsHelp";
 import ReactionPicker from "../../../components/ReactionPicker";
 import ReactionOverlay, { type ActiveReaction } from "../../../components/ReactionOverlay";
 import GameOverModal from "../../../components/GameOverModal";
+import CapturedPieces from "../../../components/CapturedPieces";
 import { useSound, detectMoveSound } from "../../../lib/useSound";
 import { useKeyboardShortcuts } from "../../../lib/useKeyboardShortcuts";
 import type { Player, MoveRecord, ClockState, ReactionType } from "@eyeonchess/chess";
@@ -331,6 +332,7 @@ export default function GamePage() {
                 <PlayerClock timeMs={topClockMs} isActive={!!topActive} isRunning={isActive} />
               )}
             </div>
+            <CapturedPieces fen={displayFen} color={isWhite ? "white" : "black"} />
 
             {/* Board */}
             <div className="w-[min(100%,480px)] relative">
@@ -349,6 +351,8 @@ export default function GamePage() {
             {isActive && !gameOver && (
               <ReactionPicker onReact={sendReaction} disabled={!isActive} />
             )}
+
+            <CapturedPieces fen={displayFen} color={isWhite ? "black" : "white"} />
 
             {/* Bottom player */}
             <div className="flex items-center justify-between">
