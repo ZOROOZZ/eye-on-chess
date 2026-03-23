@@ -3,6 +3,8 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import compress from "@fastify/compress";
 import helmet from "@fastify/helmet";
+import swagger from "@fastify/swagger";
+import swaggerUI from "@fastify/swagger-ui";
 import rateLimit from "@fastify/rate-limit";
 import metricsPlugin from "fastify-metrics";
 import { authRoutes } from "./routes/auth.js";
@@ -59,6 +61,31 @@ async function main() {
   await fastify.register(cookie);
   await fastify.register(helmet, { contentSecurityPolicy: false });
   await fastify.register(compress, { global: true });
+
+  // OpenAPI docs at /docs
+  await fastify.register(swagger, {
+    openapi: {
+      info: {
+        title: "EyeOnChess API",
+        description: "Self-hostable chess platform API",
+        version: "1.0.0",
+      },
+      tags: [
+        { name: "auth", description: "Authentication" },
+        { name: "games", description: "Game management" },
+        { name: "friends", description: "Friend system" },
+        { name: "bots", description: "Bot personalities" },
+        { name: "analysis", description: "Game analysis" },
+        { name: "collections", description: "Game collections" },
+        { name: "invites", description: "Invite system" },
+        { name: "stats", description: "Personal stats" },
+        { name: "activity", description: "Activity feed" },
+        { name: "notes", description: "Game notes" },
+        { name: "admin", description: "Admin panel" },
+      ],
+    },
+  });
+  await fastify.register(swaggerUI, { routePrefix: "/docs" });
 
   // Rate limiting (YAML config with hot-reload)
   const rateLimitCfg = initRateLimitConfig();
