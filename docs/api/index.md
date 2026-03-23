@@ -12,6 +12,17 @@
 - [Notes](notes.md) — Personal game notes
 - [WebSocket Events](websocket.md) — Socket.io real-time events reference
 
+## Redis Reconnect
+
+The Redis client uses an exponential backoff reconnect strategy:
+
+- Individual commands retry up to 3 times before throwing
+- Reconnects with backoff from 200ms to 5s cap
+- Gives up after 10 failed reconnect attempts
+- Auto-reconnects on READONLY errors (Redis failover)
+
+Brief Redis outages (restart, network blip) are handled transparently without manual intervention.
+
 ## Health Check
 
 `GET /health` pings both Postgres and Redis, returning per-service status with latency.
