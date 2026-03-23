@@ -11,11 +11,22 @@ let io: SocketServer;
  * @returns The configured Socket.IO server instance.
  */
 export function setupSocket(httpServer: HttpServer) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const siteUrl = process.env.SITE_URL || "http://localhost";
+
   io = new SocketServer(httpServer, {
     cors: {
-      origin: true,
+      origin: isProduction
+        ? siteUrl
+        : (origin, cb) => {
+            if (!origin || origin.startsWith("http://localhost")) cb(null, true);
+            else cb(null, siteUrl);
+          },
       credentials: true,
     },
+    // Reconnection resilience
+    pingTimeout: 30000,
+    pingInterval: 25000,
   });
 
   io.use((socket, next) => {
