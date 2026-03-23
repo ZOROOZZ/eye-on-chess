@@ -57,7 +57,7 @@ export function connectSocket() {
     if (err.message === "Invalid token" || err.message === "Missing token") {
       try {
         const api = (await import("./api")).default;
-        await api.post("/api/auth/refresh");
+        await api.post("/api/v1/auth/refresh");
       } catch {
         // Token refresh failed — user will need to re-login
       }

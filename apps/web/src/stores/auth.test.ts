@@ -63,7 +63,7 @@ describe("useAuthStore", () => {
 
     await useAuthStore.getState().login("test@test.com", "pass");
 
-    expect(api.post).toHaveBeenCalledWith("/api/auth/login", {
+    expect(api.post).toHaveBeenCalledWith("/api/v1/auth/login", {
       email: "test@test.com",
       password: "pass",
     });
@@ -79,7 +79,7 @@ describe("useAuthStore", () => {
 
     await useAuthStore.getState().logout();
 
-    expect(api.post).toHaveBeenCalledWith("/api/auth/logout");
+    expect(api.post).toHaveBeenCalledWith("/api/v1/auth/logout");
     expect(setAccessToken).toHaveBeenCalledWith(null);
     expect(useAuthStore.getState().user).toBeNull();
   });
@@ -93,7 +93,7 @@ describe("useAuthStore", () => {
 
     await useAuthStore.getState().register("new@test.com", "newuser", "password123");
 
-    expect(api.post).toHaveBeenCalledWith("/api/auth/register", {
+    expect(api.post).toHaveBeenCalledWith("/api/v1/auth/register", {
       email: "new@test.com",
       username: "newuser",
       password: "password123",
@@ -110,7 +110,7 @@ describe("useAuthStore", () => {
 
     await useAuthStore.getState().refresh();
 
-    expect(api.post).toHaveBeenCalledWith("/api/auth/refresh");
+    expect(api.post).toHaveBeenCalledWith("/api/v1/auth/refresh");
     expect(setAccessToken).toHaveBeenCalledWith("tok-refreshed");
   });
 
@@ -145,8 +145,8 @@ describe("useAuthStore", () => {
 
     await useAuthStore.getState().fetchMe();
 
-    expect(api.post).toHaveBeenCalledWith("/api/auth/refresh");
-    expect(api.get).toHaveBeenCalledWith("/api/auth/me");
+    expect(api.post).toHaveBeenCalledWith("/api/v1/auth/refresh");
+    expect(api.get).toHaveBeenCalledWith("/api/v1/auth/me");
     expect(setAccessToken).toHaveBeenCalledWith("tok-fresh");
     expect(useAuthStore.getState().user).toEqual(mockUser);
     expect(useAuthStore.getState().isLoading).toBe(false);

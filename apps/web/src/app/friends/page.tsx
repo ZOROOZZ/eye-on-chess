@@ -55,8 +55,8 @@ export default function FriendsPage() {
   const loadData = useCallback(async () => {
     try {
       const [friendsRes, requestsRes] = await Promise.all([
-        api.get("/api/friends"),
-        api.get("/api/friends/requests"),
+        api.get("/api/v1/friends"),
+        api.get("/api/v1/friends/requests"),
       ]);
       setFriends(friendsRes.data.friends);
       setRequests(requestsRes.data.requests);
@@ -90,7 +90,7 @@ export default function FriendsPage() {
 
   async function sendRequest(username: string) {
     try {
-      await api.post("/api/friends/request", { username });
+      await api.post("/api/v1/friends/request", { username });
       setMessage(`Friend request sent to ${username}`);
       setTimeout(() => setMessage(""), 3000);
     } catch (err: unknown) {
@@ -104,7 +104,7 @@ export default function FriendsPage() {
 
   async function acceptRequest(friendshipId: string) {
     try {
-      await api.post("/api/friends/accept", { friendshipId });
+      await api.post("/api/v1/friends/accept", { friendshipId });
       await loadData();
     } catch {
       setMessage("Failed to accept request");
@@ -114,7 +114,7 @@ export default function FriendsPage() {
 
   async function declineRequest(friendshipId: string) {
     try {
-      await api.post("/api/friends/decline", { friendshipId });
+      await api.post("/api/v1/friends/decline", { friendshipId });
       setRequests((prev) => prev.filter((r) => r.friendshipId !== friendshipId));
     } catch {
       setMessage("Failed to decline request");

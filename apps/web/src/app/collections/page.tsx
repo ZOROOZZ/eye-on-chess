@@ -33,7 +33,7 @@ export default function CollectionsPage() {
   const loadCollections = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/api/collections");
+      const { data } = await api.get("/api/v1/collections");
       setCollections(data.collections);
     } catch {
       // ignore
@@ -50,7 +50,7 @@ export default function CollectionsPage() {
     if (!newName.trim()) return;
     setError("");
     try {
-      await api.post("/api/collections", { name: newName.trim() });
+      await api.post("/api/v1/collections", { name: newName.trim() });
       setNewName("");
       await loadCollections();
     } catch (err: unknown) {

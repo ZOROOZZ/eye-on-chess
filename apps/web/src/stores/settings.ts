@@ -24,7 +24,7 @@ interface SettingsState {
 
 async function savePreference(data: Record<string, unknown>) {
   try {
-    await api.put("/api/auth/preferences", data);
+    await api.put("/api/v1/auth/preferences", data);
   } catch {
     // Silently fail — will sync next login
   }

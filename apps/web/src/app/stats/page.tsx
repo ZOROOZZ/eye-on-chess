@@ -70,7 +70,7 @@ export default function StatsPage() {
     if (!user) return;
     setLoading(true);
     api
-      .get("/api/stats")
+      .get("/api/v1/stats")
       .then(({ data }) => setStats(data))
       .catch(() => setError("Failed to load stats"))
       .finally(() => setLoading(false));

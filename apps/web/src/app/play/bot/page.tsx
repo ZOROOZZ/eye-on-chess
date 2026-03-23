@@ -81,7 +81,7 @@ export default function PlayBotPage() {
   useEffect(() => {
     if (isOnline) {
       api
-        .get("/api/bots")
+        .get("/api/v1/bots")
         .then(({ data }) => {
           if (data.bots && data.bots.length > 0) {
             setBotList(data.bots);
@@ -186,7 +186,7 @@ export default function PlayBotPage() {
   useEffect(() => {
     if (!user || phase !== "select" || !isOnline) return;
     api
-      .get("/api/games/active")
+      .get("/api/v1/games/active")
       .then(({ data }) => {
         if (data.game?.isVsBot) {
           setActiveGame(data.game);
@@ -302,7 +302,7 @@ export default function PlayBotPage() {
         } else {
           body.preset = selectedTime;
         }
-        const { data } = await api.post("/api/games/bot", body);
+        const { data } = await api.post("/api/v1/games/bot", body);
         setGameId(data.game.id);
       } catch {}
     }
@@ -592,7 +592,7 @@ export default function PlayBotPage() {
 
     if (isOnline) {
       api
-        .post("/api/games/bot", {
+        .post("/api/v1/games/bot", {
           botElo,
           color: isWhite ? "white" : "black",
           preset: showCustomTime ? undefined : selectedTime,

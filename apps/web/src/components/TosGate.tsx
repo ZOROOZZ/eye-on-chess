@@ -25,7 +25,7 @@ export default function TosGate({ children }: { children: React.ReactNode }) {
   async function accept() {
     setAccepting(true);
     try {
-      await api.post("/api/auth/accept-tos");
+      await api.post("/api/v1/auth/accept-tos");
       // Update local user state
       useAuthStore.setState({
         user: { ...user!, tosAccepted: true },
@@ -40,7 +40,7 @@ export default function TosGate({ children }: { children: React.ReactNode }) {
   async function decline() {
     setDeclined(true);
     try {
-      await api.post("/api/auth/decline-tos");
+      await api.post("/api/v1/auth/decline-tos");
       useAuthStore.setState({ user: null });
     } catch {
       // ignore

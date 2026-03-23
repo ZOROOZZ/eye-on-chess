@@ -40,7 +40,7 @@ describe("CollectionPicker", () => {
 
   it.skip("renders collections after loading", async () => {
     mockGet.mockImplementation((url: string) => {
-      if (url === "/api/collections") {
+      if (url === "/api/v1/collections") {
         return Promise.resolve({
           data: {
             collections: [
@@ -72,7 +72,7 @@ describe("CollectionPicker", () => {
 
   it("renders checkboxes for each collection", async () => {
     mockGet.mockImplementation((url: string) => {
-      if (url === "/api/collections") {
+      if (url === "/api/v1/collections") {
         return Promise.resolve({
           data: { collections: [{ id: "c1", name: "My Games" }] },
         });

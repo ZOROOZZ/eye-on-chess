@@ -114,7 +114,7 @@ describe("offlineSync", () => {
       expect(synced).toBe(2);
       expect(api.post).toHaveBeenCalledTimes(2);
       expect(api.post).toHaveBeenCalledWith(
-        "/api/games/sync",
+        "/api/v1/games/sync",
         expect.objectContaining({ botElo: 1200 })
       );
       expect(getPendingCount()).toBe(0);

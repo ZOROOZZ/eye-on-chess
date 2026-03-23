@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   register: async (email, username, password, inviteCode) => {
-    const { data } = await api.post("/api/auth/register", {
+    const { data } = await api.post("/api/v1/auth/register", {
       email,
       username,
       password,
@@ -67,21 +67,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   login: async (email, password) => {
-    const { data } = await api.post("/api/auth/login", { email, password });
+    const { data } = await api.post("/api/v1/auth/login", { email, password });
     setAccessToken(data.accessToken);
     set({ user: data.user, isLoading: false });
     syncSettings(data.user);
   },
 
   logout: async () => {
-    await api.post("/api/auth/logout");
+    await api.post("/api/v1/auth/logout");
     setAccessToken(null);
     set({ user: null });
   },
 
   refresh: async () => {
     try {
-      const { data } = await api.post("/api/auth/refresh");
+      const { data } = await api.post("/api/v1/auth/refresh");
       setAccessToken(data.accessToken);
     } catch {
       setAccessToken(null);
@@ -97,10 +97,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     fetchMePromise = (async () => {
       try {
-        const refreshRes = await api.post("/api/auth/refresh");
+        const refreshRes = await api.post("/api/v1/auth/refresh");
         setAccessToken(refreshRes.data.accessToken);
 
-        const { data } = await api.get("/api/auth/me");
+        const { data } = await api.get("/api/v1/auth/me");
         set({ user: data.user, isLoading: false });
         syncSettings(data.user);
       } catch {

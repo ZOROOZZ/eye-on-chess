@@ -64,8 +64,8 @@ export default function ProfilePage() {
 
         if (currentUser && data.user.id !== currentUser.id) {
           const [friendsRes, requestsRes] = await Promise.all([
-            api.get("/api/friends"),
-            api.get("/api/friends/requests"),
+            api.get("/api/v1/friends"),
+            api.get("/api/v1/friends/requests"),
           ]);
           const friend = friendsRes.data.friends.find(
             (f: { id: string; friendshipId: string }) => f.id === data.user.id
@@ -97,7 +97,7 @@ export default function ProfilePage() {
   async function sendRequest() {
     setActionLoading(true);
     try {
-      await api.post("/api/friends/request", { username });
+      await api.post("/api/v1/friends/request", { username });
       setFriendState("pending");
     } catch (err: unknown) {
       const msg =
@@ -114,7 +114,7 @@ export default function ProfilePage() {
     if (!friendshipId) return;
     setActionLoading(true);
     try {
-      await api.post("/api/friends/accept", { friendshipId });
+      await api.post("/api/v1/friends/accept", { friendshipId });
       setFriendState("friends");
     } catch {
       setError("Failed to accept");

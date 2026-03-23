@@ -56,7 +56,7 @@ export default function ChallengePopup() {
     if (!challenge) return;
     setLoading(true);
     try {
-      await api.post("/api/games/challenge/accept", {
+      await api.post("/api/v1/games/challenge/accept", {
         gameId: challenge.gameId,
       });
       router.push(`/game/${challenge.gameId}`);
@@ -71,7 +71,7 @@ export default function ChallengePopup() {
     if (!challenge) return;
     setLoading(true);
     try {
-      await api.post("/api/games/challenge/decline", {
+      await api.post("/api/v1/games/challenge/decline", {
         gameId: challenge.gameId,
       });
     } catch {

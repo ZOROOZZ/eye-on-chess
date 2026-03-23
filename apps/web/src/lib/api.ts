@@ -51,9 +51,9 @@ api.interceptors.response.use(
 
     // Don't retry refresh or login/register requests
     if (
-      originalRequest.url?.includes("/api/auth/refresh") ||
-      originalRequest.url?.includes("/api/auth/login") ||
-      originalRequest.url?.includes("/api/auth/register")
+      originalRequest.url?.includes("/api/v1/auth/refresh") ||
+      originalRequest.url?.includes("/api/v1/auth/login") ||
+      originalRequest.url?.includes("/api/v1/auth/register")
     ) {
       return Promise.reject(error);
     }
@@ -71,7 +71,7 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { data } = await api.post("/api/auth/refresh");
+      const { data } = await api.post("/api/v1/auth/refresh");
       accessToken = data.accessToken;
       isRefreshing = false;
       onRefreshed(data.accessToken);

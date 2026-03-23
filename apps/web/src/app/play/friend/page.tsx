@@ -50,7 +50,7 @@ export default function ChallengeFriendPage() {
 
   const loadFriends = useCallback(async () => {
     try {
-      const { data } = await api.get("/api/friends");
+      const { data } = await api.get("/api/v1/friends");
       setFriends(data.friends);
     } catch {
       // ignore
@@ -97,7 +97,7 @@ export default function ChallengeFriendPage() {
         body.initialTime = customMinutes * 60;
         body.increment = customIncrement;
       }
-      await api.post("/api/games/friend", body);
+      await api.post("/api/v1/games/friend", body);
       setMessage(`Challenge sent to ${selectedFriend.username}! Waiting...`);
     } catch (err: unknown) {
       const msg =

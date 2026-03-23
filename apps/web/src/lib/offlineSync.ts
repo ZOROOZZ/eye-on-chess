@@ -73,7 +73,7 @@ export async function syncOfflineGames(): Promise<number> {
 
   for (const game of pending) {
     try {
-      await api.post("/api/games/sync", {
+      await api.post("/api/v1/games/sync", {
         botElo: game.botElo,
         playerIsWhite: game.playerIsWhite,
         moves: game.moves,

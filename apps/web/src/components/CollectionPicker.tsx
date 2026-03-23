@@ -32,7 +32,7 @@ export default function CollectionPicker({ gameId, open, onClose }: CollectionPi
       setLoading(true);
       try {
         const [colRes, memRes] = await Promise.all([
-          api.get("/api/collections"),
+          api.get("/api/v1/collections"),
           api.get(`/api/games/${gameId}/collections`),
         ]);
         setCollections(colRes.data.collections);

@@ -46,8 +46,8 @@ export default function InvitesPage() {
     setLoading(true);
     try {
       const [invRes, statsRes] = await Promise.all([
-        api.get("/api/invites"),
-        api.get("/api/invites/stats"),
+        api.get("/api/v1/invites"),
+        api.get("/api/v1/invites/stats"),
       ]);
       setInvites(invRes.data.invites);
       setStats(statsRes.data);
@@ -65,7 +65,7 @@ export default function InvitesPage() {
   async function generate() {
     setGenerating(true);
     try {
-      const { data } = await api.post("/api/invites");
+      const { data } = await api.post("/api/v1/invites");
       toast.show(`Invite created: ${data.code.slice(0, 8)}...`);
       await loadData();
     } catch (err: unknown) {

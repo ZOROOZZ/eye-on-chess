@@ -8,7 +8,7 @@ let csrfToken: string | null = null;
  * @returns The CSRF token string.
  */
 export async function fetchCsrfToken() {
-  const { data } = await api.get("/api/admin/csrf");
+  const { data } = await api.get("/api/v1/admin/csrf");
   csrfToken = data.token;
   return csrfToken;
 }

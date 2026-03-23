@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
   async function createUser() {
     setCreating(true);
     try {
-      await adminRequest("post", "/api/admin/users", {
+      await adminRequest("post", "/api/v1/admin/users", {
         email: newEmail,
         username: newUsername,
         password: newPassword,

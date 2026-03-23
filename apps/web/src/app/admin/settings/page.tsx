@@ -19,7 +19,7 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    adminRequest("get", "/api/admin/settings")
+    adminRequest("get", "/api/v1/admin/settings")
       .then((data) => setSettings(data.settings))
       .catch(() => toast.show("Failed to load settings", "error"))
       .finally(() => setLoading(false));
@@ -29,7 +29,7 @@ export default function AdminSettingsPage() {
     if (!settings) return;
     setSaving(true);
     try {
-      const data = await adminRequest("put", "/api/admin/settings", settings);
+      const data = await adminRequest("put", "/api/v1/admin/settings", settings);
       setSettings(data.settings);
       toast.show("Settings saved");
     } catch {
