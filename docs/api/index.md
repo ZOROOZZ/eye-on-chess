@@ -12,6 +12,16 @@
 - [Notes](notes.md) — Personal game notes
 - [WebSocket Events](websocket.md) — Socket.io real-time events reference
 
+## API Versioning
+
+All API endpoints are versioned under `/api/v1/`. For example:
+
+- `POST /api/v1/auth/login`
+- `GET /api/v1/games/:id`
+- `GET /api/v1/bots`
+
+Requests to the old `/api/*` paths are permanently redirected (301) to `/api/v1/*` for backward compatibility.
+
 ## Interactive API Docs
 
 Swagger UI is available at **`/docs`** in development and production. The OpenAPI spec is auto-generated from route schemas at runtime.
@@ -58,7 +68,7 @@ Rate limits are enforced per user for authenticated requests and per IP for anon
 List endpoints support standard pagination via query parameters:
 
 ```
-GET /api/games/history?page=2&limit=10
+GET /api/v1/games/history?page=2&limit=10
 ```
 
 | Parameter | Default | Range | Description    |
@@ -75,7 +85,7 @@ Response includes a `pagination` object:
 }
 ```
 
-Paginated endpoints: `/api/games/history`, `/api/collections/:id/games`.
+Paginated endpoints: `/api/v1/games/history`, `/api/v1/collections/:id/games`.
 
 ## Response Compression
 
@@ -106,7 +116,7 @@ Brief Redis outages (restart, network blip) are handled transparently without ma
 The API exposes metrics in two formats:
 
 - **`GET /metrics`** — Prometheus text format. This is the standard scrape target for Prometheus, returning Node.js process metrics and HTTP request histograms in the OpenMetrics text exposition format.
-- **`GET /api/metrics/app`** — JSON format. Returns application-level stats (`totalUsers`, `activeGames`, `analysisQueue`) as a JSON object, suitable for custom dashboards or health checks that don't use Prometheus.
+- **`GET /api/v1/metrics/app`** — JSON format. Returns application-level stats (`totalUsers`, `activeGames`, `analysisQueue`) as a JSON object, suitable for custom dashboards or health checks that don't use Prometheus.
 
 See [Observability](../deployment/observability.md) for dashboard setup and metric definitions.
 
@@ -131,14 +141,14 @@ Returns **200** when all services are healthy, **503** with `"status": "degraded
 
 All GET endpoints with 200 responses include an `ETag` header (MD5 hash of the response body). Clients can send `If-None-Match` with the cached ETag to receive a `304 Not Modified` response with no body when content hasn't changed.
 
-This reduces bandwidth for frequently polled endpoints like `/api/bots`, `/api/stats`, and `/api/activity`.
+This reduces bandwidth for frequently polled endpoints like `/api/v1/bots`, `/api/v1/stats`, and `/api/v1/activity`.
 
 ```
-GET /api/bots
+GET /api/v1/bots
 → 200 OK
 → ETag: "abc123..."
 
-GET /api/bots
+GET /api/v1/bots
 If-None-Match: "abc123..."
 → 304 Not Modified (no body)
 ```
