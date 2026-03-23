@@ -54,6 +54,22 @@ Cross-origin requests are restricted to the configured `SITE_URL`:
 
 Set `SITE_URL` in your `.env` to match your frontend domain (e.g. `https://chess.example.com`).
 
+## Request Validation
+
+All request bodies, URL parameters, and query strings are validated at runtime using [Zod](https://zod.dev/) schemas via `fastify-type-provider-zod`. Validation runs before the route handler — invalid requests get a `400` response immediately without hitting any business logic.
+
+Schemas are defined in `apps/api/src/lib/schemas.ts` and referenced in route definitions via Fastify's `schema` option:
+
+```typescript
+app.post("/auth/login", { schema: { body: loginBodySchema } }, handler);
+```
+
+Validation errors return:
+
+```json
+{ "error": "Invalid email; Password must be at least 8 characters" }
+```
+
 ## Rate Limiting
 
 Rate limits are enforced per user for authenticated requests and per IP for anonymous requests:
