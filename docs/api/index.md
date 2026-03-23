@@ -12,6 +12,30 @@
 - [Notes](notes.md) — Personal game notes
 - [WebSocket Events](websocket.md) — Socket.io real-time events reference
 
+## Pagination
+
+List endpoints support standard pagination via query parameters:
+
+```
+GET /api/games/history?page=2&limit=10
+```
+
+| Parameter | Default | Range | Description    |
+| --------- | ------- | ----- | -------------- |
+| `page`    | 1       | 1+    | Page number    |
+| `limit`   | 20      | 1-50  | Items per page |
+
+Response includes a `pagination` object:
+
+```json
+{
+  "data": [...],
+  "pagination": { "page": 2, "limit": 10, "total": 55, "totalPages": 6 }
+}
+```
+
+Paginated endpoints: `/api/games/history`, `/api/collections/:id/games`.
+
 ## Response Compression
 
 All API responses are gzip-compressed via `@fastify/compress` when the client sends `Accept-Encoding: gzip`. This works at the application level in addition to nginx gzip, ensuring compression even when accessing the API directly (e.g., port 3001 in dev mode).
