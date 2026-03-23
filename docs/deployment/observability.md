@@ -37,6 +37,29 @@ Grafana is auto-provisioned with two dashboards:
 - Event loop lag
 - Active handles
 
+### Custom Application Metrics
+
+The API exposes chess-specific Prometheus metrics at `/metrics`:
+
+| Metric                             | Type    | Description                    |
+| ---------------------------------- | ------- | ------------------------------ |
+| `eyeonchess_active_games`          | Gauge   | Currently active games         |
+| `eyeonchess_analysis_queue_depth`  | Gauge   | Jobs waiting in analysis queue |
+| `eyeonchess_total_users`           | Gauge   | Total registered users         |
+| `eyeonchess_games_completed_total` | Counter | Cumulative completed games     |
+
+These are updated every 15 seconds and can be graphed in Grafana alongside the HTTP metrics.
+
+### Slow Query Logging
+
+Database queries taking longer than 100ms are logged as structured JSON warnings:
+
+```json
+{ "level": "warn", "msg": "slow query", "duration": 142, "query": "SELECT ...", "reqId": "req-5" }
+```
+
+These include the request ID for end-to-end tracing. View them in the Grafana logs dashboard by filtering for `slow query`.
+
 ### Logs (`eyeonchess-logs`)
 
 - All service logs (live tail)
