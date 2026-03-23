@@ -61,7 +61,7 @@ services:
           memory: 256M
 
   pgbouncer:
-    image: edoburu/pgbouncer:1.23.1-p2
+    image: edoburu/pgbouncer:v1.23.1-p2
     container_name: eyeonchess-pgbouncer
     restart: unless-stopped
     volumes:
