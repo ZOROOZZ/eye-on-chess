@@ -9,6 +9,7 @@ import { vi } from "vitest";
 process.env.JWT_SECRET = "test-secret-for-integration-tests";
 
 import Fastify, { type FastifyInstance } from "fastify";
+import { validatorCompiler } from "fastify-type-provider-zod";
 import cookie from "@fastify/cookie";
 import jwt from "jsonwebtoken";
 
@@ -255,6 +256,20 @@ async function createApp(
   registerRoutes: (app: FastifyInstance) => Promise<void> | void
 ): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
+  app.setValidatorCompiler(validatorCompiler);
+
+  // Match server.ts validation error format
+  app.setErrorHandler((error, _request, reply) => {
+    if (error.validation) {
+      const messages = error.validation.map((v) => v.message).join("; ");
+      return reply.status(400).send({ error: messages || "Validation failed" });
+    }
+    if (error.statusCode && error.statusCode < 500) {
+      return reply.status(error.statusCode).send({ error: error.message });
+    }
+    reply.status(500).send({ error: "Internal server error" });
+  });
+
   await app.register(cookie);
   await registerRoutes(app);
   await app.ready();

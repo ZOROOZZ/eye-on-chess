@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import { validatorCompiler } from "fastify-type-provider-zod";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import compress from "@fastify/compress";
@@ -38,6 +39,23 @@ async function main() {
       level: process.env.LOG_LEVEL || "info",
     },
     trustProxy: true,
+  });
+
+  // Zod request validation
+  fastify.setValidatorCompiler(validatorCompiler);
+
+  // Standardize validation errors to match existing { error: "..." } shape
+  fastify.setErrorHandler((error, request, reply) => {
+    if (error.validation) {
+      const messages = error.validation.map((v) => v.message).join("; ");
+      return reply.status(400).send({ error: messages || "Validation failed" });
+    }
+    // Let Fastify handle all other errors with its default behavior
+    if (error.statusCode && error.statusCode < 500) {
+      return reply.status(error.statusCode).send({ error: error.message });
+    }
+    request.log.error(error);
+    reply.status(500).send({ error: "Internal server error" });
   });
 
   // CORS — whitelist based on SITE_URL, permissive in development
