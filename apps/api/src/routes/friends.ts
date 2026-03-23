@@ -9,7 +9,7 @@ export async function friendRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
 
   // My friends list (accepted)
-  app.get("/api/friends", async (request) => {
+  app.get("/friends", async (request) => {
     const userId = request.user.userId;
 
     const friendships = await prisma.friendship.findMany({
@@ -45,7 +45,7 @@ export async function friendRoutes(app: FastifyInstance) {
   });
 
   // Incoming pending requests
-  app.get("/api/friends/requests", async (request) => {
+  app.get("/friends/requests", async (request) => {
     const userId = request.user.userId;
 
     const requests = await prisma.friendship.findMany({
@@ -71,7 +71,7 @@ export async function friendRoutes(app: FastifyInstance) {
   });
 
   // Send friend request
-  app.post<{ Body: { username: string } }>("/api/friends/request", async (request, reply) => {
+  app.post<{ Body: { username: string } }>("/friends/request", async (request, reply) => {
     const userId = request.user.userId;
     const { username } = request.body;
 
@@ -130,7 +130,7 @@ export async function friendRoutes(app: FastifyInstance) {
   });
 
   // Accept friend request
-  app.post<{ Body: { friendshipId: string } }>("/api/friends/accept", async (request, reply) => {
+  app.post<{ Body: { friendshipId: string } }>("/friends/accept", async (request, reply) => {
     const userId = request.user.userId;
     const { friendshipId } = request.body;
 
@@ -159,7 +159,7 @@ export async function friendRoutes(app: FastifyInstance) {
   });
 
   // Decline friend request
-  app.post<{ Body: { friendshipId: string } }>("/api/friends/decline", async (request, reply) => {
+  app.post<{ Body: { friendshipId: string } }>("/friends/decline", async (request, reply) => {
     const userId = request.user.userId;
     const { friendshipId } = request.body;
 
@@ -189,7 +189,7 @@ export async function friendRoutes(app: FastifyInstance) {
 
   // Remove friend
   app.delete<{ Params: { friendshipId: string } }>(
-    "/api/friends/:friendshipId",
+    "/friends/:friendshipId",
     async (request, reply) => {
       const userId = request.user.userId;
       const { friendshipId } = request.params;

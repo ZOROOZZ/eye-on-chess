@@ -8,7 +8,7 @@ export async function collectionRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
 
   // List my collections
-  app.get("/api/collections", async (request) => {
+  app.get("/collections", async (request) => {
     const userId = request.user.userId;
     const collections = await prisma.collection.findMany({
       where: { userId },
@@ -26,7 +26,7 @@ export async function collectionRoutes(app: FastifyInstance) {
   });
 
   // Create collection
-  app.post<{ Body: { name: string } }>("/api/collections", async (request, reply) => {
+  app.post<{ Body: { name: string } }>("/collections", async (request, reply) => {
     const userId = request.user.userId;
     const { name } = request.body;
 
@@ -51,7 +51,7 @@ export async function collectionRoutes(app: FastifyInstance) {
   });
 
   // Delete collection
-  app.delete<{ Params: { id: string } }>("/api/collections/:id", async (request, reply) => {
+  app.delete<{ Params: { id: string } }>("/collections/:id", async (request, reply) => {
     const userId = request.user.userId;
     const { id } = request.params;
 
@@ -69,7 +69,7 @@ export async function collectionRoutes(app: FastifyInstance) {
 
   // List games in collection
   app.get<{ Params: { id: string }; Querystring: { page?: string; limit?: string } }>(
-    "/api/collections/:id/games",
+    "/collections/:id/games",
     async (request, reply) => {
       const userId = request.user.userId;
       const { id } = request.params;
@@ -118,7 +118,7 @@ export async function collectionRoutes(app: FastifyInstance) {
 
   // Add game to collection
   app.post<{ Params: { id: string }; Body: { gameId: string } }>(
-    "/api/collections/:id/games",
+    "/collections/:id/games",
     async (request, reply) => {
       const userId = request.user.userId;
       const { id } = request.params;
@@ -141,7 +141,7 @@ export async function collectionRoutes(app: FastifyInstance) {
 
   // Remove game from collection
   app.delete<{ Params: { id: string; gameId: string } }>(
-    "/api/collections/:id/games/:gameId",
+    "/collections/:id/games/:gameId",
     async (request, reply) => {
       const userId = request.user.userId;
       const { id, gameId } = request.params;
@@ -159,7 +159,7 @@ export async function collectionRoutes(app: FastifyInstance) {
   );
 
   // Get which collections a game belongs to (for the current user)
-  app.get<{ Params: { id: string } }>("/api/games/:id/collections", async (request) => {
+  app.get<{ Params: { id: string } }>("/games/:id/collections", async (request) => {
     const userId = request.user.userId;
     const { id: gameId } = request.params;
 

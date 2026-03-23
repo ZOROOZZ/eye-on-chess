@@ -9,7 +9,7 @@ const UNLOCK_THRESHOLD = 0.75;
 /** Register invite routes (create, accept, decline, list invites). */
 export async function inviteRoutes(app: FastifyInstance) {
   // Validate invite (public — no auth needed)
-  app.get<{ Params: { code: string } }>("/api/invites/validate/:code", async (request, reply) => {
+  app.get<{ Params: { code: string } }>("/invites/validate/:code", async (request, reply) => {
     const { code } = request.params;
     const invite = await prisma.invite.findUnique({
       where: { code },
@@ -26,7 +26,7 @@ export async function inviteRoutes(app: FastifyInstance) {
     authed.addHook("preHandler", authMiddleware);
 
     // My invite stats
-    authed.get("/api/invites/stats", async (request) => {
+    authed.get("/invites/stats", async (request) => {
       const userId = request.user.userId;
       const [totalCreated, totalUsed] = await Promise.all([
         prisma.invite.count({ where: { creatorId: userId } }),
@@ -53,7 +53,7 @@ export async function inviteRoutes(app: FastifyInstance) {
     });
 
     // List my invites
-    authed.get("/api/invites", async (request) => {
+    authed.get("/invites", async (request) => {
       const userId = request.user.userId;
       const invites = await prisma.invite.findMany({
         where: { creatorId: userId },
@@ -81,7 +81,7 @@ export async function inviteRoutes(app: FastifyInstance) {
     });
 
     // Generate new invite
-    authed.post("/api/invites", async (request, reply) => {
+    authed.post("/invites", async (request, reply) => {
       const userId = request.user.userId;
 
       const [totalCreated, totalUsed] = await Promise.all([

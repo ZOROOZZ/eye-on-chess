@@ -46,7 +46,7 @@ export async function authRoutes(app: FastifyInstance) {
   // ── Register ──────────────────────────────────────
   app.post<{
     Body: { email: string; username: string; password: string; inviteCode: string };
-  }>("/api/auth/register", async (request, reply) => {
+  }>("/auth/register", async (request, reply) => {
     const { email, username, password, inviteCode } = request.body;
 
     if (!email || !username || !password || !inviteCode) {
@@ -131,7 +131,7 @@ export async function authRoutes(app: FastifyInstance) {
   // ── Login ─────────────────────────────────────────
   app.post<{
     Body: { email: string; password: string };
-  }>("/api/auth/login", async (request, reply) => {
+  }>("/auth/login", async (request, reply) => {
     const { email, password } = request.body;
 
     if (!email || !password) {
@@ -178,7 +178,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // ── Refresh ───────────────────────────────────────
-  app.post("/api/auth/refresh", async (request, reply) => {
+  app.post("/auth/refresh", async (request, reply) => {
     const rawToken = request.cookies[COOKIE_NAME];
     if (!rawToken) {
       return reply.status(401).send({ error: "No refresh token" });
@@ -217,7 +217,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // ── Logout ────────────────────────────────────────
-  app.post("/api/auth/logout", async (request, reply) => {
+  app.post("/auth/logout", async (request, reply) => {
     const rawToken = request.cookies[COOKIE_NAME];
     if (rawToken) {
       const hashed = hashToken(rawToken);
@@ -229,7 +229,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // ── Me ────────────────────────────────────────────
-  app.get("/api/auth/me", { preHandler: authMiddleware }, async (request) => {
+  app.get("/auth/me", { preHandler: authMiddleware }, async (request) => {
     const user = await prisma.user.findUnique({
       where: { id: request.user.userId },
       select: {
@@ -258,7 +258,7 @@ export async function authRoutes(app: FastifyInstance) {
   // ── Update preferences ──────────────────────────────
   app.put<{
     Body: { darkMode?: boolean; boardTheme?: string; pieceSet?: string; soundEnabled?: boolean };
-  }>("/api/auth/preferences", { preHandler: authMiddleware }, async (request) => {
+  }>("/auth/preferences", { preHandler: authMiddleware }, async (request) => {
     const { darkMode, boardTheme, pieceSet, soundEnabled } = request.body;
 
     const VALID_BOARD_THEMES = ["classic", "wood", "green", "blue", "purple", "dark"];
@@ -285,7 +285,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // ── Accept TOS ──────────────────────────────────────
-  app.post("/api/auth/accept-tos", { preHandler: authMiddleware }, async (request) => {
+  app.post("/auth/accept-tos", { preHandler: authMiddleware }, async (request) => {
     await prisma.user.update({
       where: { id: request.user.userId },
       data: { tosAccepted: true, tosAcceptedAt: new Date() },
@@ -294,7 +294,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   // ── Decline TOS ─────────────────────────────────────
-  app.post("/api/auth/decline-tos", { preHandler: authMiddleware }, async (request) => {
+  app.post("/auth/decline-tos", { preHandler: authMiddleware }, async (request) => {
     // Record the decline but deactivate the account
     await prisma.user.update({
       where: { id: request.user.userId },

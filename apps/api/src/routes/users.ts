@@ -6,7 +6,7 @@ import { authMiddleware } from "../middleware/auth.js";
 export async function userRoutes(app: FastifyInstance) {
   // Search users by partial username
   app.get<{ Querystring: { q?: string } }>(
-    "/api/users/search",
+    "/users/search",
     { preHandler: authMiddleware },
     async (request, reply) => {
       const query = request.query.q?.trim();
@@ -34,7 +34,7 @@ export async function userRoutes(app: FastifyInstance) {
 
   // Public profile with optional H2H
   app.get<{ Params: { username: string }; Querystring: { vsUserId?: string } }>(
-    "/api/users/:username",
+    "/users/:username",
     async (request, reply) => {
       const { username } = request.params;
       const { vsUserId } = request.query;

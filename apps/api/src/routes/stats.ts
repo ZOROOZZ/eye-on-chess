@@ -14,7 +14,7 @@ import {
 export async function statsRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
 
-  app.get("/api/stats", async (request) => {
+  app.get("/stats", async (request) => {
     const userId = request.user.userId;
     const cacheKey = `stats:${userId}`;
 

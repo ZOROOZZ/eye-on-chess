@@ -21,7 +21,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.addHook("preHandler", csrfProtection);
 
   // ── CSRF Token ────────────────────────────────────────
-  app.get("/api/admin/csrf", async (request, reply) => {
+  app.get("/admin/csrf", async (request, reply) => {
     const token = generateCsrfToken();
     reply.setCookie("csrf_token", token, {
       httpOnly: false, // Must be readable by JS
@@ -34,7 +34,7 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // ── Dashboard ─────────────────────────────────────────
-  app.get("/api/admin/dashboard", async () => {
+  app.get("/admin/dashboard", async () => {
     const [
       totalUsers,
       activeUsers,
@@ -84,7 +84,7 @@ export async function adminRoutes(app: FastifyInstance) {
       sort?: string;
       order?: string;
     };
-  }>("/api/admin/users", async (request) => {
+  }>("/admin/users", async (request) => {
     const page = Math.max(1, parseInt(request.query.page || "1"));
     const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "20")));
     const search = request.query.search?.trim();
@@ -137,7 +137,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.patch<{
     Params: { id: string };
     Body: { active?: boolean; verified?: boolean; role?: string };
-  }>("/api/admin/users/:id", async (request, reply) => {
+  }>("/admin/users/:id", async (request, reply) => {
     const { id } = request.params;
     const { active, verified, role } = request.body;
     const adminId = request.user.userId;
@@ -182,7 +182,7 @@ export async function adminRoutes(app: FastifyInstance) {
     return { user };
   });
 
-  app.delete<{ Params: { id: string } }>("/api/admin/users/:id", async (request, reply) => {
+  app.delete<{ Params: { id: string } }>("/admin/users/:id", async (request, reply) => {
     const { id } = request.params;
     const adminId = request.user.userId;
 
@@ -222,7 +222,7 @@ export async function adminRoutes(app: FastifyInstance) {
       role?: string;
       verified?: boolean;
     };
-  }>("/api/admin/users", async (request, reply) => {
+  }>("/admin/users", async (request, reply) => {
     const adminId = request.user.userId;
     const { email, username, password, role, verified } = request.body;
 
@@ -291,7 +291,7 @@ export async function adminRoutes(app: FastifyInstance) {
       status?: string;
       search?: string;
     };
-  }>("/api/admin/games", async (request) => {
+  }>("/admin/games", async (request) => {
     const page = Math.max(1, parseInt(request.query.page || "1"));
     const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "20")));
     const statusFilter = request.query.status;
@@ -333,7 +333,7 @@ export async function adminRoutes(app: FastifyInstance) {
     };
   });
 
-  app.delete<{ Params: { id: string } }>("/api/admin/games/:id", async (request, reply) => {
+  app.delete<{ Params: { id: string } }>("/admin/games/:id", async (request, reply) => {
     const { id } = request.params;
     const adminId = request.user.userId;
 
@@ -354,7 +354,7 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   // ── Site Settings ─────────────────────────────────────
-  app.get("/api/admin/settings", async () => {
+  app.get("/admin/settings", async () => {
     let settings = await prisma.siteSettings.findUnique({
       where: { id: "singleton" },
     });
@@ -380,7 +380,7 @@ export async function adminRoutes(app: FastifyInstance) {
       maxUsers?: number;
       requireEmailVerification?: boolean;
     };
-  }>("/api/admin/settings", async (request) => {
+  }>("/admin/settings", async (request) => {
     const { siteName, registrationOpen, maxUsers, requireEmailVerification } = request.body;
     const adminId = request.user.userId;
 
@@ -415,7 +415,7 @@ export async function adminRoutes(app: FastifyInstance) {
       action?: string;
       adminId?: string;
     };
-  }>("/api/admin/audit-log", async (request) => {
+  }>("/admin/audit-log", async (request) => {
     const page = Math.max(1, parseInt(request.query.page || "1"));
     const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "50")));
     const actionFilter = request.query.action;

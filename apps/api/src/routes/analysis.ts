@@ -15,7 +15,7 @@ export async function analysisRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
 
   // Queue analysis job
-  app.post<{ Params: { id: string } }>("/api/games/:id/analyze", async (request, reply) => {
+  app.post<{ Params: { id: string } }>("/games/:id/analyze", async (request, reply) => {
     const userId = request.user.userId;
     const { id: gameId } = request.params;
 
@@ -54,7 +54,7 @@ export async function analysisRoutes(app: FastifyInstance) {
   });
 
   // Get analysis results
-  app.get<{ Params: { id: string } }>("/api/games/:id/analysis", async (request, _reply) => {
+  app.get<{ Params: { id: string } }>("/games/:id/analysis", async (request, _reply) => {
     const { id: gameId } = request.params;
 
     // Check job status

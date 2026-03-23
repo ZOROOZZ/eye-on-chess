@@ -28,7 +28,7 @@ export async function gameRoutes(app: FastifyInstance) {
       initialTime?: number;
       increment?: number;
     };
-  }>("/api/games/friend", async (request, reply) => {
+  }>("/games/friend", async (request, reply) => {
     const userId = request.user.userId;
     const { friendId, preset, initialTime: customTime, increment: customIncrement } = request.body;
 
@@ -110,7 +110,7 @@ export async function gameRoutes(app: FastifyInstance) {
   });
 
   // Accept challenge
-  app.post<{ Body: { gameId: string } }>("/api/games/challenge/accept", async (request, reply) => {
+  app.post<{ Body: { gameId: string } }>("/games/challenge/accept", async (request, reply) => {
     const userId = request.user.userId;
     const { gameId } = request.body;
 
@@ -146,7 +146,7 @@ export async function gameRoutes(app: FastifyInstance) {
   });
 
   // Decline challenge
-  app.post<{ Body: { gameId: string } }>("/api/games/challenge/decline", async (request, reply) => {
+  app.post<{ Body: { gameId: string } }>("/games/challenge/decline", async (request, reply) => {
     const userId = request.user.userId;
     const { gameId } = request.body;
 
@@ -174,7 +174,7 @@ export async function gameRoutes(app: FastifyInstance) {
   });
 
   // Get game state
-  app.get<{ Params: { id: string } }>("/api/games/:id", async (request, reply) => {
+  app.get<{ Params: { id: string } }>("/games/:id", async (request, reply) => {
     const { id } = request.params;
 
     const game = await prisma.game.findUnique({
@@ -194,7 +194,7 @@ export async function gameRoutes(app: FastifyInstance) {
   });
 
   // Export PGN
-  app.get<{ Params: { id: string } }>("/api/games/:id/pgn", async (request, reply) => {
+  app.get<{ Params: { id: string } }>("/games/:id/pgn", async (request, reply) => {
     const { id } = request.params;
 
     const game = await prisma.game.findUnique({
@@ -261,7 +261,7 @@ export async function gameRoutes(app: FastifyInstance) {
   });
 
   // Get user's active game (if any)
-  app.get("/api/games/active", async (request) => {
+  app.get("/games/active", async (request) => {
     const userId = request.user.userId;
 
     const game = await prisma.game.findFirst({
@@ -283,7 +283,7 @@ export async function gameRoutes(app: FastifyInstance) {
   // Get user's game history
   app.get<{
     Querystring: { page?: string; limit?: string };
-  }>("/api/games/history", async (request) => {
+  }>("/games/history", async (request) => {
     const userId = request.user.userId;
     const { page, limit, skip, take } = parsePagination(request.query);
 
@@ -334,7 +334,7 @@ export async function gameRoutes(app: FastifyInstance) {
       initialTime?: number;
       increment?: number;
     };
-  }>("/api/games/bot", async (request, reply) => {
+  }>("/games/bot", async (request, reply) => {
     const userId = request.user.userId;
     const {
       botElo,
@@ -429,7 +429,7 @@ export async function gameRoutes(app: FastifyInstance) {
   app.post<{
     Params: { id: string };
     Body: { from: string; to: string; promotion?: string };
-  }>("/api/games/:id/move", async (request, reply) => {
+  }>("/games/:id/move", async (request, reply) => {
     const userId = request.user.userId;
     const { id: gameId } = request.params;
     const { from, to, promotion } = request.body;
@@ -582,7 +582,7 @@ export async function gameRoutes(app: FastifyInstance) {
   });
 
   // Resign bot game
-  app.post<{ Params: { id: string } }>("/api/games/:id/resign", async (request, reply) => {
+  app.post<{ Params: { id: string } }>("/games/:id/resign", async (request, reply) => {
     const userId = request.user.userId;
     const { id: gameId } = request.params;
 
@@ -615,7 +615,7 @@ export async function gameRoutes(app: FastifyInstance) {
       startedAt: string;
       endedAt: string | null;
     };
-  }>("/api/games/sync", async (request, reply) => {
+  }>("/games/sync", async (request, reply) => {
     const userId = request.user.userId;
     const { botElo, playerIsWhite, moves, result, termination, startedAt, endedAt } = request.body;
 

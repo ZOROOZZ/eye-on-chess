@@ -7,7 +7,7 @@ import { prisma } from "../lib/prisma.js";
  * No authentication is required for this route.
  */
 export async function botRoutes(app: FastifyInstance) {
-  app.get("/api/bots", async () => {
+  app.get("/bots", async () => {
     const dbBots = await prisma.botProfile.findMany({
       where: { enabled: true },
       orderBy: { sortOrder: "asc" },

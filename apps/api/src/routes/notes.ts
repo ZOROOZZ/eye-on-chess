@@ -10,7 +10,7 @@ export async function noteRoutes(app: FastifyInstance) {
   app.addHook("preHandler", authMiddleware);
 
   // Get my note for a game
-  app.get<{ Params: { id: string } }>("/api/games/:id/notes", async (request) => {
+  app.get<{ Params: { id: string } }>("/games/:id/notes", async (request) => {
     const userId = request.user.userId;
     const { id: gameId } = request.params;
 
@@ -24,7 +24,7 @@ export async function noteRoutes(app: FastifyInstance) {
 
   // Create/update/delete my note for a game
   app.put<{ Params: { id: string }; Body: { text?: string } }>(
-    "/api/games/:id/notes",
+    "/games/:id/notes",
     async (request, reply) => {
       const userId = request.user.userId;
       const { id: gameId } = request.params;

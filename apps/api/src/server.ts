@@ -132,42 +132,54 @@ async function main() {
     routeMetrics: { enabled: true },
   });
 
-  await fastify.register(botRoutes);
-  await fastify.register(authRoutes);
-  await fastify.register(userRoutes);
-  await fastify.register(friendRoutes);
-  await fastify.register(gameRoutes);
-  await fastify.register(analysisRoutes);
-  await fastify.register(adminRoutes);
-  await fastify.register(collectionRoutes);
-  await fastify.register(inviteRoutes);
-  await fastify.register(noteRoutes);
-  await fastify.register(activityRoutes);
-  await fastify.register(statsRoutes);
+  // ── API v1 routes ───────────────────────────────────
+  await fastify.register(
+    async (v1) => {
+      await v1.register(botRoutes);
+      await v1.register(authRoutes);
+      await v1.register(userRoutes);
+      await v1.register(friendRoutes);
+      await v1.register(gameRoutes);
+      await v1.register(analysisRoutes);
+      await v1.register(adminRoutes);
+      await v1.register(collectionRoutes);
+      await v1.register(inviteRoutes);
+      await v1.register(noteRoutes);
+      await v1.register(activityRoutes);
+      await v1.register(statsRoutes);
+
+      v1.get("/settings", async () => {
+        const settings = await getSiteSettings();
+        return {
+          siteName: settings.siteName,
+          siteUrl: process.env.SITE_URL || "http://localhost",
+          registrationOpen: settings.registrationOpen,
+        };
+      });
+
+      // Custom metrics endpoint with app-specific gauges
+      v1.get("/metrics/app", async () => {
+        const [totalUsers, activeGames, analysisQueue] = await Promise.all([
+          prisma.user.count(),
+          prisma.game.count({ where: { status: "ACTIVE" } }),
+          redis.llen("analysis:queue"),
+        ]);
+        return { totalUsers, activeGames, analysisQueue };
+      });
+    },
+    { prefix: "/api/v1" }
+  );
+
+  // ── Backward-compat redirect: /api/* → /api/v1/* ──
+  fastify.all("/api/*", async (request, reply) => {
+    const rest = (request.params as { "*": string })["*"];
+    reply.redirect(301, `/api/v1/${rest}`);
+  });
 
   fastify.get("/health", async (_request, reply) => {
     const health = await checkHealth();
     reply.code(health.status === "ok" ? 200 : 503);
     return health;
-  });
-
-  fastify.get("/api/settings", async () => {
-    const settings = await getSiteSettings();
-    return {
-      siteName: settings.siteName,
-      siteUrl: process.env.SITE_URL || "http://localhost",
-      registrationOpen: settings.registrationOpen,
-    };
-  });
-
-  // Custom metrics endpoint with app-specific gauges
-  fastify.get("/api/metrics/app", async () => {
-    const [totalUsers, activeGames, analysisQueue] = await Promise.all([
-      prisma.user.count(),
-      prisma.game.count({ where: { status: "ACTIVE" } }),
-      redis.llen("analysis:queue"),
-    ]);
-    return { totalUsers, activeGames, analysisQueue };
   });
 
   try {
