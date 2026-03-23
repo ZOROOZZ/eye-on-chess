@@ -23,6 +23,7 @@ import { redis } from "./lib/redis.js";
 import { registerRequestLogger } from "./middleware/requestLogger.js";
 import { registerEtag } from "./middleware/etag.js";
 import { checkHealth } from "./lib/healthCheck.js";
+import { registerShutdown } from "./lib/shutdown.js";
 import { initRateLimitConfig, getRouteLimit } from "./lib/rateLimit.js";
 
 async function main() {
@@ -124,6 +125,8 @@ async function main() {
     const io = setupSocket(httpServer);
     setupGameSocket(io);
     fastify.log.info("Socket.io attached with game events");
+
+    registerShutdown(fastify, io, fastify.log);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
