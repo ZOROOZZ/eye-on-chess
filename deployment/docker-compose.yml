@@ -60,6 +60,24 @@ services:
         reservations:
           memory: 256M
 
+  pgbouncer:
+    image: edoburu/pgbouncer:1.23.1-p2
+    container_name: eyeonchess-pgbouncer
+    restart: unless-stopped
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 64M
+        reservations:
+          memory: 32M
+
   redis:
     image: redis:7-alpine
     container_name: eyeonchess-redis
@@ -87,11 +105,14 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:6432/eyeonchess?pgbouncer=true
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eyeonchess
     volumes:
       - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
     depends_on:
-      postgres:
-        condition: service_healthy
+      pgbouncer:
+        condition: service_started
       redis:
         condition: service_healthy
     healthcheck:
@@ -140,9 +161,11 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@pgbouncer:6432/eyeonchess?pgbouncer=true
     depends_on:
-      postgres:
-        condition: service_healthy
+      pgbouncer:
+        condition: service_started
       redis:
         condition: service_healthy
     deploy:
