@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: "~" },
   { href: "/admin/users", label: "Users", icon: "U" },
   { href: "/admin/games", label: "Games", icon: "G" },
+  { href: "/admin/bots", label: "Bots", icon: "B" },
   { href: "/admin/settings", label: "Settings", icon: "S" },
   { href: "/admin/audit-log", label: "Audit Log", icon: "A" },
 ];
