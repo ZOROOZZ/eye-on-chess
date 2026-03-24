@@ -29,11 +29,12 @@ export function useBotEngine() {
    */
   async function getPersonalityMove(
     fen: string,
-    personality: BotPersonality
+    personality: BotPersonality,
+    moveHistory: string[] = []
   ): Promise<string | null> {
     if (personality.tier === "custom") {
       // Run JS engine (fast, no async needed for depth 1-3)
-      return computeCustomMove(fen, personality);
+      return computeCustomMove(fen, personality, moveHistory);
     }
 
     if (personality.tier === "hybrid") {

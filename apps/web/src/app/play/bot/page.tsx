@@ -40,8 +40,13 @@ import MoveList from "../../../components/MoveList";
 import CapturedPieces from "../../../components/CapturedPieces";
 import MoveFeedbackPopup from "../../../components/MoveFeedbackPopup";
 import ConfirmModal from "../../../components/ConfirmModal";
-import type { BotPersonality, MoveRecord } from "@eyeonchess/chess";
+import type { BotPersonality, MoveRecord, ThinkTimeContext } from "@eyeonchess/chess";
+import { computeThinkTime } from "@eyeonchess/chess";
 import BotSelector from "../../../components/BotSelector";
+import { useBotChat } from "../../../lib/useBotChat";
+import BotChatBubble from "../../../components/BotChatBubble";
+import { useBotReactions } from "../../../lib/useBotReactions";
+import ReactionOverlay from "../../../components/ReactionOverlay";
 
 const TIME_PRESETS = [
   { label: "1+0", key: "bullet_1_0" },
@@ -150,6 +155,9 @@ export default function PlayBotPage() {
 
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [flipDisplay, setFlipDisplay] = useState(false);
+
+  const botChat = useBotChat({ messages: selectedBot?.messages });
+  const botReactions = useBotReactions();
 
   useKeyboardShortcuts({
     ArrowLeft: () => setCurrentPly((p) => Math.max(0, p - 1)),
@@ -308,6 +316,7 @@ export default function PlayBotPage() {
     }
 
     setPhase("game");
+    setTimeout(() => botChat.triggerMessage("gameStart"), 500);
     if (!isWhite) makeBotMove(chess, []);
   }
 
@@ -350,11 +359,31 @@ export default function PlayBotPage() {
     setThinking(true);
     try {
       const personality = selectedBot || buildFallbackPersonality(botElo);
-      const moveUci = await botEngine.getPersonalityMove(chess.fen(), personality);
+      const currentSans = currentMoves.map((m) => m.san);
+      const moveUci = await botEngine.getPersonalityMove(chess.fen(), personality, currentSans);
       if (!moveUci) return;
       const from = moveUci.slice(0, 2);
       const to = moveUci.slice(2, 4);
       const promotion = moveUci[4] || undefined;
+
+      // Simulated think time — delay before applying move
+      const peekChess = new Chess(chess.fen());
+      const peekMove = peekChess.move({ from, to, promotion });
+      const thinkCtx: ThinkTimeContext = {
+        ply: currentMoves.length + 1,
+        isInCheck: chess.inCheck(),
+        isCapture: !!peekMove?.captured,
+        evalCp: playerIsWhite ? -evalScore : evalScore,
+        playerBlundered: feedback === "BLUNDER",
+      };
+      const thinkDelay = computeThinkTime(personality, thinkCtx);
+      // Maybe send a 🤔 reaction during thinking
+      const confFactor = personality.randomMoveChance + personality.blunderChance;
+      if (Math.random() < confFactor * 0.3) {
+        setTimeout(() => botReactions.triggerReaction("thinking", personality), thinkDelay * 0.4);
+      }
+      await new Promise((r) => setTimeout(r, thinkDelay));
+
       const move = chess.move({ from, to, promotion });
       if (!move) return;
       const ply = currentMoves.length + 1;
@@ -366,12 +395,22 @@ export default function PlayBotPage() {
       setCurrentPly(ply);
       setLastMove([from, to]);
       sound.playForMove(move);
+      if (move.captured) {
+        botChat.triggerMessage("onCapture");
+        botReactions.triggerReaction("botCapture", personality);
+      } else if (chess.inCheck()) {
+        botChat.triggerMessage("onGivingCheck");
+        botReactions.triggerReaction("botCheck", personality);
+      }
       if (chess.isGameOver()) {
         const result = chess.isCheckmate()
           ? chess.turn() === "w"
             ? "Black wins by checkmate"
             : "White wins by checkmate"
           : "Draw";
+        if (chess.isCheckmate()) botChat.triggerMessage("onCheckmate");
+        else botChat.triggerMessage("onDraw");
+        botReactions.triggerReaction("gameEnd", personality);
         setGameOver(result);
         setPhase("ended");
         sound.playGameOver();
@@ -387,6 +426,9 @@ export default function PlayBotPage() {
         if (needsEval) {
           const ev = await botEngine.evaluate(chess.fen());
           if (activeSettings.evalBar) setEvalScore(ev.score);
+          const botAdvantage = playerIsWhite ? -ev.score : ev.score;
+          if (botAdvantage > 300) botChat.triggerMessage("onWinning");
+          else if (botAdvantage < -300) botChat.triggerMessage("onLosing");
           if (activeSettings.threats && ev.bestMove) {
             setThreatArrows([{ from: ev.bestMove.slice(0, 2), to: ev.bestMove.slice(2, 4) }]);
           } else {
@@ -436,6 +478,11 @@ export default function PlayBotPage() {
       setCurrentPly(ply);
       setLastMove([from, to]);
       sound.playForMove(move);
+      if (chess.inCheck()) {
+        botChat.triggerMessage("onBeingChecked");
+        const p = selectedBot || buildFallbackPersonality(botElo);
+        botReactions.triggerReaction("botInCheck", p);
+      }
       setHintStep(0);
       setHintSource(null);
       setHintDest(null);
@@ -457,13 +504,22 @@ export default function PlayBotPage() {
             const cpLoss = isWhiteMove
               ? evBefore.score - evAfter.score
               : evAfter.score - evBefore.score;
-            if (cpLoss <= 0) setFeedback("BEST");
-            else if (cpLoss <= 10) setFeedback("EXCELLENT");
-            else if (cpLoss <= 25) setFeedback("GOOD");
+            const pForReaction = selectedBot || buildFallbackPersonality(botElo);
+            if (cpLoss <= 0) {
+              setFeedback("BEST");
+              botReactions.triggerReaction("playerGoodMove", pForReaction);
+            } else if (cpLoss <= 10) {
+              setFeedback("EXCELLENT");
+              botReactions.triggerReaction("playerGoodMove", pForReaction);
+            } else if (cpLoss <= 25) setFeedback("GOOD");
             else if (cpLoss <= 50) setFeedback("GOOD");
             else if (cpLoss <= 100) setFeedback("INACCURACY");
             else if (cpLoss <= 200) setFeedback("MISTAKE");
-            else setFeedback("BLUNDER");
+            else {
+              setFeedback("BLUNDER");
+              botChat.triggerMessage("onPlayerBlunder");
+              botReactions.triggerReaction("playerBlunder", pForReaction);
+            }
           }
         }
       }
@@ -478,6 +534,10 @@ export default function PlayBotPage() {
             ? "Black wins by checkmate"
             : "White wins by checkmate"
           : "Draw";
+        const pEnd = selectedBot || buildFallbackPersonality(botElo);
+        if (chess.isCheckmate()) botChat.triggerMessage("onCheckmated");
+        else botChat.triggerMessage("onDraw");
+        botReactions.triggerReaction("gameEnd", pEnd);
         setGameOver(result);
         setPhase("ended");
         sound.playGameOver();
@@ -499,6 +559,8 @@ export default function PlayBotPage() {
       isOnline,
       botElo,
       selectedBot,
+      botChat,
+      botReactions,
     ]
   );
 
@@ -564,6 +626,8 @@ export default function PlayBotPage() {
     setError("");
     setHintStep(0);
     setEvalScore(0);
+    botChat.clearMessage();
+    botReactions.clearReactions();
   }
 
   function rematch() {
@@ -604,6 +668,7 @@ export default function PlayBotPage() {
     }
 
     setPhase("game");
+    setTimeout(() => botChat.triggerMessage("gameStart"), 500);
     if (!isWhite) makeBotMove(chess, []);
   }
 
@@ -902,6 +967,7 @@ export default function PlayBotPage() {
                   {selectedBot ? selectedBot.name : "Bot"} ({botElo}){" "}
                   <span className="text-gray-500">{eloLabel(botElo)}</span>
                 </span>
+                <BotChatBubble message={botChat.currentMessage} />
                 {!isOnline && (
                   <span className="text-xs text-yellow-500 bg-yellow-900/30 px-2 py-0.5 rounded">
                     OFFLINE
@@ -927,6 +993,7 @@ export default function PlayBotPage() {
                   }
                 />
                 {activeSettings.moveFeedback && <MoveFeedbackPopup classification={feedback} />}
+                <ReactionOverlay reactions={botReactions.activeReactions} onExpired={botReactions.removeReaction} />
                 {activeSettings.engine && engineLine && (
                   <div className="absolute top-2 left-2 bg-gray-900/80 px-2 py-1 rounded text-xs text-blue-400 font-mono">
                     {engineLine}
