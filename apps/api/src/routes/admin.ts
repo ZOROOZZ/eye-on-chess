@@ -11,7 +11,11 @@ import {
   auditLog,
   sanitizeString,
 } from "../middleware/admin.js";
-import { adminCreateUserBodySchema } from "../lib/schemas.js";
+import {
+  adminCreateUserBodySchema,
+  createBotBodySchema,
+  updateBotBodySchema,
+} from "../lib/schemas.js";
 import {
   apiError,
   ADMIN_SELF_DEMOTE,
@@ -22,7 +26,10 @@ import {
   ADMIN_EMAIL_EXISTS,
   ADMIN_USERNAME_EXISTS,
   ADMIN_GAME_NOT_FOUND,
+  ADMIN_BOT_NOT_FOUND,
+  ADMIN_BOT_ID_EXISTS,
 } from "../lib/errorCodes.js";
+import { loadBotsFromYaml, type BotDef } from "../../prisma/seed-bots.js";
 
 /** Register admin routes (user management, site settings, CSRF tokens). */
 export async function adminRoutes(app: FastifyInstance) {
@@ -47,27 +54,94 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // ── Dashboard ─────────────────────────────────────────
   app.get("/admin/dashboard", async () => {
+    const now = new Date();
+    const today = new Date(now.setHours(0, 0, 0, 0));
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
     const [
       totalUsers,
       activeUsers,
+      verifiedUsers,
+      newUsersWeek,
       totalGames,
       activeGames,
       completedGames,
+      abortedGames,
       gamesToday,
+      gamesWeek,
+      gamesMonth,
+      botGames,
       queueDepth,
+      resultDist,
+      timeControlDist,
+      recentAudit,
+      topBotGames,
+      enabledBots,
+      totalBots,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { active: true } }),
+      prisma.user.count({ where: { verified: true } }),
+      prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
       prisma.game.count(),
       prisma.game.count({ where: { status: "ACTIVE" } }),
       prisma.game.count({ where: { status: "COMPLETED" } }),
-      prisma.game.count({
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-        },
-      }),
+      prisma.game.count({ where: { status: "ABORTED" } }),
+      prisma.game.count({ where: { createdAt: { gte: today } } }),
+      prisma.game.count({ where: { createdAt: { gte: weekAgo } } }),
+      prisma.game.count({ where: { createdAt: { gte: monthAgo } } }),
+      prisma.game.count({ where: { isVsBot: true } }),
       redis.llen("analysis:queue"),
+      prisma.game.groupBy({
+        by: ["result"],
+        where: { status: "COMPLETED", result: { not: null } },
+        _count: true,
+      }),
+      prisma.game.groupBy({ by: ["timeControl"], _count: true }),
+      prisma.auditLog.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: { admin: { select: { username: true } } },
+      }),
+      prisma.game.groupBy({
+        by: ["botElo"],
+        where: { isVsBot: true, botElo: { not: null } },
+        _count: true,
+        orderBy: { _count: { botElo: "desc" } },
+        take: 5,
+      }),
+      prisma.botProfile.count({ where: { enabled: true } }),
+      prisma.botProfile.count(),
     ]);
+
+    // Map top bot Elos to bot names
+    const topBotElos = topBotGames.map((g) => g.botElo as number);
+    const botProfiles = topBotElos.length > 0
+      ? await prisma.botProfile.findMany({
+          where: { elo: { in: topBotElos } },
+          select: { name: true, avatar: true, elo: true },
+        })
+      : [];
+    const botByElo = new Map(botProfiles.map((b) => [b.elo, b]));
+    const topBots = topBotGames.map((g) => {
+      const bot = botByElo.get(g.botElo as number);
+      return {
+        name: bot?.name || `Bot ${g.botElo}`,
+        avatar: bot?.avatar || "",
+        elo: g.botElo,
+        games: g._count,
+      };
+    });
+
+    // Online users count from Redis
+    let onlineCount = 0;
+    try {
+      const keys = await redis.keys("online:*");
+      onlineCount = keys.length;
+    } catch {
+      // Redis might not have any keys
+    }
 
     const settings = await prisma.siteSettings.findUnique({
       where: { id: "singleton" },
@@ -77,12 +151,36 @@ export async function adminRoutes(app: FastifyInstance) {
       stats: {
         totalUsers,
         activeUsers,
+        verifiedUsers,
+        newUsersWeek,
         totalGames,
         activeGames,
         completedGames,
+        abortedGames,
         gamesToday,
+        gamesWeek,
+        gamesMonth,
+        botGames,
+        humanGames: totalGames - botGames,
         analysisQueueDepth: queueDepth,
+        onlineCount,
+        enabledBots,
+        totalBots,
       },
+      resultDistribution: resultDist.map((r) => ({
+        result: r.result,
+        count: r._count,
+      })),
+      timeControlDistribution: timeControlDist.map((t) => ({
+        timeControl: t.timeControl,
+        count: t._count,
+      })),
+      topBots,
+      recentAudit: recentAudit.map((a) => ({
+        action: a.action,
+        admin: a.admin.username,
+        createdAt: a.createdAt,
+      })),
       settings: settings || null,
     };
   });
@@ -446,5 +544,240 @@ export async function adminRoutes(app: FastifyInstance) {
       logs,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  });
+
+  // ── Bots ────────────────────────────────────────────────
+
+  app.get("/admin/bots", async (request) => {
+    const { page: pageStr, limit: limitStr, search, sort, order } = request.query as Record<
+      string,
+      string | undefined
+    >;
+    const page = Math.max(1, parseInt(pageStr || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(limitStr || "20")));
+    const sortField = ["elo", "name", "category", "sortOrder", "createdAt"].includes(sort || "")
+      ? sort!
+      : "sortOrder";
+    const sortOrder = order === "desc" ? "desc" : "asc";
+
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { botId: { contains: search, mode: "insensitive" as const } },
+            { category: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {};
+
+    const [bots, total] = await Promise.all([
+      prisma.botProfile.findMany({
+        where,
+        orderBy: { [sortField]: sortOrder },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.botProfile.count({ where }),
+    ]);
+
+    return {
+      bots: bots.map((b) => ({
+        id: b.id,
+        botId: b.botId,
+        name: b.name,
+        elo: b.elo,
+        description: b.description,
+        avatar: b.avatar,
+        tier: b.tier,
+        category: b.category,
+        enabled: b.enabled,
+        sortOrder: b.sortOrder,
+        randomMoveChance: b.randomMoveChance,
+        blunderChance: b.blunderChance,
+        captureGreed: b.captureGreed,
+        aggressionBias: b.aggressionBias,
+        maxDepth: b.maxDepth,
+        queenEarly: b.queenEarly,
+        pawnPusher: b.pawnPusher,
+        messages: b.messages ?? null,
+        preferredOpenings: b.preferredOpenings ?? null,
+        createdAt: b.createdAt,
+        updatedAt: b.updatedAt,
+      })),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  });
+
+  app.post(
+    "/admin/bots",
+    { schema: { body: createBotBodySchema } },
+    async (request, reply) => {
+      const body = request.body as Record<string, unknown>;
+      const botId = body.botId as string;
+
+      const existing = await prisma.botProfile.findUnique({ where: { botId } });
+      if (existing) return apiError(reply, 409, ADMIN_BOT_ID_EXISTS, "Bot ID already exists");
+
+      const maxSort = await prisma.botProfile.aggregate({ _max: { sortOrder: true } });
+      const bot = await prisma.botProfile.create({
+        data: {
+          botId,
+          name: sanitizeString(body.name as string),
+          elo: body.elo as number,
+          description: sanitizeString(body.description as string),
+          avatar: body.avatar as string,
+          tier: body.tier as string,
+          category: body.category as string,
+          enabled: (body.enabled as boolean) ?? true,
+          randomMoveChance: (body.randomMoveChance as number) ?? 0,
+          blunderChance: (body.blunderChance as number) ?? 0,
+          captureGreed: (body.captureGreed as number) ?? 0,
+          aggressionBias: (body.aggressionBias as number) ?? 0,
+          maxDepth: (body.maxDepth as number) ?? 3,
+          queenEarly: (body.queenEarly as boolean) ?? false,
+          pawnPusher: (body.pawnPusher as boolean) ?? false,
+          sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
+          messages: body.messages as object | undefined,
+          preferredOpenings: body.preferredOpenings as object | undefined,
+        },
+      });
+
+      await auditLog({
+        adminId: request.user.userId,
+        action: "bot.create",
+        targetType: "BotProfile",
+        targetId: bot.id,
+        details: { botId, name: bot.name, elo: bot.elo },
+        ip: request.ip,
+      });
+
+      return { bot };
+    }
+  );
+
+  app.patch<{ Params: { id: string } }>(
+    "/admin/bots/:id",
+    { schema: { body: updateBotBodySchema } },
+    async (request, reply) => {
+      const { id } = request.params;
+      const body = request.body as Record<string, unknown>;
+
+      const existing = await prisma.botProfile.findUnique({ where: { id } });
+      if (!existing) return apiError(reply, 404, ADMIN_BOT_NOT_FOUND, "Bot not found");
+
+      const data: Record<string, unknown> = {};
+      for (const key of [
+        "name",
+        "elo",
+        "description",
+        "avatar",
+        "tier",
+        "category",
+        "enabled",
+        "sortOrder",
+        "randomMoveChance",
+        "blunderChance",
+        "captureGreed",
+        "aggressionBias",
+        "maxDepth",
+        "queenEarly",
+        "pawnPusher",
+        "messages",
+        "preferredOpenings",
+      ]) {
+        if (body[key] !== undefined) {
+          data[key] =
+            typeof body[key] === "string" ? sanitizeString(body[key] as string) : body[key];
+        }
+      }
+
+      const bot = await prisma.botProfile.update({ where: { id }, data });
+
+      await auditLog({
+        adminId: request.user.userId,
+        action: "bot.update",
+        targetType: "BotProfile",
+        targetId: id,
+        details: data,
+        ip: request.ip,
+      });
+
+      return { bot };
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>("/admin/bots/:id", async (request, reply) => {
+    const { id } = request.params;
+
+    const existing = await prisma.botProfile.findUnique({ where: { id } });
+    if (!existing) return apiError(reply, 404, ADMIN_BOT_NOT_FOUND, "Bot not found");
+
+    await prisma.botProfile.delete({ where: { id } });
+
+    await auditLog({
+      adminId: request.user.userId,
+      action: "bot.delete",
+      targetType: "BotProfile",
+      targetId: id,
+      details: { botId: existing.botId, name: existing.name },
+      ip: request.ip,
+    });
+
+    return { success: true };
+  });
+
+  app.post("/admin/bots/reseed", async (request) => {
+    let bots: BotDef[];
+    try {
+      bots = loadBotsFromYaml();
+    } catch {
+      return { error: "Could not load bots.yml" };
+    }
+
+    let created = 0;
+    let updated = 0;
+
+    for (let i = 0; i < bots.length; i++) {
+      const bot = bots[i];
+      const existing = await prisma.botProfile.findUnique({ where: { botId: bot.id } });
+
+      const data = {
+        name: bot.name,
+        elo: bot.elo,
+        description: bot.description,
+        avatar: bot.avatar,
+        category: bot.category,
+        tier: bot.tier,
+        randomMoveChance: bot.randomMoveChance,
+        blunderChance: bot.blunderChance,
+        captureGreed: bot.captureGreed,
+        aggressionBias: bot.aggressionBias,
+        maxDepth: bot.maxDepth,
+        queenEarly: bot.queenEarly,
+        pawnPusher: bot.pawnPusher,
+        sortOrder: i,
+        messages: bot.messages ?? undefined,
+        preferredOpenings: bot.preferredOpenings ?? undefined,
+      };
+
+      if (existing) {
+        await prisma.botProfile.update({ where: { botId: bot.id }, data });
+        updated++;
+      } else {
+        await prisma.botProfile.create({ data: { botId: bot.id, ...data } });
+        created++;
+      }
+    }
+
+    await auditLog({
+      adminId: request.user.userId,
+      action: "bot.reseed",
+      targetType: "BotProfile",
+      targetId: "all",
+      details: { created, updated, total: bots.length },
+      ip: request.ip,
+    });
+
+    return { created, updated };
   });
 }
