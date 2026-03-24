@@ -29,6 +29,8 @@ export async function botRoutes(app: FastifyInstance) {
         maxDepth: b.maxDepth,
         queenEarly: b.queenEarly,
         pawnPusher: b.pawnPusher,
+        messages: b.messages ?? undefined,
+        preferredOpenings: b.preferredOpenings ?? undefined,
       })),
     };
   });

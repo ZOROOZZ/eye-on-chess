@@ -58,6 +58,8 @@ export const ADMIN_USER_NOT_FOUND = "ADMIN_USER_NOT_FOUND";
 export const ADMIN_GAME_NOT_FOUND = "ADMIN_GAME_NOT_FOUND";
 export const ADMIN_EMAIL_EXISTS = "ADMIN_EMAIL_EXISTS";
 export const ADMIN_USERNAME_EXISTS = "ADMIN_USERNAME_EXISTS";
+export const ADMIN_BOT_NOT_FOUND = "ADMIN_BOT_NOT_FOUND";
+export const ADMIN_BOT_ID_EXISTS = "ADMIN_BOT_ID_EXISTS";
 
 // ── Collections ────────────────────────────────────────
 export const COLLECTION_NOT_FOUND = "COLLECTION_NOT_FOUND";

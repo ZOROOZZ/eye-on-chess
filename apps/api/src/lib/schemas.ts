@@ -177,3 +177,66 @@ export const updateNoteBodySchema = z.object({
 export const validateInviteParamSchema = z.object({
   code: z.string().min(1),
 });
+
+// ── Bots (Admin) ──────────────────────────────────────
+
+const botTierEnum = z.enum(["custom", "hybrid", "engine"]);
+const botCategoryEnum = z.enum([
+  "beginner",
+  "novice",
+  "intermediate",
+  "advanced",
+  "expert",
+  "master",
+  "grandmaster",
+]);
+
+export const createBotBodySchema = z.object({
+  botId: z.string().min(1).max(50).regex(/^[a-z0-9_]+$/),
+  name: z.string().min(1).max(50),
+  elo: z.number().int().min(100).max(3200),
+  description: z.string().min(1).max(500),
+  avatar: z.string().min(1).max(10),
+  tier: botTierEnum,
+  category: botCategoryEnum,
+  enabled: z.boolean().optional(),
+  randomMoveChance: z.number().min(0).max(1).optional(),
+  blunderChance: z.number().min(0).max(1).optional(),
+  captureGreed: z.number().min(0).max(1).optional(),
+  aggressionBias: z.number().min(-1).max(1).optional(),
+  maxDepth: z.number().int().min(1).max(18).optional(),
+  queenEarly: z.boolean().optional(),
+  pawnPusher: z.boolean().optional(),
+  messages: z.record(z.array(z.string())).optional(),
+  preferredOpenings: z
+    .object({
+      asWhite: z.array(z.string()).optional(),
+      asBlack: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
+
+export const updateBotBodySchema = z.object({
+  name: z.string().min(1).max(50).optional(),
+  elo: z.number().int().min(100).max(3200).optional(),
+  description: z.string().min(1).max(500).optional(),
+  avatar: z.string().min(1).max(10).optional(),
+  tier: botTierEnum.optional(),
+  category: botCategoryEnum.optional(),
+  enabled: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).optional(),
+  randomMoveChance: z.number().min(0).max(1).optional(),
+  blunderChance: z.number().min(0).max(1).optional(),
+  captureGreed: z.number().min(0).max(1).optional(),
+  aggressionBias: z.number().min(-1).max(1).optional(),
+  maxDepth: z.number().int().min(1).max(18).optional(),
+  queenEarly: z.boolean().optional(),
+  pawnPusher: z.boolean().optional(),
+  messages: z.record(z.array(z.string())).optional(),
+  preferredOpenings: z
+    .object({
+      asWhite: z.array(z.string()).optional(),
+      asBlack: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
