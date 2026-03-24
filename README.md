@@ -87,6 +87,10 @@ See the full step-by-step walkthrough in the [`screenshots/`](screenshots/README
 - Challenge friends directly
 - 31 bot personalities from Amir (200) to Erfan (3200) — each with unique playstyle and behavior
 - Three bot tiers: custom JS engine (200-1200), Stockfish hybrid (1300-1900), full Stockfish (2000+)
+- Bot chat messages — bots talk during games based on personality and game events
+- Simulated think time — bots pause before moving (beginners: 1-3s confused, grandmasters: 300ms instant)
+- Bot emoji reactions — bots send 👍 ✨ 🤦 🤔 based on personality during games
+- Opening preferences — custom-tier bots follow preferred openings (Bella attempts Scholar's Mate, Ahmed plays Ruy Lopez)
 - Game mode presets: Challenge (no help), Friendly (hints + takebacks), Assisted (all tools), Custom
 - Time controls: Bullet, Blitz, Rapid, Classical, Unlimited, or custom
 - Elo rating system (K=32) with automatic updates
@@ -161,12 +165,23 @@ See the full step-by-step walkthrough in the [`screenshots/`](screenshots/README
 - Structured error codes (`{ code: "AUTH_INVALID_CREDENTIALS", error: "..." }`)
 - Interactive API docs at `/docs` (Swagger UI)
 
+**Admin Panel**
+
+- Rich dashboard with 17+ metrics: user/game stats, result distribution, time control popularity, bot vs human split, top bots, online count
+- User management: search, activate/deactivate, verify, promote/demote, create, delete
+- Game management: browse, filter by status, delete
+- Bot personality editor: edit all parameters via sliders, JSON editors for messages and openings, enable/disable, create/delete bots
+- Reseed from YAML: one-click reset of all bot personalities to YAML defaults
+- Site settings: registration toggle, max users, email verification
+- Full audit log of all admin actions
+- CSRF protection on all mutations
+
 **Self-Hosting**
 
 - Single command deploy: `docker compose up`
 - No external services or third-party APIs
-- PostgreSQL with PgBouncer connection pooling (transaction mode)
-- Redis for presence, clocks, caching, and job queue
+- PostgreSQL with PgBouncer connection pooling (transaction mode, password from env)
+- Redis with password authentication
 - Nginx reverse proxy with WebSocket support
 - Automatic database migrations on startup
 - Database backup script with rotation

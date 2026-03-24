@@ -316,8 +316,49 @@ Self-hostable chess platform built with Next.js 14, Fastify, PostgreSQL, Redis, 
   - Domains: AUTH, GAME, FRIEND, ADMIN, COLLECTION, INVITE, ANALYSIS, NOTE
   - Backward compatible — `error` field preserved for existing clients
 
+### Bot Personality System (Complete)
+
+- **Chat messages**: 31 bots × 11 event types = ~350 unique messages
+  - Events: gameStart, onCapture, onBeingChecked, onGivingCheck, onBlunder, onPlayerBlunder, onWinning, onLosing, onCheckmate, onCheckmated, onDraw
+  - `useBotChat` hook with rate limiting (1/5s), probability gate (60%), auto-dismiss (3s)
+  - `BotChatBubble` component (blue speech bubble next to bot avatar)
+
+- **Simulated think time**: Personality-driven delays before bot moves
+  - `computeThinkTime(personality, context)` — derives from existing params
+  - Custom tier: 800-2800ms, Engine tier: 250-350ms, clamped [200, 4000]ms
+  - Context modifiers: check +50%, losing +30%, winning -30%, blunder -40%
+
+- **Bot reactions**: Floating emoji reactions (👍 ✨ 🤦 🤔 🤝) during games
+  - `useBotReactions` hook — personality-driven probabilities
+  - Reuses existing `ReactionOverlay` component
+  - Rate limited: 1/8s, max 5 on screen
+
+- **Opening preferences**: Custom-tier bots follow preferred opening sequences
+  - `getOpeningMove(personality, moveHistory, isWhite)` — SAN prefix matching
+  - `preferredOpenings: { asWhite: string[], asBlack: string[] }` per bot
+  - Falls back to minimax when opponent deviates or sequence exhausts
+
+- **Admin bot management**: Full CRUD via admin panel (`/admin/bots`)
+  - Edit all parameters via sliders and JSON editors
+  - Create/delete/enable/disable bots
+  - Reseed from YAML (destructive override)
+  - Seeder is non-destructive (create-only, `FORCE_RESEED=1` to override)
+
+- **Enhanced admin dashboard**: Expanded from 7 to 17+ metrics
+  - Game result distribution, time control popularity, bot vs human split
+  - Top 3 most played bots, recent admin actions, site status badges
+  - Online user count, new users (7d), games today/week/month
+
+### Security Hardening (Complete)
+
+- Postgres password from `${POSTGRES_PASSWORD}` env var (not hardcoded)
+- Redis password support via `--requirepass ${REDIS_PASSWORD}`
+- All dev ports bound to `127.0.0.1` except Nginx port 80
+- PgBouncer userlist.txt generated dynamically from env at container startup
+- `--env-file .env` in Makefile for compose variable interpolation
+
 ## Current Status
 
-- All phases complete: 1, 2, 3, 4, 5, 7, 8, 9 + release prep + admin panel + technical improvements
+- All phases complete: 1, 2, 3, 4, 5, 7, 8, 9 + release prep + admin panel + technical improvements + bot personality system + security hardening
 - Ready for open source release
 - Note: Phase 6 was skipped (user jumped from Phase 5 to Phase 7)

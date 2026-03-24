@@ -1,31 +1,30 @@
 # Bot Personalities
 
-EyeOnChess features 31 distinct bot personalities ranging from 200 to 3200 Elo, each with unique playstyles and behaviors.
+EyeOnChess features 31 distinct bot personalities ranging from 200 to 3200 Elo, each with unique playstyles, chat messages, reactions, opening preferences, and simulated think times.
 
 ## Architecture
 
-Bot personalities are **YAML-configured and database-driven**:
+Bot personalities are **database-driven with YAML as the seed source**:
 
 ```
-deployment/config/bots.yml     ← Source of truth (edit this)
-        ↓
-   make seed-bots              ← Seeds DB (only creates, never overwrites)
-        ↓
-   BotProfile table            ← Admin-editable via admin panel
-        ↓
-   GET /api/bots               ← Served to frontend (nginx-cached 1 hour)
-        ↓
-   localStorage                ← Cached on device for offline use
+deployment/config/bots.yml     <- Seed template (initial data only)
+        |
+   make seed-bots              <- Creates missing bots, never overwrites existing
+        |
+   BotProfile table            <- Source of truth, editable via admin panel
+        |
+   GET /api/v1/bots            <- Served to frontend
+        |
+   localStorage                <- Cached on device for offline use
 ```
 
-- **YAML** defines the default bot roster
-- **Seeder** runs on every container restart, only creates bots that don't exist
-- **Admin edits** in the DB are never overwritten by the seeder
+- **YAML** defines the default bot roster for new environments
+- **Seeder** only creates bots that don't exist (non-destructive)
+- **Admin panel** (`/admin/bots`) is the primary editing interface
+- **`FORCE_RESEED=1 make seed-bots`** overwrites all bots from YAML (destructive)
 - **Frontend** fetches from API, caches to localStorage, works offline from cache
 
 ## Tiers
-
-Bots are organized into three tiers based on how their moves are generated:
 
 | Tier       | Elo Range | Engine               | Description                                                                     |
 | ---------- | --------- | -------------------- | ------------------------------------------------------------------------------- |
@@ -34,8 +33,6 @@ Bots are organized into three tiers based on how their moves are generated:
 | **Engine** | 2000-3200 | Stockfish UCI_Elo    | Full Stockfish with Elo-limited strength                                        |
 
 ## Categories
-
-Bots are grouped into skill categories in the UI:
 
 | Category         | Elo Range | Bots                                             |
 | ---------------- | --------- | ------------------------------------------------ |
@@ -49,8 +46,6 @@ Bots are grouped into skill categories in the UI:
 
 ## Behavior Parameters
 
-Each bot has tunable parameters that control its playstyle:
-
 | Parameter          | Range   | Effect                                                   |
 | ------------------ | ------- | -------------------------------------------------------- |
 | `randomMoveChance` | 0-0.5   | Chance to play a completely random legal move            |
@@ -60,55 +55,98 @@ Each bot has tunable parameters that control its playstyle:
 | `maxDepth`         | 1-18    | How many moves ahead the bot can "see"                   |
 | `queenEarly`       | bool    | Brings queen out in the first 5 moves                    |
 | `pawnPusher`       | bool    | Pushes random edge pawns                                 |
-| `sortOrder`        | int     | Controls display order in API responses (lower = first)  |
-| `enabled`          | bool    | Admins can disable a bot without deleting it from the DB |
 
-## Bot Selection UI
+## Bot Chat Messages
 
-Players select a bot from a visual grid on the `/play/bot` page, grouped by category (Beginner, Novice, etc.) with sticky headers. Each card shows the bot's emoji avatar, name, Elo badge (color-coded), and a short description.
+Bots send contextual chat messages during games based on their personality. Messages appear as blue speech bubbles next to the bot's avatar.
 
-A "Custom Elo" toggle allows advanced users to use the raw Elo slider with Stockfish directly.
+**Events that trigger messages:**
+gameStart, onCapture, onBeingChecked, onGivingCheck, onBlunder, onPlayerBlunder, onWinning, onLosing, onCheckmate, onCheckmated, onDraw
+
+**Behavior:**
+- Messages are randomly selected from the event's pool
+- 60% probability gate (gameStart/checkmate always show)
+- Rate limited: max 1 message per 5 seconds
+- Auto-dismiss after 3 seconds
+- Stored as `messages` JSON field on BotProfile
+
+**Personality examples:**
+- Amir (200): "Hi! I just learned how the horsey moves!", "Was that yours?"
+- Erfan (3200): "Show me your best.", "Inevitable."
+
+## Simulated Think Time
+
+Bots pause before moving to simulate human-like thinking. The delay is derived from existing personality parameters — no additional config needed.
+
+**Formula:**
+- Custom tier: base 800 + confusionFactor × 1800 (±variance)
+- Hybrid tier: base 600 + confusionFactor × 800
+- Engine tier: base 300 + (3200-elo)/1200 × 400
+
+**Context modifiers:** in check +50%, losing +30%, winning -30%, player blundered -40%, capture -20%, opening -30%, endgame +20%
+
+**Result:** Amir ~1.5-3s (confused), Erfan ~300ms (machine-like). Clamped [200, 4000]ms.
+
+## Bot Reactions
+
+Bots send floating emoji reactions during games based on their personality:
+
+| Event | Reaction | Probability |
+|-------|----------|-------------|
+| Bot captures | ✨ brilliant | captureGreed × 0.5 |
+| Bot gives check | ✨ brilliant | aggressionBias × 0.4 |
+| Bot in check | 🤔 thinking | confusionFactor × 0.6 |
+| Player good move | 👍 good_move | 15% |
+| Player blunder | 🤦 blunder | 30% (beginners) / 10% (masters) |
+| During thinking | 🤔 thinking | confusionFactor × 0.3 |
+| Game ends | 🤝 gg | 80% |
+
+Rate limited: 1 per 8 seconds, max 5 on screen. Reuses the existing `ReactionOverlay` component.
+
+## Opening Preferences
+
+Custom-tier bots (200-1200) follow preferred opening move sequences before falling back to minimax.
+
+**Format:** SAN move sequences split by color:
+```json
+{
+  "asWhite": ["e4 e5 Nf3 Nc6 Bc4", "e4 e5 f4"],
+  "asBlack": ["e5", "c5"]
+}
+```
+
+**Behavior:**
+- Bot picks a random opening from its pool at game start
+- Follows the sequence move-by-move
+- Falls back to minimax if opponent deviates or sequence exhausts
+- Personality quirks (randomMoveChance, blunderChance) can still override
+
+**Examples:**
+- Bella (400): Attempts Scholar's Mate (Qh5) or Italian Game (Bc4)
+- Ahmed (1100): Plays Ruy Lopez (Bb5 a6 Ba4) or Queen's Gambit (d4 d5 c4)
+- Amir (200): No openings — too chaotic to follow a book
+
+## Admin Management
+
+The admin panel (`/admin/bots`) provides full CRUD:
+
+- **Edit** any bot: name, Elo, description, behavior sliders, messages (JSON), openings (JSON)
+- **Enable/Disable** bots without deleting
+- **Create** new bots with all parameters
+- **Delete** bots permanently
+- **Reseed from YAML** to reset all bots to default values (destructive)
+
+All changes are audited and persist across container restarts.
 
 ## API
 
-`GET /api/bots` returns enabled bot personalities from the database (no authentication required). Response is cached by nginx for 1 hour.
+`GET /api/v1/bots` returns enabled bot personalities (no auth required). Response includes all fields: behavior params, messages, preferredOpenings.
 
 ## Seeding
 
 ```bash
-make seed-bots    # Reads bots.yml, creates only missing bots in DB
+make seed-bots                    # Creates missing bots only (safe)
+FORCE_RESEED=1 make seed-bots    # Overwrites all bots from YAML (destructive)
 ```
 
-The seeder also runs automatically on every API container restart. It only creates bots that don't already exist in the database — it never overwrites existing rows. This means admin edits (name, description, Elo, behavior parameters, enabled/disabled state) are fully preserved across restarts and redeployments.
-
-## Adding a New Bot
-
-Add an entry to `deployment/config/bots.yml`:
-
-```yaml
-- id: unique-slug
-  name: Display Name
-  elo: 1500
-  description: "Short personality description"
-  avatar: "\U0001F600"
-  tier: hybrid
-  category: advanced
-  randomMoveChance: 0.03
-  blunderChance: 0.08
-  captureGreed: 0.4
-  aggressionBias: 0.4
-  maxDepth: 5
-  queenEarly: false
-  pawnPusher: false
-```
-
-Then run `make seed-bots` to add it to the database.
-
-## Admin Management
-
-Admins can customize bot personalities through the database:
-
-- Edit name, description, avatar, and Elo
-- Tune behavior parameters
-- Enable/disable individual bots
-- Changes are preserved across container restarts (seeder won't overwrite)
+The seeder runs on every API container restart. It only creates bots that don't exist — admin edits are preserved.
