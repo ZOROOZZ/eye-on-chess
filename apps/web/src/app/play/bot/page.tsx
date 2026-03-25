@@ -490,6 +490,28 @@ export default function PlayBotPage() {
       setSuggestionArrow(null);
       setEngineLine(null);
       setFeedback(null);
+      // Skip evaluation if game is already over (checkmate/stalemate)
+      if (chess.isGameOver()) {
+        const result = chess.isCheckmate()
+          ? chess.turn() === "w"
+            ? "Black wins by checkmate"
+            : "White wins by checkmate"
+          : "Draw";
+        const pEnd = selectedBot || buildFallbackPersonality(botElo);
+        if (chess.isCheckmate()) botChat.triggerMessage("onCheckmated");
+        else botChat.triggerMessage("onDraw");
+        botReactions.triggerReaction("gameEnd", pEnd);
+        setGameOver(result);
+        setPhase("ended");
+        sound.playGameOver();
+        if (gameId && isOnline) {
+          try {
+            await api.post(`/api/games/${gameId}/move`, { from, to, promotion });
+          } catch {}
+        }
+        if (!gameId) saveGameOffline(newMoves, [...allUciMoves, playerUci], result);
+        return;
+      }
       // Evaluate position before bot responds for move feedback and eval bar
       if (activeSettings.moveFeedback || activeSettings.evalBar) {
         const evBefore = await botEngine.evaluate(fenBefore);
@@ -528,22 +550,7 @@ export default function PlayBotPage() {
           await api.post(`/api/games/${gameId}/move`, { from, to, promotion });
         } catch {}
       }
-      if (chess.isGameOver()) {
-        const result = chess.isCheckmate()
-          ? chess.turn() === "w"
-            ? "Black wins by checkmate"
-            : "White wins by checkmate"
-          : "Draw";
-        const pEnd = selectedBot || buildFallbackPersonality(botElo);
-        if (chess.isCheckmate()) botChat.triggerMessage("onCheckmated");
-        else botChat.triggerMessage("onDraw");
-        botReactions.triggerReaction("gameEnd", pEnd);
-        setGameOver(result);
-        setPhase("ended");
-        sound.playGameOver();
-        if (!gameId) saveGameOffline(newMoves, [...allUciMoves, playerUci], result);
-        return;
-      }
+      // Game-over already handled above (before eval). Proceed to bot move.
       makeBotMove(chess, newMoves);
     },
     [
