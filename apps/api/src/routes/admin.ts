@@ -642,14 +642,7 @@ export async function adminRoutes(app: FastifyInstance) {
         },
       });
 
-      await auditLog({
-        adminId: request.user.userId,
-        action: "bot.create",
-        targetType: "BotProfile",
-        targetId: bot.id,
-        details: { botId, name: bot.name, elo: bot.elo },
-        ip: request.ip,
-      });
+      await auditLog(request.user.userId, "bot.create", "BotProfile", bot.id, { botId, name: bot.name, elo: bot.elo }, request.ip);
 
       return { bot };
     }
@@ -693,14 +686,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
       const bot = await prisma.botProfile.update({ where: { id }, data });
 
-      await auditLog({
-        adminId: request.user.userId,
-        action: "bot.update",
-        targetType: "BotProfile",
-        targetId: id,
-        details: data,
-        ip: request.ip,
-      });
+      await auditLog(request.user.userId, "bot.update", "BotProfile", id, data, request.ip);
 
       return { bot };
     }
@@ -714,14 +700,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
     await prisma.botProfile.delete({ where: { id } });
 
-    await auditLog({
-      adminId: request.user.userId,
-      action: "bot.delete",
-      targetType: "BotProfile",
-      targetId: id,
-      details: { botId: existing.botId, name: existing.name },
-      ip: request.ip,
-    });
+    await auditLog(request.user.userId, "bot.delete", "BotProfile", id, { botId: existing.botId, name: existing.name }, request.ip);
 
     return { success: true };
   });
@@ -769,14 +748,7 @@ export async function adminRoutes(app: FastifyInstance) {
       }
     }
 
-    await auditLog({
-      adminId: request.user.userId,
-      action: "bot.reseed",
-      targetType: "BotProfile",
-      targetId: "all",
-      details: { created, updated, total: bots.length },
-      ip: request.ip,
-    });
+    await auditLog(request.user.userId, "bot.reseed", "BotProfile", "all", { created, updated, total: bots.length }, request.ip);
 
     return { created, updated };
   });

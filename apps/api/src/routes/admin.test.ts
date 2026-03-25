@@ -100,17 +100,30 @@ describe("adminRoutes", () => {
 
       prisma.user.count
         .mockResolvedValueOnce(50) // totalUsers
-        .mockResolvedValueOnce(45); // activeUsers
+        .mockResolvedValueOnce(45) // activeUsers
+        .mockResolvedValueOnce(48) // verifiedUsers
+        .mockResolvedValueOnce(3); // newUsersWeek
       prisma.game.count
         .mockResolvedValueOnce(200) // totalGames
         .mockResolvedValueOnce(5) // activeGames
         .mockResolvedValueOnce(180) // completedGames
-        .mockResolvedValueOnce(10); // gamesToday
+        .mockResolvedValueOnce(2) // abortedGames
+        .mockResolvedValueOnce(10) // gamesToday
+        .mockResolvedValueOnce(50) // gamesWeek
+        .mockResolvedValueOnce(150) // gamesMonth
+        .mockResolvedValueOnce(100); // botGames
       redis.llen.mockResolvedValue(3);
+      redis.keys.mockResolvedValue(["online:1", "online:2"]);
+      prisma.game.groupBy.mockResolvedValue([]);
+      prisma.auditLog.findMany.mockResolvedValue([]);
+      prisma.botProfile.count.mockResolvedValue(31);
       prisma.siteSettings.findUnique.mockResolvedValue({
         id: "singleton",
         siteName: "EyeOnChess",
         registrationOpen: true,
+        maxUsers: 0,
+        requireEmailVerification: false,
+        updatedAt: new Date(),
       });
 
       const res = await app.inject({

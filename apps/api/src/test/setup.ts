@@ -33,6 +33,7 @@ const mockPrismaClient: Record<string, unknown> = {
     update: vi.fn(),
     delete: vi.fn(),
     count: vi.fn(),
+    groupBy: vi.fn().mockResolvedValue([]),
   },
   move: {
     create: vi.fn(),
@@ -99,9 +100,12 @@ const mockPrismaClient: Record<string, unknown> = {
     findUnique: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
     upsert: vi.fn(),
     count: vi.fn(),
+    aggregate: vi.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
   },
   $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(mockPrismaClient)),
 };
@@ -124,6 +128,7 @@ const mockRedis: Record<string, ReturnType<typeof vi.fn>> = {
   smembers: vi.fn(),
   llen: vi.fn(),
   lpush: vi.fn(),
+  keys: vi.fn().mockResolvedValue([]),
   pipeline: vi.fn(() => ({ exec: vi.fn().mockResolvedValue([]) })),
 };
 

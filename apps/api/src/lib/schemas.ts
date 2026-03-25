@@ -207,7 +207,7 @@ export const createBotBodySchema = z.object({
   maxDepth: z.number().int().min(1).max(18).optional(),
   queenEarly: z.boolean().optional(),
   pawnPusher: z.boolean().optional(),
-  messages: z.record(z.array(z.string())).optional(),
+  messages: z.record(z.string(), z.array(z.string())).optional(),
   preferredOpenings: z
     .object({
       asWhite: z.array(z.string()).optional(),
@@ -232,7 +232,7 @@ export const updateBotBodySchema = z.object({
   maxDepth: z.number().int().min(1).max(18).optional(),
   queenEarly: z.boolean().optional(),
   pawnPusher: z.boolean().optional(),
-  messages: z.record(z.array(z.string())).optional(),
+  messages: z.record(z.string(), z.array(z.string())).optional(),
   preferredOpenings: z
     .object({
       asWhite: z.array(z.string()).optional(),
