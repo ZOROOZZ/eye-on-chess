@@ -649,40 +649,61 @@ export async function gameRoutes(app: FastifyInstance) {
   }>("/games/:id/sync-moves", async (request, reply) => {
     const userId = request.user.userId;
     const { id } = request.params;
-    const { moves: movesData, fen, result, termination } = request.body;
+    const { moves: movesData, result, termination } = request.body;
 
     const game = await prisma.game.findUnique({ where: { id }, select: { id: true, whiteId: true, blackId: true, isVsBot: true } });
-    if (!game) return reply.status(404).send({ error: "Game not found" });
-    if (!game.isVsBot) return reply.status(400).send({ error: "Only bot games can sync moves" });
-    if (game.whiteId !== userId && game.blackId !== userId) return reply.status(403).send({ error: "Not a participant" });
+    if (!game) return apiError(reply, 404, GAME_NOT_FOUND, "Game not found");
+    if (!game.isVsBot) return apiError(reply, 400, GAME_NOT_BOT, "Only bot games can sync moves");
+    if (game.whiteId !== userId && game.blackId !== userId) return apiError(reply, 403, GAME_NOT_PARTICIPANT, "Not a participant");
 
-    // Delete existing moves (in case of re-sync) and insert all
-    await prisma.move.deleteMany({ where: { gameId: id } });
-    if (movesData.length > 0) {
-      await prisma.move.createMany({
-        data: movesData.map((m) => ({
-          gameId: id,
-          ply: m.ply,
-          san: m.san,
-          uci: m.uci,
-          fen: m.fen,
-        })),
+    // Validate result/termination values
+    const validResults = ["WHITE_WIN", "BLACK_WIN", "DRAW"];
+    const validTerminations = ["CHECKMATE", "RESIGNATION", "TIMEOUT", "AGREEMENT"];
+    if (result && !validResults.includes(result)) {
+      return apiError(reply, 400, GAME_INVALID_MOVE, "Invalid result value");
+    }
+    if (termination && !validTerminations.includes(termination)) {
+      return apiError(reply, 400, GAME_INVALID_MOVE, "Invalid termination value");
+    }
+
+    // Replay all moves from starting position to validate legality
+    const chess = new Chess();
+    const validatedMoves: { ply: number; san: string; uci: string; fen: string }[] = [];
+    for (const m of movesData) {
+      const move = chess.move(m.san);
+      if (!move) {
+        return apiError(reply, 400, GAME_INVALID_MOVE, `Invalid move at ply ${validatedMoves.length + 1}: ${m.san}`);
+      }
+      validatedMoves.push({
+        ply: validatedMoves.length + 1,
+        san: move.san,
+        uci: `${move.from}${move.to}${move.promotion || ""}`,
+        fen: chess.fen(),
       });
     }
 
-    // Build PGN from SANs
-    const pgn = movesData
-      .map((m, i) => (i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ${m.san}` : m.san))
-      .join(" ");
+    // Use chess.js-computed FEN and PGN — never trust client values
+    const validatedFen = chess.fen();
+    const validatedPgn = chess.pgn();
 
-    // Update game record
-    const updateData: Record<string, unknown> = { fen, pgn };
-    if (result) updateData.result = result;
-    if (termination) updateData.termination = termination;
-    updateData.status = "COMPLETED";
-    updateData.endedAt = new Date();
-
-    await prisma.game.update({ where: { id }, data: updateData });
+    // Atomic: delete old moves + insert validated + update game
+    await prisma.$transaction(async (tx) => {
+      await tx.move.deleteMany({ where: { gameId: id } });
+      if (validatedMoves.length > 0) {
+        await tx.move.createMany({
+          data: validatedMoves.map((m) => ({ gameId: id, ...m })),
+        });
+      }
+      const updateData: Record<string, unknown> = {
+        fen: validatedFen,
+        pgn: validatedPgn,
+        status: "COMPLETED",
+        endedAt: new Date(),
+      };
+      if (result) updateData.result = result;
+      if (termination) updateData.termination = termination;
+      await tx.game.update({ where: { id }, data: updateData });
+    });
 
     return { success: true };
   });
