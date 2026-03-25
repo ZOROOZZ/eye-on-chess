@@ -144,7 +144,7 @@ jobs:
         run: docker build -f deployment/Dockerfile.base -t eyeonchess-base .
 
       - name: Start services
-        run: docker compose -f deployment/docker-compose.dev.yml up --build -d
+        run: docker compose --env-file .env -f deployment/docker-compose.dev.yml up --build -d
 
       - name: Wait for services
         run: |
@@ -157,7 +157,7 @@ jobs:
             sleep 3
           done
           echo "API failed to start"
-          docker compose -f deployment/docker-compose.dev.yml logs api --tail 30
+          docker compose --env-file .env -f deployment/docker-compose.dev.yml logs api --tail 30
           exit 1
 
       - name: Health check
@@ -168,11 +168,11 @@ jobs:
 
       - name: Dump logs on failure
         if: failure()
-        run: docker compose -f deployment/docker-compose.dev.yml logs --tail 50
+        run: docker compose --env-file .env -f deployment/docker-compose.dev.yml logs --tail 50
 
       - name: Stop services
         if: always()
-        run: docker compose -f deployment/docker-compose.dev.yml down -v
+        run: docker compose --env-file .env -f deployment/docker-compose.dev.yml down -v
 
   codacy-coverage:
     name: Codacy Coverage
