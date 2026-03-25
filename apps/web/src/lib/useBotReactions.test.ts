@@ -3,11 +3,7 @@ import { renderHook, act } from "@testing-library/react";
 import { useBotReactions } from "./useBotReactions";
 import type { BotPersonality } from "@eyeonchess/chess";
 
-// Mock crypto.randomUUID
-let uuidCounter = 0;
-vi.stubGlobal("crypto", {
-  randomUUID: () => `uuid-${++uuidCounter}`,
-});
+// No crypto mock needed - useBotReactions uses Math.random() for IDs
 
 const AMIR: BotPersonality = {
   id: "amir",

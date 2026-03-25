@@ -67,7 +67,7 @@ export function useBotReactions() {
       setActiveReactions((prev) => [
         ...prev.slice(-(MAX_ACTIVE - 1)),
         {
-          id: crypto.randomUUID(),
+          id: Math.random().toString(36).slice(2) + Date.now().toString(36),
           reaction: mapping.reaction,
           fromOpponent: true,
           timestamp: now,
