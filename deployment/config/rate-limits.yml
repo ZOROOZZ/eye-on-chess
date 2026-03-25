@@ -49,6 +49,15 @@ routes:
     max: 60
     timeWindow: "1 minute"
 
+  # Game sync — expensive (chess.js replay + DB transaction)
+  "/api/v1/games/*/sync-moves":
+    max: 5
+    timeWindow: "1 minute"
+
+  "/api/v1/games/sync":
+    max: 10
+    timeWindow: "1 minute"
+
   # Analysis — expensive operation
   "/api/v1/games/*/analyze":
     max: 5
