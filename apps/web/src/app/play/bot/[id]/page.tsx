@@ -215,12 +215,11 @@ export default function BotGamePage({
       setPlayerIsWhite(colorParam === "white");
       setModePreset(presetParam);
 
-      // Determine active settings
+      // Determine active settings from game mode (not time control preset)
       if (modeParam === "custom") {
-        // For custom mode, we'd need more params; fall back to DEFAULT_CUSTOM
         setActiveSettings({ ...DEFAULT_CUSTOM });
-      } else if (presetParam in GAME_MODE_PRESETS) {
-        setActiveSettings(GAME_MODE_PRESETS[presetParam]);
+      } else if (modeParam in GAME_MODE_PRESETS) {
+        setActiveSettings(GAME_MODE_PRESETS[modeParam as GameModePreset]);
       } else {
         setActiveSettings(GAME_MODE_PRESETS.friendly);
       }
@@ -289,11 +288,11 @@ export default function BotGamePage({
             }
           }
 
-          // Determine mode from search params or default
-          const presetParam = (searchParams.get("preset") || "friendly") as GameModePreset;
-          setModePreset(presetParam);
-          if (presetParam in GAME_MODE_PRESETS) {
-            setActiveSettings(GAME_MODE_PRESETS[presetParam]);
+          // Determine game mode from search params or default
+          const modeParam = (searchParams.get("mode") || "friendly") as GameModePreset;
+          setModePreset(modeParam);
+          if (modeParam in GAME_MODE_PRESETS) {
+            setActiveSettings(GAME_MODE_PRESETS[modeParam]);
           } else {
             setActiveSettings(GAME_MODE_PRESETS.friendly);
           }
