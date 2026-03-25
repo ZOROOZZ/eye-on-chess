@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Chess } from "chess.js";
 import api from "../../../../lib/api";
 import { useAuthStore } from "../../../../stores/auth";
@@ -98,7 +98,6 @@ export default function BotGamePage({
 }) {
   const { id } = params;
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, isLoading, fetchMe } = useAuthStore();
   const botEngine = useBotEngine();
   const sound = useSound();
@@ -197,49 +196,54 @@ export default function BotGamePage({
     return null;
   }
 
+  // --- Read game config from sessionStorage (set by selection page) ---
+  function readGameConfig(): {
+    elo: number;
+    color: string;
+    mode: string;
+    botId: string | null;
+    settings: GameModeSettings;
+  } | null {
+    try {
+      const raw = sessionStorage.getItem("botGameConfig");
+      if (raw) {
+        sessionStorage.removeItem("botGameConfig");
+        return JSON.parse(raw);
+      }
+    } catch {}
+    return null;
+  }
+
+  function applyConfig(config: ReturnType<typeof readGameConfig>) {
+    if (config?.settings) {
+      setActiveSettings(config.settings);
+    } else if (config?.mode && config.mode !== "custom" && config.mode in GAME_MODE_PRESETS) {
+      setActiveSettings(GAME_MODE_PRESETS[config.mode as GameModePreset]);
+    } else {
+      setActiveSettings(GAME_MODE_PRESETS.friendly);
+    }
+    if (config?.mode) setModePreset(config.mode as GameModePreset);
+    if (config?.botId || config?.elo) {
+      const cachedBot = loadBotFromCache(config.botId, config.elo);
+      if (cachedBot) setBot(cachedBot);
+    }
+  }
+
   // --- Initialization: determine online vs offline, load game state ---
   useEffect(() => {
     if (initialized || !user) return;
 
+    const config = readGameConfig();
     const isOffline = id.startsWith("offline-");
 
     if (isOffline) {
-      // Offline game: read params from URL search params
-      const eloParam = parseInt(searchParams.get("elo") || "800", 10);
-      const colorParam = searchParams.get("color") || "white";
-      const presetParam = (searchParams.get("preset") || "friendly") as GameModePreset;
-      const modeParam = searchParams.get("mode");
-      const botIdParam = searchParams.get("botId");
+      const elo = config?.elo || 800;
+      const isWhite = config?.color !== "black";
 
-      setBotElo(eloParam);
-      setPlayerIsWhite(colorParam === "white");
-      setModePreset(presetParam);
+      setBotElo(elo);
+      setPlayerIsWhite(isWhite);
+      applyConfig(config);
 
-      // Determine active settings — read individual toggles from URL params
-      const hasSettingsInUrl = searchParams.has("hints") || searchParams.has("evalBar");
-      if (hasSettingsInUrl) {
-        setActiveSettings({
-          hints: searchParams.get("hints") === "1",
-          evalBar: searchParams.get("evalBar") === "1",
-          threats: searchParams.get("threats") === "1",
-          suggestions: searchParams.get("suggestions") === "1",
-          moveFeedback: searchParams.get("moveFeedback") === "1",
-          takeback: searchParams.get("takeback") === "1",
-          engine: searchParams.get("engine") === "1",
-        });
-      } else if (modeParam !== "custom" && modeParam in GAME_MODE_PRESETS) {
-        setActiveSettings(GAME_MODE_PRESETS[modeParam as GameModePreset]);
-      } else {
-        setActiveSettings(GAME_MODE_PRESETS.friendly);
-      }
-
-      // Load bot personality
-      const cachedBot = loadBotFromCache(botIdParam, eloParam);
-      if (cachedBot) {
-        setBot(cachedBot);
-      }
-
-      // Fresh chess instance
       const chess = new Chess();
       setGame(chess);
       setMoves([]);
@@ -267,11 +271,14 @@ export default function BotGamePage({
           setPlayerIsWhite(g.whiteId === user?.id);
           setBotElo(g.botElo || 800);
 
-          // Load bot personality
-          const botIdParam = searchParams.get("botId");
-          const cachedBot = loadBotFromCache(botIdParam, g.botElo);
-          if (cachedBot) {
-            setBot(cachedBot);
+          // Apply config from sessionStorage, or fall back to defaults
+          if (config) {
+            applyConfig(config);
+          } else {
+            // Page refresh without sessionStorage — load bot from cache by elo
+            const cachedBot = loadBotFromCache(null, g.botElo);
+            if (cachedBot) setBot(cachedBot);
+            setActiveSettings(GAME_MODE_PRESETS.friendly);
           }
 
           // Restore moves
@@ -295,26 +302,6 @@ export default function BotGamePage({
             if (last.uci?.length >= 4) {
               setLastMove([last.uci.slice(0, 2), last.uci.slice(2, 4)]);
             }
-          }
-
-          // Determine game mode — read individual toggles from URL params
-          const modeParam = (searchParams.get("mode") || "friendly") as GameModePreset;
-          setModePreset(modeParam);
-          const hasSettingsInUrl = searchParams.has("hints") || searchParams.has("evalBar");
-          if (hasSettingsInUrl) {
-            setActiveSettings({
-              hints: searchParams.get("hints") === "1",
-              evalBar: searchParams.get("evalBar") === "1",
-              threats: searchParams.get("threats") === "1",
-              suggestions: searchParams.get("suggestions") === "1",
-              moveFeedback: searchParams.get("moveFeedback") === "1",
-              takeback: searchParams.get("takeback") === "1",
-              engine: searchParams.get("engine") === "1",
-            });
-          } else if (modeParam !== "custom" && modeParam in GAME_MODE_PRESETS) {
-            setActiveSettings(GAME_MODE_PRESETS[modeParam]);
-          } else {
-            setActiveSettings(GAME_MODE_PRESETS.friendly);
           }
 
           setOfflineGameId(null);
