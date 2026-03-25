@@ -126,6 +126,26 @@ Custom-tier bots (200-1200) follow preferred opening move sequences before falli
 - Ahmed (1100): Plays Ruy Lopez (Bb5 a6 Ba4) or Queen's Gambit (d4 d5 c4)
 - Amir (200): No openings — too chaotic to follow a book
 
+## Game State Persistence
+
+Bot games auto-save state to prevent data loss from accidental tab closure or navigation:
+
+- **Auto-save:** Game state saved to localStorage every move under `eyeonchess-game-{id}`
+- **Backup save:** `beforeunload` handler fires on tab close as a fallback
+- **Resume:** On page load, the game page checks for a saved in-progress game and resumes automatically
+- **Cleanup:** Saved state cleared on game completion
+
+**Sync after completion:**
+- Completed offline games are synced via `POST /api/v1/games/sync` (game creation) or `POST /api/v1/games/:id/sync-moves` (move batch sync to existing game)
+- If sync fails, the game is added to a pending queue (`eyeonchess-pending-syncs` in localStorage) and retried on next page load via `retryPendingSyncs()`
+- Error toast shown to user: "Game sync failed — will retry later"
+- `syncOfflineGames` returns `{ synced, failed }` counts for reporting
+
+**Key functions** in `src/lib/offlineSync.ts`:
+- `saveInProgress(id, state)` — save current game state
+- `loadInProgress(id)` — restore saved game
+- `clearInProgress(id)` — remove saved state after completion
+
 ## Admin Management
 
 The admin panel (`/admin/bots`) provides full CRUD:

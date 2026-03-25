@@ -186,6 +186,7 @@ See the full step-by-step walkthrough in the [`screenshots/`](screenshots/README
 - Automatic database migrations on startup
 - Database backup script with rotation
 - Configurable registration (open/closed, user limits)
+- Zombie game cleanup: server automatically aborts bot games stuck in ACTIVE status for >24 hours (runs every 5 minutes)
 - YAML-configurable rate limiting with hot-reload (no restart needed)
 - Request logging with sensitive field redaction
 - Terms of Service / Privacy Policy gate (users must accept)

@@ -357,6 +357,22 @@ Self-hostable chess platform built with Next.js 14, Fastify, PostgreSQL, Redis, 
 - PgBouncer userlist.txt generated dynamically from env at container startup
 - `--env-file .env` in Makefile for compose variable interpolation
 
+### v1.1.1 - v1.1.3 Bug Fixes & Hardening (Complete)
+
+- **Bot game route split:** `/play/bot` (selection) and `/play/bot/[id]` (game) — each game has a unique URL with server game ID or offline ID. Game config passed via sessionStorage.
+- **New endpoint `POST /games/:id/sync-moves`:** Batch sync all moves to existing bot game after completion. Chess.js replay validation, server-computed FEN/PGN, atomic transaction. Rate limited: 5 req/min.
+- **Mid-game data loss prevention:** Game state auto-saved to localStorage every move (`eyeonchess-game-{id}`). `beforeunload` handler as backup. InProgressGame interface in offlineSync.ts.
+- **Sync failure handling:** syncGameToServer saves to pending queue on failure with error toast. `retryPendingSyncs()` retries on next page load. `syncOfflineGames` returns `{ synced, failed }`.
+- **Zombie game cleanup:** Server-side periodic cleanup every 5 minutes aborts bot games ACTIVE > 24 hours (status=ABORTED with endedAt).
+- **Duplicate sync prevention:** Client-side sync lock prevents concurrent syncOfflineGames calls. Server-side dedup checks for existing game with matching startedAt + botElo + user. offlineId sent in sync request.
+- **Rate limits:** `/api/v1/games/*/sync-moves` at 5 req/min, `/api/v1/games/sync` at 10 req/min.
+- **Time control preservation:** Offline sync now passes timeControl, initialTime, increment instead of hardcoding UNLIMITED.
+- **Bug fixes:**
+  - All frontend API paths fixed to `/api/v1/` (14 files)
+  - `crypto.randomUUID` replaced with `Math.random` for HTTP contexts
+  - Game-over detection before Stockfish eval (prevents crash)
+  - Login form autoComplete attributes added
+
 ## Current Status
 
 - All phases complete: 1, 2, 3, 4, 5, 7, 8, 9 + release prep + admin panel + technical improvements + bot personality system + security hardening
