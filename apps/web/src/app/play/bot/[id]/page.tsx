@@ -313,7 +313,7 @@ export default function BotGamePage({
           setInitialized(true);
         });
     }
-  }, [initialized, user, id, searchParams]);
+  }, [initialized, user, id]);
 
   // --- Handle bot first move (if player is black) ---
   useEffect(() => {
