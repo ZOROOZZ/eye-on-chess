@@ -253,6 +253,17 @@ export default function BotGamePage({
     return () => window.removeEventListener("beforeunload", handler);
   }, [moves, gameOver, initialized, id, botElo, playerIsWhite, allUciMoves, gameStartTime, activeSettings, bot, gameId]);
 
+  // --- Stockfish load timeout ---
+  useEffect(() => {
+    if (botEngine.ready) return;
+    const timeout = setTimeout(() => {
+      if (!botEngine.ready) {
+        setError("Chess engine failed to load. Please check your connection and try again.");
+      }
+    }, 30000);
+    return () => clearTimeout(timeout);
+  }, [botEngine.ready]);
+
   // --- Auth guard ---
   useEffect(() => {
     if (!user) fetchMe();
@@ -590,6 +601,8 @@ export default function BotGamePage({
           setEngineLine(null);
         }
       }
+    } catch (err) {
+      setError(`Bot move failed: ${err instanceof Error ? err.message : "Unknown error"}. Try refreshing.`);
     } finally {
       setThinking(false);
     }
@@ -648,8 +661,15 @@ export default function BotGamePage({
       }
       // Evaluate position before bot responds for move feedback and eval bar
       if (activeSettings.moveFeedback || activeSettings.evalBar) {
-        const evBefore = await botEngine.evaluate(fenBefore);
-        const evAfter = await botEngine.evaluate(chess.fen());
+        let evBefore, evAfter;
+        try {
+          evBefore = await botEngine.evaluate(fenBefore);
+          evAfter = await botEngine.evaluate(chess.fen());
+        } catch {
+          // Eval failed — continue without feedback, don't crash the game
+          makeBotMove(chess, newMoves);
+          return;
+        }
         if (activeSettings.evalBar) setEvalScore(evAfter.score);
         if (activeSettings.moveFeedback) {
           const opening = lookupOpeningClient(newSans);
@@ -840,10 +860,31 @@ export default function BotGamePage({
     );
   }
 
-  if (error && !initialized) {
+  if (error) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
-        <p className="text-red-400">{error}</p>
+      <main className="flex items-center justify-center min-h-screen p-4">
+        <div className="text-center max-w-md">
+          <div className="text-4xl mb-4">♟️</div>
+          <h1 className="text-xl font-bold text-red-400 mb-2">Game Error</h1>
+          <p className="text-sm text-gray-400 mb-2">{error}</p>
+          <p className="text-xs text-gray-500 mb-4">
+            Your game progress has been saved automatically.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => (window.location.href = "/play/bot")}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-medium"
+            >
+              Exit
+            </button>
+          </div>
+        </div>
       </main>
     );
   }
