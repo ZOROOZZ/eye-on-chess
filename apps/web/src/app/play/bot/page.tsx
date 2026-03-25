@@ -138,11 +138,37 @@ export default function PlayBotPage() {
     setShowActivePrompt(false);
   }
 
+  function getActiveMode(): GameModeSettings {
+    return modePreset === "custom" ? customSettings : GAME_MODE_PRESETS[modePreset];
+  }
+
   async function startGame() {
     setError("");
     setConfirmStart(false);
     const isWhite =
       colorChoice === "white" ? true : colorChoice === "black" ? false : Math.random() < 0.5;
+
+    // Build search params with game settings
+    const settings = getActiveMode();
+    const gameParams: Record<string, string> = {
+      elo: String(botElo),
+      color: isWhite ? "white" : "black",
+      preset: showCustomTime ? "custom" : selectedTime,
+      mode: modePreset,
+      ...(selectedBot ? { botId: selectedBot.id } : {}),
+      ...(showCustomTime
+        ? { minutes: String(customMinutes), increment: String(customIncrement) }
+        : {}),
+    };
+    // Serialize individual settings so game page can reconstruct them
+    if (settings.hints) gameParams.hints = "1";
+    if (settings.evalBar) gameParams.evalBar = "1";
+    if (settings.threats) gameParams.threats = "1";
+    if (settings.suggestions) gameParams.suggestions = "1";
+    if (settings.moveFeedback) gameParams.moveFeedback = "1";
+    if (settings.takeback) gameParams.takeback = "1";
+    if (settings.engine) gameParams.engine = "1";
+    const qs = new URLSearchParams(gameParams).toString();
 
     if (isOnline) {
       try {
@@ -157,23 +183,13 @@ export default function PlayBotPage() {
           body.preset = selectedTime;
         }
         const { data } = await api.post("/api/v1/games/bot", body);
-        router.push(`/play/bot/${data.game.id}`);
+        router.push(`/play/bot/${data.game.id}?${qs}`);
       } catch {
         setError("Failed to create game");
       }
     } else {
       const offId = generateOfflineGameId();
-      const params = new URLSearchParams({
-        elo: String(botElo),
-        color: isWhite ? "white" : "black",
-        preset: showCustomTime ? "custom" : selectedTime,
-        mode: modePreset,
-        ...(selectedBot ? { botId: selectedBot.id } : {}),
-        ...(showCustomTime
-          ? { minutes: String(customMinutes), increment: String(customIncrement) }
-          : {}),
-      });
-      router.push(`/play/bot/${offId}?${params.toString()}`);
+      router.push(`/play/bot/${offId}?${qs}`);
     }
   }
 

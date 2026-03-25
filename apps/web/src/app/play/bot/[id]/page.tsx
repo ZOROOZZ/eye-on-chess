@@ -215,10 +215,19 @@ export default function BotGamePage({
       setPlayerIsWhite(colorParam === "white");
       setModePreset(presetParam);
 
-      // Determine active settings from game mode (not time control preset)
-      if (modeParam === "custom") {
-        setActiveSettings({ ...DEFAULT_CUSTOM });
-      } else if (modeParam in GAME_MODE_PRESETS) {
+      // Determine active settings — read individual toggles from URL params
+      const hasSettingsInUrl = searchParams.has("hints") || searchParams.has("evalBar");
+      if (hasSettingsInUrl) {
+        setActiveSettings({
+          hints: searchParams.get("hints") === "1",
+          evalBar: searchParams.get("evalBar") === "1",
+          threats: searchParams.get("threats") === "1",
+          suggestions: searchParams.get("suggestions") === "1",
+          moveFeedback: searchParams.get("moveFeedback") === "1",
+          takeback: searchParams.get("takeback") === "1",
+          engine: searchParams.get("engine") === "1",
+        });
+      } else if (modeParam !== "custom" && modeParam in GAME_MODE_PRESETS) {
         setActiveSettings(GAME_MODE_PRESETS[modeParam as GameModePreset]);
       } else {
         setActiveSettings(GAME_MODE_PRESETS.friendly);
@@ -288,10 +297,21 @@ export default function BotGamePage({
             }
           }
 
-          // Determine game mode from search params or default
+          // Determine game mode — read individual toggles from URL params
           const modeParam = (searchParams.get("mode") || "friendly") as GameModePreset;
           setModePreset(modeParam);
-          if (modeParam in GAME_MODE_PRESETS) {
+          const hasSettingsInUrl = searchParams.has("hints") || searchParams.has("evalBar");
+          if (hasSettingsInUrl) {
+            setActiveSettings({
+              hints: searchParams.get("hints") === "1",
+              evalBar: searchParams.get("evalBar") === "1",
+              threats: searchParams.get("threats") === "1",
+              suggestions: searchParams.get("suggestions") === "1",
+              moveFeedback: searchParams.get("moveFeedback") === "1",
+              takeback: searchParams.get("takeback") === "1",
+              engine: searchParams.get("engine") === "1",
+            });
+          } else if (modeParam !== "custom" && modeParam in GAME_MODE_PRESETS) {
             setActiveSettings(GAME_MODE_PRESETS[modeParam]);
           } else {
             setActiveSettings(GAME_MODE_PRESETS.friendly);
