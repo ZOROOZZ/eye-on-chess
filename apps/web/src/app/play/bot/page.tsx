@@ -429,17 +429,18 @@ export default function PlayBotPage() {
           const botAdvantage = playerIsWhite ? -ev.score : ev.score;
           if (botAdvantage > 300) botChat.triggerMessage("onWinning");
           else if (botAdvantage < -300) botChat.triggerMessage("onLosing");
-          if (activeSettings.threats && ev.bestMove) {
+          const validBestMove = ev.bestMove && ev.bestMove.length >= 4;
+          if (activeSettings.threats && validBestMove) {
             setThreatArrows([{ from: ev.bestMove.slice(0, 2), to: ev.bestMove.slice(2, 4) }]);
           } else {
             setThreatArrows([]);
           }
-          if (activeSettings.suggestions && ev.bestMove) {
+          if (activeSettings.suggestions && validBestMove) {
             setSuggestionArrow({ from: ev.bestMove.slice(0, 2), to: ev.bestMove.slice(2, 4) });
           } else {
             setSuggestionArrow(null);
           }
-          if (activeSettings.engine && ev.bestMove) {
+          if (activeSettings.engine && validBestMove) {
             const score = ev.score;
             const scoreStr =
               Math.abs(score) > 99000
@@ -504,11 +505,6 @@ export default function PlayBotPage() {
         setGameOver(result);
         setPhase("ended");
         sound.playGameOver();
-        if (gameId && isOnline) {
-          try {
-            await api.post(`/api/v1/games/${gameId}/move`, { from, to, promotion });
-          } catch {}
-        }
         if (!gameId) saveGameOffline(newMoves, [...allUciMoves, playerUci], result);
         return;
       }
@@ -545,11 +541,10 @@ export default function PlayBotPage() {
           }
         }
       }
-      if (gameId && isOnline) {
-        try {
-          await api.post(`/api/v1/games/${gameId}/move`, { from, to, promotion });
-        } catch {}
-      }
+      // Bot games use client-side engine — don't sync individual moves to server
+      // (server expects to compute bot response itself, causing state mismatch).
+      // Game will be synced as a whole via /games/sync at completion.
+
       // Game-over already handled above (before eval). Proceed to bot move.
       makeBotMove(chess, newMoves);
     },
