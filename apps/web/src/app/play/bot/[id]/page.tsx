@@ -566,7 +566,8 @@ export default function BotGamePage({
         if (chess.isCheckmate()) botChat.triggerMessage("onCheckmate");
         else botChat.triggerMessage("onDraw");
         botReactions.triggerReaction("gameEnd", personality);
-        setGameOver(result);\n        pickGameOverQuote(result);
+        setGameOver(result);
+        pickGameOverQuote(result);
         clearInProgress(id);
         sound.playGameOver();
         setThreatArrows([]);

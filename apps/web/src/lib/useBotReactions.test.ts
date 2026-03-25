@@ -41,7 +41,6 @@ const _ERFAN: BotPersonality = {
 
 describe("useBotReactions", () => {
   beforeEach(() => {
-    uuidCounter = 0;
     vi.spyOn(Math, "random").mockRestore();
   });
 
