@@ -11,6 +11,9 @@ interface OfflineGame {
   termination: string | null;
   startedAt: string;
   endedAt: string | null;
+  timeControl?: string;
+  initialTime?: number;
+  increment?: number;
 }
 
 const STORAGE_KEY = "eyeonchess-offline-games";
@@ -81,6 +84,9 @@ export async function syncOfflineGames(): Promise<{ synced: number; failed: numb
         termination: game.termination,
         startedAt: game.startedAt,
         endedAt: game.endedAt,
+        timeControl: game.timeControl,
+        initialTime: game.initialTime,
+        increment: game.increment,
       });
       synced++;
     } catch {

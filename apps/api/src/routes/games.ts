@@ -721,7 +721,13 @@ export async function gameRoutes(app: FastifyInstance) {
     };
   }>("/games/sync", { schema: { body: syncOfflineGameBodySchema } }, async (request, reply) => {
     const userId = request.user.userId;
-    const { botElo, playerIsWhite, moves, result, termination, startedAt, endedAt } = request.body;
+    const { botElo, playerIsWhite, moves, result, termination, startedAt, endedAt, timeControl, initialTime, increment } = request.body as Record<string, unknown> & {
+      botElo: number; playerIsWhite: boolean;
+      moves: { ply: number; san: string; uci: string; fen: string }[];
+      result: string | null; termination: string | null;
+      startedAt: string; endedAt: string | null;
+      timeControl?: string; initialTime?: number; increment?: number;
+    };
 
     // Validate moves by replaying
     const chess = new Chess();
@@ -743,9 +749,9 @@ export async function gameRoutes(app: FastifyInstance) {
           termination: termination as Termination | null,
           fen: chess.fen(),
           pgn: chess.pgn(),
-          timeControl: "UNLIMITED",
-          initialTime: 0,
-          increment: 0,
+          timeControl: timeControl || "UNLIMITED",
+          initialTime: initialTime || 0,
+          increment: increment || 0,
           isVsBot: true,
           botElo,
           startedAt: new Date(startedAt),

@@ -90,6 +90,9 @@ export const syncOfflineGameBodySchema = z.object({
   termination: z.string().nullable(),
   startedAt: z.string(),
   endedAt: z.string().nullable(),
+  timeControl: z.string().optional(),
+  initialTime: z.number().optional(),
+  increment: z.number().optional(),
 });
 
 // ── Friends ────────────────────────────────────────────
