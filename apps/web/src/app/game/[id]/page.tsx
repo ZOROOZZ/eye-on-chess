@@ -106,7 +106,7 @@ export default function GamePage() {
   useEffect(() => {
     async function load() {
       try {
-        const { data } = await api.get(`/api/games/${gameId}`);
+        const { data } = await api.get(`/api/v1/games/${gameId}`);
         const g = data.game;
         setWhite(g.white);
         setBlack(g.black);

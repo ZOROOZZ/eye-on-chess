@@ -44,7 +44,7 @@ export default function HistoryPage() {
   const loadGames = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/games/history?page=${page}&limit=20`);
+      const { data } = await api.get(`/api/v1/games/history?page=${page}&limit=20`);
       setGames(data.games);
       setTotalPages(data.pagination.totalPages);
     } catch {

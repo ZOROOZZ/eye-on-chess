@@ -33,7 +33,7 @@ export default function CollectionPicker({ gameId, open, onClose }: CollectionPi
       try {
         const [colRes, memRes] = await Promise.all([
           api.get("/api/v1/collections"),
-          api.get(`/api/games/${gameId}/collections`),
+          api.get(`/api/v1/games/${gameId}/collections`),
         ]);
         setCollections(colRes.data.collections);
         setMemberOf(new Set(memRes.data.collections.map((c: Collection) => c.id)));
@@ -50,14 +50,14 @@ export default function CollectionPicker({ gameId, open, onClose }: CollectionPi
     const isMember = memberOf.has(collectionId);
     try {
       if (isMember) {
-        await api.delete(`/api/collections/${collectionId}/games/${gameId}`);
+        await api.delete(`/api/v1/collections/${collectionId}/games/${gameId}`);
         setMemberOf((prev) => {
           const next = new Set(prev);
           next.delete(collectionId);
           return next;
         });
       } else {
-        await api.post(`/api/collections/${collectionId}/games`, { gameId });
+        await api.post(`/api/v1/collections/${collectionId}/games`, { gameId });
         setMemberOf((prev) => new Set(prev).add(collectionId));
       }
     } catch {

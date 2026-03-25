@@ -26,7 +26,7 @@ export default function GameNoteEditor({ gameId, compact = false }: GameNoteEdit
 
   useEffect(() => {
     api
-      .get(`/api/games/${gameId}/notes`)
+      .get(`/api/v1/games/${gameId}/notes`)
       .then(({ data }) => {
         if (data.note) setText(data.note.text);
         setLoaded(true);
@@ -39,7 +39,7 @@ export default function GameNoteEditor({ gameId, compact = false }: GameNoteEdit
       setSaving(true);
       setSaved(false);
       try {
-        await api.put(`/api/games/${gameId}/notes`, { text: value });
+        await api.put(`/api/v1/games/${gameId}/notes`, { text: value });
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } catch {

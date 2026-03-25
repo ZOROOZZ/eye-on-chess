@@ -41,7 +41,7 @@ export default function AdminAuditLogPage() {
     try {
       const params = new URLSearchParams({ page: String(page), limit: "50" });
       if (actionFilter) params.set("action", actionFilter);
-      const data = await adminRequest("get", `/api/admin/audit-log?${params}`);
+      const data = await adminRequest("get", `/api/v1/admin/audit-log?${params}`);
       setLogs(data.logs);
       setPagination(data.pagination);
     } catch {

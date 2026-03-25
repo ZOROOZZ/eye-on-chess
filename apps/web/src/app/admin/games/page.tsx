@@ -47,7 +47,7 @@ export default function AdminGamesPage() {
       const params = new URLSearchParams({ page: String(page), limit: "20" });
       if (search) params.set("search", search);
       if (statusFilter) params.set("status", statusFilter);
-      const data = await adminRequest("get", `/api/admin/games?${params}`);
+      const data = await adminRequest("get", `/api/v1/admin/games?${params}`);
       setGames(data.games);
       setPagination(data.pagination);
     } catch {
@@ -68,7 +68,7 @@ export default function AdminGamesPage() {
   async function deleteGame(id: string) {
     setActionLoading(true);
     try {
-      await adminRequest("delete", `/api/admin/games/${id}`);
+      await adminRequest("delete", `/api/v1/admin/games/${id}`);
       toast.show("Game deleted");
       await loadGames();
     } catch {

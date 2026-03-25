@@ -97,7 +97,7 @@ export default function AdminUsersPage() {
     try {
       const params = new URLSearchParams({ page: String(page), limit: "20" });
       if (search) params.set("search", search);
-      const data = await adminRequest("get", `/api/admin/users?${params}`);
+      const data = await adminRequest("get", `/api/v1/admin/users?${params}`);
       setUsers(data.users);
       setPagination(data.pagination);
     } catch {
@@ -118,7 +118,7 @@ export default function AdminUsersPage() {
   async function updateUser(id: string, data: Record<string, unknown>) {
     setActionLoading(true);
     try {
-      await adminRequest("patch", `/api/admin/users/${id}`, data);
+      await adminRequest("patch", `/api/v1/admin/users/${id}`, data);
       toast.show("User updated");
       await loadUsers();
     } catch (err: unknown) {
@@ -135,7 +135,7 @@ export default function AdminUsersPage() {
   async function deleteUser(id: string) {
     setActionLoading(true);
     try {
-      await adminRequest("delete", `/api/admin/users/${id}`);
+      await adminRequest("delete", `/api/v1/admin/users/${id}`);
       toast.show("User deleted");
       await loadUsers();
     } catch (err: unknown) {

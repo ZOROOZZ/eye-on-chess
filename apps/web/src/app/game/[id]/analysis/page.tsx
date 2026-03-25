@@ -73,8 +73,8 @@ export default function AnalysisPage() {
   const loadAnalysis = useCallback(async () => {
     try {
       const [analysisRes, gameRes] = await Promise.all([
-        api.get(`/api/games/${gameId}/analysis`),
-        api.get(`/api/games/${gameId}`),
+        api.get(`/api/v1/games/${gameId}/analysis`),
+        api.get(`/api/v1/games/${gameId}`),
       ]);
 
       setStatus(analysisRes.data.status);
@@ -99,7 +99,7 @@ export default function AnalysisPage() {
 
   async function requestAnalysis() {
     try {
-      await api.post(`/api/games/${gameId}/analyze`);
+      await api.post(`/api/v1/games/${gameId}/analyze`);
       setStatus("queued");
     } catch {
       setStatus("error");

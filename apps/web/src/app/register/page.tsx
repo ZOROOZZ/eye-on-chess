@@ -33,7 +33,7 @@ export default function RegisterPage() {
     }
     const timer = setTimeout(async () => {
       try {
-        await api.get(`/api/invites/validate/${inviteCode}`);
+        await api.get(`/api/v1/invites/validate/${inviteCode}`);
         setInviteValid(true);
         setInviteError("");
       } catch (err: unknown) {

@@ -24,7 +24,7 @@ export default function ExportPGN({ gameId, compact = false }: ExportPGNProps) {
   async function fetchPGN(): Promise<string | null> {
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/games/${gameId}/pgn`, {
+      const { data } = await api.get(`/api/v1/games/${gameId}/pgn`, {
         responseType: "text",
         transformResponse: [(d: string) => d],
       });

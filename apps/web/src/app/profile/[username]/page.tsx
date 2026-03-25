@@ -59,7 +59,7 @@ export default function ProfilePage() {
       try {
         const isOther = currentUser && currentUser.username !== username;
         const vsParam = isOther && h2hMode ? `?vsUserId=${currentUser.id}` : "";
-        const { data } = await api.get(`/api/users/${username}${vsParam}`);
+        const { data } = await api.get(`/api/v1/users/${username}${vsParam}`);
         setProfile(data.user);
 
         if (currentUser && data.user.id !== currentUser.id) {
@@ -127,7 +127,7 @@ export default function ProfilePage() {
     if (!friendshipId) return;
     setActionLoading(true);
     try {
-      await api.delete(`/api/friends/${friendshipId}`);
+      await api.delete(`/api/v1/friends/${friendshipId}`);
       setFriendState("none");
       setFriendshipId(null);
     } catch {

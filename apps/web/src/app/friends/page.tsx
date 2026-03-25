@@ -77,7 +77,7 @@ export default function FriendsPage() {
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const { data } = await api.get(`/api/users/search?q=${encodeURIComponent(searchQuery)}`);
+        const { data } = await api.get(`/api/v1/users/search?q=${encodeURIComponent(searchQuery)}`);
         setSearchResults(data.users);
       } catch {
         setSearchResults([]);
@@ -124,7 +124,7 @@ export default function FriendsPage() {
 
   async function removeFriend(friendshipId: string) {
     try {
-      await api.delete(`/api/friends/${friendshipId}`);
+      await api.delete(`/api/v1/friends/${friendshipId}`);
       setFriends((prev) => prev.filter((f) => f.friendshipId !== friendshipId));
     } catch {
       setMessage("Failed to remove friend");

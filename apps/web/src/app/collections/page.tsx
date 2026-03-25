@@ -64,7 +64,7 @@ export default function CollectionsPage() {
   async function deleteCollection() {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/api/collections/${deleteTarget.id}`);
+      await api.delete(`/api/v1/collections/${deleteTarget.id}`);
       await loadCollections();
     } catch {
       // ignore

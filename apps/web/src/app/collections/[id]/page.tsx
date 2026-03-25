@@ -39,7 +39,7 @@ export default function CollectionDetailPage() {
   const loadGames = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/collections/${collectionId}/games?page=${page}`);
+      const { data } = await api.get(`/api/v1/collections/${collectionId}/games?page=${page}`);
       setName(data.collection.name);
       setGames(data.games);
       setTotalPages(data.pagination.totalPages);
