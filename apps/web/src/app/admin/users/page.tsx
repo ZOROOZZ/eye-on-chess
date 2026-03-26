@@ -462,8 +462,8 @@ export default function AdminUsersPage() {
         open={!!confirm}
         title={
           confirm?.type === "delete"
-            ? `Delete ${confirm.user.username}?`
-            : `${confirm?.field === "role" ? (confirm.value === "ADMIN" ? "Promote" : "Demote") : confirm?.value ? "Activate" : "Deactivate"} ${confirm?.user.username}?`
+            ? `Delete ${confirm?.user?.username}?`
+            : `${confirm?.field === "role" ? (confirm?.value === "ADMIN" ? "Promote" : "Demote") : confirm?.value ? "Activate" : "Deactivate"} ${confirm?.user?.username}?`
         }
         message={
           confirm?.type === "delete"

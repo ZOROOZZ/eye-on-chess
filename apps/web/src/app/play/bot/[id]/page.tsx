@@ -602,14 +602,15 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
           const botAdvantage = playerIsWhite ? -ev.score : ev.score;
           if (botAdvantage > 300) botChat.triggerMessage("onWinning");
           else if (botAdvantage < -300) botChat.triggerMessage("onLosing");
-          const validBestMove = ev.bestMove && ev.bestMove.length >= 4;
+          const bm = ev.bestMove;
+          const validBestMove = bm != null && bm.length >= 4;
           if (activeSettings.threats && validBestMove) {
-            setThreatArrows([{ from: ev.bestMove.slice(0, 2), to: ev.bestMove.slice(2, 4) }]);
+            setThreatArrows([{ from: bm.slice(0, 2), to: bm.slice(2, 4) }]);
           } else {
             setThreatArrows([]);
           }
           if (activeSettings.suggestions && validBestMove) {
-            setSuggestionArrow({ from: ev.bestMove.slice(0, 2), to: ev.bestMove.slice(2, 4) });
+            setSuggestionArrow({ from: bm.slice(0, 2), to: bm.slice(2, 4) });
           } else {
             setSuggestionArrow(null);
           }
@@ -619,7 +620,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
               Math.abs(score) > 99000
                 ? `M${Math.sign(score) > 0 ? "" : "-"}${Math.ceil(Math.abs(100000 - Math.abs(score)) / 2)}`
                 : `${score > 0 ? "+" : ""}${(score / 100).toFixed(1)}`;
-            setEngineLine(`${scoreStr} ${ev.bestMove.slice(0, 2)}-${ev.bestMove.slice(2, 4)}`);
+            setEngineLine(`${scoreStr} ${bm.slice(0, 2)}-${bm.slice(2, 4)}`);
           } else {
             setEngineLine(null);
           }
