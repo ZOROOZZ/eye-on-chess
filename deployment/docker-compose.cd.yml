@@ -114,7 +114,9 @@ services:
     image: redis:7-alpine
     container_name: eyeonchess-redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
@@ -285,6 +287,8 @@ volumes:
     name: eyeonchess-prometheus-data
   loki_data:
     name: eyeonchess-loki-data
+  redis_data:
+    name: eyeonchess-redis-data
   grafana_data:
     name: eyeonchess-grafana-data
   certbot-certs:

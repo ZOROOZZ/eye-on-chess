@@ -86,7 +86,7 @@ async function main() {
         scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "blob:"],
-        connectSrc: ["'self'", "ws:", "wss:"],
+        connectSrc: isProduction ? ["'self'", "wss:"] : ["'self'", "ws:", "wss:"],
         workerSrc: ["'self'", "blob:"],
         fontSrc: ["'self'"],
         mediaSrc: ["'self'"],

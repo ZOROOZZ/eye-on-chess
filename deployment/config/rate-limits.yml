@@ -20,7 +20,7 @@ global:
 routes:
   # Auth — strict to prevent brute force
   "/api/v1/auth/login":
-    max: 10
+    max: 5
     timeWindow: "1 minute"
 
   "/api/v1/auth/register":
