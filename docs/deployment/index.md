@@ -1,5 +1,6 @@
 # Deployment
 
+- [GitHub Repository Setup](github-setup.md) — Branch/tag rulesets, security features, Actions config, and best practices
 - [CI/CD Pipeline](ci-cd.md) — Automated deployment with GitHub Actions, GitLab CI, GHCR, and Ansible
 - [HTTPS Setup](ci-cd.md#https-with-lets-encrypt) — Automatic SSL via Let's Encrypt Certbot
 - [Docker Compose](docker-compose.md) — Production, CD, and development compose configurations
