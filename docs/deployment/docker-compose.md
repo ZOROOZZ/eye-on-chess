@@ -1,78 +1,73 @@
 # Docker Compose
 
-EyeOnChess provides two Docker Compose configurations in the `deployment/` directory.
+EyeOnChess provides three Docker Compose configurations in the `deployment/` directory.
 
-## Production (`docker-compose.yml`)
+## Production — Local Build (`docker-compose.yml`)
+
+Builds images from source on the server. Use this when not using the CI/CD pipeline.
 
 ```bash
-docker compose -f deployment/docker-compose.yml up -d
+docker compose --env-file .env -f deployment/docker-compose.yml up -d
 # or: make up
 ```
 
 ### Services
 
-| Service   | Image                      | Port             | Health Check                        |
-| --------- | -------------------------- | ---------------- | ----------------------------------- |
-| nginx     | nginx:alpine               | **80** (exposed) | `wget http://localhost/health`      |
-| postgres  | postgres:16-alpine         | internal         | `pg_isready -U postgres`            |
-| pgbouncer | edoburu/pgbouncer:1.23.1   | internal (6432)  | —                                   |
-| redis     | redis:7-alpine             | internal         | `redis-cli ping`                    |
-| api       | apps/api/Dockerfile.prod   | internal (3001)  | `wget http://localhost:3001/health` |
-| web       | apps/web/Dockerfile        | internal (3000)  | `wget http://localhost:3000`        |
-| worker    | apps/api/Dockerfile.worker | none             | —                                   |
+| Service    | Image                        | Port               | Health Check                        |
+| ---------- | ---------------------------- | ------------------ | ----------------------------------- |
+| nginx      | nginx:alpine                 | **80, 443** (host) | `wget http://localhost/health`      |
+| certbot    | certbot/certbot:latest       | —                  | —                                   |
+| postgres   | postgres:16-alpine           | internal           | `pg_isready -U postgres`            |
+| pgbouncer  | edoburu/pgbouncer:v1.23.1-p2 | internal (6432)    | —                                   |
+| redis      | redis:7-alpine               | internal           | `redis-cli ping`                    |
+| api        | Built from Dockerfile.prod   | internal (3001)    | `wget http://localhost:3001/health` |
+| web        | Built from Dockerfile        | internal (3000)    | `wget http://localhost:3000`        |
+| worker     | Built from Dockerfile.worker | —                  | —                                   |
+| prometheus | prom/prometheus:v3.4.1       | internal (9090)    | —                                   |
+| loki       | grafana/loki:3.5.0           | internal (3100)    | —                                   |
+| promtail   | grafana/promtail:3.5.0       | internal           | —                                   |
+| grafana    | grafana/grafana:11.6.0       | internal (3000)    | —                                   |
 
-### Key Differences from Dev
+### Key Points
 
-- Nginx is the single entry point (port 80)
-- No ports exposed for postgres, redis, api, or web
-- No volume mounts (code baked into images)
-- Health checks on all services with dependency ordering
-- Production-optimized builds
+- Nginx is the single entry point (ports 80 and 443)
+- No internal service ports exposed to the host
+- Images are built locally from Dockerfiles (not pulled from a registry)
+- Health checks on postgres, redis, api, web, and nginx with dependency ordering
+- Certbot container handles SSL — see [HTTPS Setup](ci-cd.md#https-with-lets-encrypt)
 
-### Connection Pooling (PgBouncer)
+## Production — CD Pipeline (`docker-compose.cd.yml`)
 
-All application database traffic routes through PgBouncer, a lightweight connection pooler sitting between application services and PostgreSQL.
+Pulls pre-built images from a container registry (GHCR or GitLab). Used by the CI/CD pipeline and `make deploy`.
 
-- **Pool mode:** Transaction (connections returned to pool after each transaction)
-- **Default pool size:** 20 connections per database
-- **Max client connections:** 200
-- **Port:** 6432 (internal)
+```bash
+IMAGE_TAG=1.2.0 docker compose --env-file .env -f deployment/docker-compose.cd.yml up -d
+# or: IMAGE_TAG=1.2.0 make deploy
+```
 
-API and worker services connect to `pgbouncer:6432` with `?pgbouncer=true` in the connection string (disables PostgreSQL prepared statements, which are incompatible with transaction pooling).
+### Differences from Local Build
 
-Migrations, seeds, and bot seeds use `DIRECT_DATABASE_URL` to connect directly to PostgreSQL (DDL statements require a direct connection, not a pooled one).
+| Aspect           | `docker-compose.yml`    | `docker-compose.cd.yml`                                             |
+| ---------------- | ----------------------- | ------------------------------------------------------------------- |
+| App images       | Built from Dockerfiles  | Pulled from registry (`${IMAGE_REGISTRY}/api:${IMAGE_TAG}`)         |
+| Image versioning | None (always `:latest`) | Tagged by version (`1.2.0`) and `:latest`                           |
+| Build step       | `make build` required   | `docker compose pull` only                                          |
+| Default registry | N/A                     | `ghcr.io/amiwrpremium/eye-on-chess` (override via `IMAGE_REGISTRY`) |
+| Rollback         | Requires `git checkout` | `IMAGE_TAG=<old-version> make rollback`                             |
 
-Configuration files are in `deployment/pgbouncer/`:
+The `IMAGE_REGISTRY` variable defaults to GHCR. Override it for GitLab:
 
-- `pgbouncer.ini` — pool settings
-- `userlist.txt` — authentication credentials
+```bash
+# In .env
+IMAGE_REGISTRY=registry.gitlab.com/your-username/eye-on-chess
+```
 
-### Startup Order
-
-1. Postgres + Redis start first
-2. Postgres must pass health check before PgBouncer starts
-3. PgBouncer starts after Postgres is healthy
-4. API runs migrations + seed + bot seed on startup (via direct Postgres connection)
-5. Web starts after API
-6. Nginx starts after both Web and API are healthy
-
-### Graceful Shutdown
-
-The API server handles `SIGTERM` and `SIGINT` for clean shutdown during `docker stop` or deployments:
-
-1. Stop accepting new connections
-2. Wait for in-flight requests to complete
-3. Close Socket.io connections
-4. Disconnect Prisma (drain DB connection pool)
-5. Disconnect Redis
-6. Exit
-
-Force exits after 10 seconds if cleanup hangs.
+Infrastructure services (postgres, redis, nginx, certbot, observability) are identical in both compose files.
 
 ## Development (`docker-compose.dev.yml`)
 
 ```bash
-docker compose -f deployment/docker-compose.dev.yml up --build
+docker compose --env-file .env -f deployment/docker-compose.dev.yml up --build
 # or: make dev
 ```
 
@@ -90,6 +85,8 @@ docker compose -f deployment/docker-compose.dev.yml up --build
 
 ### Volume Mounts
 
+Source directories are mounted into containers for hot reload:
+
 - `apps/api/src/` → `/app/apps/api/src/`
 - `apps/api/prisma/` → `/app/apps/api/prisma/`
 - `apps/web/src/` → `/app/apps/web/src/`
@@ -97,23 +94,70 @@ docker compose -f deployment/docker-compose.dev.yml up --build
 
 Nginx is included in development on port 80 as the primary entry point (same routing as production). Service ports are also exposed on `127.0.0.1` for direct debugging access.
 
+No Certbot or SSL in development — always HTTP.
+
+## Connection Pooling (PgBouncer)
+
+All application database traffic routes through PgBouncer, a lightweight connection pooler sitting between application services and PostgreSQL.
+
+- **Pool mode:** Transaction (connections returned to pool after each transaction)
+- **Default pool size:** 20 connections per database
+- **Max client connections:** 200
+- **Port:** 6432 (internal)
+
+API and worker services connect to `pgbouncer:6432` with `?pgbouncer=true` in the connection string (disables PostgreSQL prepared statements, which are incompatible with transaction pooling).
+
+Migrations, seeds, and bot seeds use `DIRECT_DATABASE_URL` to connect directly to PostgreSQL (DDL statements require a direct connection, not a pooled one).
+
+Configuration files are in `deployment/pgbouncer/`:
+
+- `pgbouncer.ini` — pool settings
+- `userlist.txt` — placeholder; actual credentials generated at container startup from `$POSTGRES_PASSWORD`
+
+## Startup Order
+
+1. Postgres + Redis start first
+2. Postgres must pass health check (with 10s start period) before PgBouncer starts
+3. PgBouncer starts after Postgres is healthy
+4. API runs migrations + seed + bot seed on startup (via direct Postgres connection)
+5. Web starts after API
+6. Nginx starts after both Web and API are healthy
+7. Certbot starts after Nginx (needs port 80 for ACME challenge)
+
+## Graceful Shutdown
+
+The API server handles `SIGTERM` and `SIGINT` for clean shutdown during `docker stop` or deployments:
+
+1. Stop accepting new connections
+2. Wait for in-flight requests to complete
+3. Close Socket.IO connections
+4. Disconnect Prisma (drain DB connection pool)
+5. Disconnect Redis
+6. Exit
+
+Force exits after 10 seconds if cleanup hangs.
+
 ## Environment Variables
 
-Both compose files read from `../.env` (project root). See [Configuration](../getting-started/configuration.md).
+All compose files use `--env-file .env` (project root) for variable interpolation. The `.env` file contains database passwords, Redis password, JWT secret, site configuration, and SSL settings.
+
+See [Configuration](../getting-started/configuration.md) for the full reference. See [CI/CD](ci-cd.md) for deployment-specific variables.
 
 ## Volumes
 
 Named volumes persist data across restarts:
 
-| Volume            | Name (prod)                  | Name (dev)              | Purpose                         |
+| Volume            | Name (prod/CD)               | Name (dev)              | Purpose                         |
 | ----------------- | ---------------------------- | ----------------------- | ------------------------------- |
 | `pgdata`          | `eyeonchess-pgdata`          | `eyeonchess-dev-pgdata` | PostgreSQL data                 |
 | `prometheus_data` | `eyeonchess-prometheus-data` | —                       | Prometheus metrics              |
 | `loki_data`       | `eyeonchess-loki-data`       | —                       | Loki log data                   |
 | `grafana_data`    | `eyeonchess-grafana-data`    | —                       | Grafana dashboards and settings |
+| `certbot-certs`   | `eyeonchess-certbot-certs`   | —                       | Let's Encrypt certificates      |
+| `certbot-webroot` | `eyeonchess-certbot-webroot` | —                       | ACME challenge webroot          |
 
 To destroy all volumes:
 
 ```bash
-make clean-volumes   # WARNING: destroys all data
+make clean-volumes   # WARNING: destroys all data including SSL certs
 ```
