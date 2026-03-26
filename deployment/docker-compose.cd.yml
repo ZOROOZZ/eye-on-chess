@@ -140,6 +140,7 @@ services:
       DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
+      - ./config/bots.yml:/app/config/bots.yml:ro
     depends_on:
       pgbouncer:
         condition: service_started
@@ -224,8 +225,9 @@ services:
     container_name: eyeonchess-loki
     restart: unless-stopped
     volumes:
+      - ./loki/loki.yml:/etc/loki/config.yaml:ro
       - loki_data:/loki
-    command: -config.expand-env=true
+    command: -config.file=/etc/loki/config.yaml -config.expand-env=true
     deploy:
       resources:
         limits:
