@@ -2,6 +2,9 @@
 # ──────────────────────────────────────────────────────────
 # Certbot init — gets initial cert then renews every 12h.
 # Skips entirely if SITE_DOMAIN is not set.
+#
+# After renewal, touches /etc/letsencrypt/.renewed so the
+# nginx-entrypoint watcher can reload nginx automatically.
 # ──────────────────────────────────────────────────────────
 set -e
 
@@ -15,22 +18,40 @@ if [ -z "$CERTBOT_EMAIL" ]; then
   exit 1
 fi
 
+# Build domain list: CERTBOT_DOMAINS overrides, otherwise just SITE_DOMAIN
+DOMAINS="${CERTBOT_DOMAINS:-$SITE_DOMAIN}"
+DOMAIN_ARGS=""
+for d in $DOMAINS; do
+  DOMAIN_ARGS="$DOMAIN_ARGS -d $d"
+done
+
 # Wait for Nginx to be ready (serves ACME challenge on port 80)
 echo "Waiting for Nginx..."
-sleep 10
+for i in $(seq 1 30); do
+  if wget -qO- http://nginx:80/ > /dev/null 2>&1; then
+    echo "Nginx is ready"
+    break
+  fi
+  if [ "$i" = "30" ]; then
+    echo "WARNING: Nginx not responding after 60s, attempting cert anyway"
+  fi
+  sleep 2
+done
 
 # Get initial cert if it doesn't exist
 if [ ! -f "/etc/letsencrypt/live/$SITE_DOMAIN/fullchain.pem" ]; then
-  echo "Requesting initial certificate for $SITE_DOMAIN..."
+  echo "Requesting initial certificate for: $DOMAINS"
   certbot certonly \
     --webroot \
     -w /var/www/certbot \
-    -d "$SITE_DOMAIN" \
-    -d "grafana.$SITE_DOMAIN" \
+    $DOMAIN_ARGS \
     --email "$CERTBOT_EMAIL" \
     --agree-tos \
     --non-interactive \
     --no-eff-email
+
+  # Signal nginx to reload with new certs
+  touch /etc/letsencrypt/.renewed
 
   echo ""
   echo "============================================"
@@ -48,4 +69,6 @@ while true; do
   sleep 12h
   echo "Checking for certificate renewal..."
   certbot renew --quiet
+  # Signal nginx to reload if certs were renewed
+  touch /etc/letsencrypt/.renewed
 done
