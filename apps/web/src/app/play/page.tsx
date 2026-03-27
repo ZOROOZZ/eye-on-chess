@@ -10,6 +10,7 @@ import { useOnlineStatus } from "../../lib/useOnlineStatus";
 import { useInstallPrompt } from "../../lib/useInstallPrompt";
 import ActivityFeed from "../../components/ActivityFeed";
 import ChallengePopup from "../../components/ChallengePopup";
+import ErrorBoundary from "../../components/ErrorBoundary";
 
 export default function PlayPage() {
   const router = useRouter();
@@ -185,7 +186,11 @@ export default function PlayPage() {
         )}
 
         {/* Activity feed */}
-        {isOnline && <ActivityFeed />}
+        {isOnline && (
+          <ErrorBoundary>
+            <ActivityFeed />
+          </ErrorBoundary>
+        )}
 
         {/* Online indicator */}
         <div className="flex items-center justify-center gap-2 mt-4">
