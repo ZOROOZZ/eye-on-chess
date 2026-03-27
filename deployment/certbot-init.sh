@@ -68,7 +68,5 @@ echo "Starting renewal loop..."
 while true; do
   sleep 12h
   echo "Checking for certificate renewal..."
-  certbot renew --quiet
-  # Signal nginx to reload if certs were renewed
-  touch /etc/letsencrypt/.renewed
+  certbot renew --quiet --deploy-hook "touch /etc/letsencrypt/.renewed"
 done
