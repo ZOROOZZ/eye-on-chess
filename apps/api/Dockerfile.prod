@@ -8,18 +8,13 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/chess/package.json ./packages/chess/
 RUN pnpm install --frozen-lockfile && pnpm store prune
 
-FROM base AS builder
+FROM base AS runner
 WORKDIR /app
 COPY --from=deps /app ./
 COPY packages/chess ./packages/chess
 COPY apps/api ./apps/api
 RUN pnpm --filter @eyeonchess/api run db:generate
-RUN pnpm --filter @eyeonchess/api run build
-
-FROM base AS runner
-WORKDIR /app
-COPY --from=builder /app ./
 ENV NODE_ENV=production
 
 EXPOSE 3001
-CMD ["sh", "-c", "DATABASE_URL=${DIRECT_DATABASE_URL:-$DATABASE_URL} pnpm --filter @eyeonchess/api run db:migrate && DATABASE_URL=${DIRECT_DATABASE_URL:-$DATABASE_URL} pnpm --filter @eyeonchess/api run db:seed && DATABASE_URL=${DIRECT_DATABASE_URL:-$DATABASE_URL} pnpm --filter @eyeonchess/api run db:seed-bots && pnpm --filter @eyeonchess/api start"]
+CMD ["pnpm", "--filter", "@eyeonchess/api", "start"]

@@ -16,7 +16,6 @@ COPY packages/chess ./packages/chess
 COPY apps/api ./apps/api
 
 RUN pnpm --filter @eyeonchess/api run db:generate
-RUN pnpm --filter @eyeonchess/api run build
 
 ENV NODE_ENV=production
 CMD ["pnpm", "--filter", "@eyeonchess/api", "worker:start"]

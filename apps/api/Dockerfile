@@ -19,4 +19,4 @@ RUN pnpm --filter @eyeonchess/api run db:generate
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "DATABASE_URL=${DIRECT_DATABASE_URL:-$DATABASE_URL} pnpm --filter @eyeonchess/api run db:migrate && DATABASE_URL=${DIRECT_DATABASE_URL:-$DATABASE_URL} pnpm --filter @eyeonchess/api run db:seed && DATABASE_URL=${DIRECT_DATABASE_URL:-$DATABASE_URL} pnpm --filter @eyeonchess/api run db:seed-bots && pnpm --filter @eyeonchess/api dev"]
+CMD ["pnpm", "--filter", "@eyeonchess/api", "dev"]
