@@ -25,6 +25,7 @@ import { setupGameSocket } from "./lib/gameSocket.js";
 import { getSiteSettings } from "./lib/settings.js";
 import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
+import { authMiddleware } from "./middleware/auth.js";
 import { registerRequestLogger } from "./middleware/requestLogger.js";
 import { registerEtag } from "./middleware/etag.js";
 import { checkHealth } from "./lib/healthCheck.js";
@@ -193,8 +194,8 @@ async function main() {
         };
       });
 
-      // Custom metrics endpoint with app-specific gauges
-      v1.get("/metrics/app", async () => {
+      // Custom metrics endpoint with app-specific gauges (auth required)
+      v1.get("/metrics/app", { preHandler: authMiddleware }, async () => {
         const [totalUsers, activeGames, analysisQueue] = await Promise.all([
           prisma.user.count(),
           prisma.game.count({ where: { status: "ACTIVE" } }),
