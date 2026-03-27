@@ -73,9 +73,9 @@ routes:
     max: 30
     timeWindow: "1 minute"
 
-  # Health check — no limit
+  # Health check — limited to prevent abuse (Docker healthcheck + monitoring)
   "/health":
-    max: 1000
+    max: 120
     timeWindow: "1 minute"
 
   # Metrics — no limit (Prometheus scrapes)
