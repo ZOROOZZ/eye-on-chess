@@ -96,6 +96,33 @@ services:
         reservations:
           memory: 32M
 
+  # ── Database migrations + seeds (runs once, then exits) ─
+  migrate:
+    image: eyeonchess-api
+    container_name: eyeonchess-dev-migrate
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: "no"
+    env_file:
+      - ../.env
+    environment:
+      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
+    command:
+      [
+        "sh",
+        "-c",
+        "DATABASE_URL=$${DIRECT_DATABASE_URL} pnpm --filter @eyeonchess/api run db:migrate && DATABASE_URL=$${DIRECT_DATABASE_URL} pnpm --filter @eyeonchess/api run db:seed && DATABASE_URL=$${DIRECT_DATABASE_URL} pnpm --filter @eyeonchess/api run db:seed-bots",
+      ]
+    volumes:
+      - ../apps/api/prisma:/app/apps/api/prisma
+      - ./config/bots.yml:/app/config/bots.yml:ro
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_started
+
   # ── Application ──────────────────────────────────────
   api:
     image: eyeonchess-api
@@ -110,16 +137,14 @@ services:
       - ../.env
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
-      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ../apps/api/src:/app/apps/api/src
       - ../apps/api/prisma:/app/apps/api/prisma
       - ../packages/chess/src:/app/packages/chess/src
       - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
-      - ./config/bots.yml:/app/config/bots.yml:ro
     depends_on:
-      pgbouncer:
-        condition: service_started
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_started
     deploy:
@@ -141,14 +166,13 @@ services:
       - ../.env
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
-      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ../apps/api/src:/app/apps/api/src
       - ../apps/api/prisma:/app/apps/api/prisma
       - ../packages/chess/src:/app/packages/chess/src
     depends_on:
-      pgbouncer:
-        condition: service_started
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_started
     deploy:

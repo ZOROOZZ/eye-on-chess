@@ -136,6 +136,27 @@ services:
         reservations:
           memory: 64M
 
+  # ── Database migrations + seeds (runs once, then exits) ─
+  migrate:
+    image: eyeonchess-migrate
+    container_name: eyeonchess-migrate
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile.migrate
+    restart: "no"
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
+      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
+    volumes:
+      - ./config/bots.yml:/app/config/bots.yml:ro
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   # ── Application ──────────────────────────────────────
   api:
     image: eyeonchess-api
@@ -148,20 +169,19 @@ services:
       - ../.env
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
-      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
-      - ./config/bots.yml:/app/config/bots.yml:ro
     depends_on:
-      pgbouncer:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -207,8 +227,8 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true
     depends_on:
-      pgbouncer:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     deploy:
