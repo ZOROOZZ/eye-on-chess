@@ -14,6 +14,7 @@
     state: present
 
 - name: Log in to GHCR for image pulls
+  when: github_pat is defined and github_pat | length > 0 and github_pat != "none"
   become_user: "{{ deploy_user }}"
   command: docker login ghcr.io -u {{ github_username }} -p {{ github_pat }}
   no_log: true
