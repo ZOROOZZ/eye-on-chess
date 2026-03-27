@@ -186,7 +186,7 @@ deploy-production:
   script:
     - export VERSION=${CI_COMMIT_TAG#v}
     - |
-      ssh -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} << DEPLOY
+      ssh -o StrictHostKeyChecking=accept-new ${SSH_USER}@${SSH_HOST} << DEPLOY
         set -e
         cd /opt/eyeonchess
 
