@@ -29,18 +29,18 @@ This means:
 
 ## Routing Rules
 
-| Path                            | Upstream          | Notes                               |
-| ------------------------------- | ----------------- | ----------------------------------- |
-| `/api/v1/*`                     | `api:3001`        | REST API routes                     |
-| `/api/*`                        | 301 → `/api/v1/*` | Backward compatibility redirect     |
-| `/api/v1/bots`                  | `api:3001`        | Cached: `max-age=3600` (1 hour)     |
-| `/health`                       | `api:3001`        | Health check endpoint               |
-| `/metrics`                      | `api:3001`        | Prometheus metrics                  |
-| `/socket.io/*`                  | `api:3001`        | WebSocket with upgrade headers      |
-| `/_next/static/*`               | `web:3000`        | Immutable cache (365 days)          |
-| `*.png,jpg,wasm,...`            | `web:3000`        | Static files cached 30 days         |
-| `/.well-known/acme-challenge/*` | Certbot webroot   | SSL only — Let's Encrypt validation |
-| `/*` (everything else)          | `web:3000`        | Next.js frontend                    |
+| Path                            | Upstream          | Notes                                  |
+| ------------------------------- | ----------------- | -------------------------------------- |
+| `/api/v1/*`                     | `api:3001`        | REST API routes                        |
+| `/api/*`                        | 301 → `/api/v1/*` | Backward compatibility redirect        |
+| `/api/v1/bots`                  | `api:3001`        | Cached: `max-age=3600` (1 hour)        |
+| `/health`                       | `api:3001`        | Health check endpoint                  |
+| `/metrics`                      | `api:3001`        | Prometheus metrics (internal IPs only) |
+| `/socket.io/*`                  | `api:3001`        | WebSocket with upgrade headers         |
+| `/_next/static/*`               | `web:3000`        | Immutable cache (365 days)             |
+| `*.png,jpg,wasm,...`            | `web:3000`        | Static files cached 30 days            |
+| `/.well-known/acme-challenge/*` | Certbot webroot   | SSL only — Let's Encrypt validation    |
+| `/*` (everything else)          | `web:3000`        | Next.js frontend                       |
 
 ### Grafana Subdomain
 

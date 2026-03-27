@@ -36,9 +36,15 @@ All Dockerfiles are co-located with their respective apps.
 ## `apps/api/Dockerfile.prod` (Production)
 
 - **Base:** `node:22-alpine` (multi-stage)
-- **Stages:** base → deps → runner
-- **Features:** pnpm store pruned in deps stage
-- **CMD:** Same startup sequence as dev (migrate → seed → seed-bots → dev)
+- **Stages:** base → deps → builder → runner
+- **Features:** TypeScript compiled via `tsc`, pnpm store pruned in deps stage
+- **Build:** `pnpm --filter @eyeonchess/api run build` compiles TS to `dist/`
+- **CMD:** Runs migrations → seed → seed-bots → `node dist/server.js` (compiled production server)
+- **Startup sequence:**
+  1. `prisma migrate deploy` — applies pending migrations (via DIRECT_DATABASE_URL)
+  2. `prisma db seed` — creates admin user (idempotent upsert)
+  3. `prisma db seed-bots` — seeds bot personalities from YAML
+  4. `node dist/server.js` — starts compiled Fastify server
 
 ## `apps/api/Dockerfile.worker` (Analysis Worker)
 
@@ -46,8 +52,8 @@ All Dockerfiles are co-located with their respective apps.
 - **Why Debian?** Stockfish is not available in Alpine's package repository
 - **Installs:** `stockfish` via apt
 - **PATH:** `/usr/games` added for stockfish binary
-- **Features:** pnpm store pruned after install
-- **CMD:** `pnpm --filter @eyeonchess/api worker` (runs `src/worker.ts`)
+- **Features:** TypeScript compiled via `tsc`, pnpm store pruned after install
+- **CMD:** `pnpm --filter @eyeonchess/api worker:start` (runs compiled `dist/worker.js`)
 
 ## Image Size Optimizations
 

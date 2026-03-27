@@ -116,13 +116,13 @@ Configuration files are in `deployment/pgbouncer/`:
 
 ## Startup Order
 
-1. Postgres + Redis start first
+1. Postgres + Redis start first (both have health checks)
 2. Postgres must pass health check (with 10s start period) before PgBouncer starts
-3. PgBouncer starts after Postgres is healthy
-4. API runs migrations + seed + bot seed on startup (via direct Postgres connection)
+3. PgBouncer starts after Postgres is healthy, has its own health check
+4. API waits for PgBouncer healthy + Redis healthy, then runs migrations + seed + bot seed
 5. Web starts after API
 6. Nginx starts after both Web and API are healthy
-7. Certbot starts after Nginx (needs port 80 for ACME challenge)
+7. Certbot starts after Nginx (needs port 80 for ACME challenge, exits cleanly if no SITE_DOMAIN)
 
 ## Graceful Shutdown
 
@@ -147,14 +147,15 @@ See [Configuration](../getting-started/configuration.md) for the full reference.
 
 Named volumes persist data across restarts:
 
-| Volume            | Name (prod/CD)               | Name (dev)              | Purpose                         |
-| ----------------- | ---------------------------- | ----------------------- | ------------------------------- |
-| `pgdata`          | `eyeonchess-pgdata`          | `eyeonchess-dev-pgdata` | PostgreSQL data                 |
-| `prometheus_data` | `eyeonchess-prometheus-data` | —                       | Prometheus metrics              |
-| `loki_data`       | `eyeonchess-loki-data`       | —                       | Loki log data                   |
-| `grafana_data`    | `eyeonchess-grafana-data`    | —                       | Grafana dashboards and settings |
-| `certbot-certs`   | `eyeonchess-certbot-certs`   | —                       | Let's Encrypt certificates      |
-| `certbot-webroot` | `eyeonchess-certbot-webroot` | —                       | ACME challenge webroot          |
+| Volume            | Name (prod/CD)               | Name (dev)              | Purpose                             |
+| ----------------- | ---------------------------- | ----------------------- | ----------------------------------- |
+| `pgdata`          | `eyeonchess-pgdata`          | `eyeonchess-dev-pgdata` | PostgreSQL data                     |
+| `redis_data`      | `eyeonchess-redis-data`      | —                       | Redis AOF persistence (game clocks) |
+| `prometheus_data` | `eyeonchess-prometheus-data` | —                       | Prometheus metrics                  |
+| `loki_data`       | `eyeonchess-loki-data`       | —                       | Loki log data                       |
+| `grafana_data`    | `eyeonchess-grafana-data`    | —                       | Grafana dashboards and settings     |
+| `certbot-certs`   | `eyeonchess-certbot-certs`   | —                       | Let's Encrypt certificates          |
+| `certbot-webroot` | `eyeonchess-certbot-webroot` | —                       | ACME challenge webroot              |
 
 To destroy all volumes:
 

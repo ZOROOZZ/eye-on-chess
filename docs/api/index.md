@@ -24,10 +24,10 @@ Requests to the old `/api/*` paths are permanently redirected (301) to `/api/v1/
 
 ## Interactive API Docs
 
-Swagger UI is available at **`/docs`** in development and production. The OpenAPI spec is auto-generated from route schemas at runtime.
+Swagger UI is available at **`/docs`** in development only. It is disabled in production (`NODE_ENV=production`) to prevent public exposure of API schemas.
 
-- `/docs` — Interactive Swagger UI
-- `/docs/json` — Raw OpenAPI 3.0 JSON spec
+- `/docs` — Interactive Swagger UI (development only)
+- `/docs/json` — Raw OpenAPI 3.0 JSON spec (development only)
 
 ## Security Headers
 
