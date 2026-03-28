@@ -91,7 +91,7 @@ When SSL is active, Nginx uses:
 - **HTTP/2** enabled on port 443
 - **HTTP → HTTPS redirect** — all port 80 traffic redirected to 443 (except ACME challenge)
 
-Certificates are mounted read-only from the `certbot-certs` Docker volume at `/etc/letsencrypt/`.
+Certificates are mounted from the `certbot-certs` Docker volume at `/etc/letsencrypt/`. The volume is writable so the nginx cert renewal watcher can delete the `.renewed` flag file.
 
 ## Compression
 
@@ -118,6 +118,7 @@ Minimum size: 256 bytes. Compression level: 6.
 | Resource              | Cache Duration | Header                 |
 | --------------------- | -------------- | ---------------------- |
 | `/_next/static/*`     | 365 days       | `public, immutable`    |
+| `/favicon.ico`        | 30 days        | (nginx expires)        |
 | Static files (images) | 30 days        | `public`               |
 | `/api/v1/bots`        | 1 hour         | `public, max-age=3600` |
 | API routes            | No cache       | `no-store`             |

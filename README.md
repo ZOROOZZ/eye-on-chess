@@ -262,19 +262,21 @@ scripts/        → Backup utilities
 
 ### Services
 
-| Service        | Role                                                       |
-| -------------- | ---------------------------------------------------------- |
-| **Nginx**      | Reverse proxy (port 80), routes /api and /socket.io to API |
-| **Web**        | Next.js frontend                                           |
-| **API**        | Fastify REST API + Socket.io for real-time                 |
-| **Worker**     | Stockfish analysis pipeline (polls Redis queue)            |
-| **Postgres**   | Primary database (Prisma ORM)                              |
-| **PgBouncer**  | Connection pooler for PostgreSQL (transaction mode)        |
-| **Redis**      | Presence, game clocks, analysis job queue, caching         |
-| **Prometheus** | Metrics collection (scrapes API /metrics every 15s)        |
-| **Loki**       | Log aggregation                                            |
-| **Promtail**   | Ships Docker container logs to Loki                        |
-| **Grafana**    | Dashboards and log viewer (port 3003)                      |
+| Service        | Role                                                            |
+| -------------- | --------------------------------------------------------------- |
+| **Nginx**      | Reverse proxy (ports 80/443), routes /api and /socket.io to API |
+| **Certbot**    | Automatic SSL via Let's Encrypt (runs once, then renews)        |
+| **Migrate**    | Database migrations + seeds (init container, runs once)         |
+| **Web**        | Next.js frontend                                                |
+| **API**        | Fastify REST API + Socket.io for real-time                      |
+| **Worker**     | Stockfish analysis pipeline (polls Redis queue)                 |
+| **Postgres**   | Primary database (Prisma ORM)                                   |
+| **PgBouncer**  | Connection pooler for PostgreSQL (transaction mode)             |
+| **Redis**      | Presence, game clocks, analysis job queue, caching              |
+| **Prometheus** | Metrics collection (scrapes API /metrics every 15s)             |
+| **Loki**       | Log aggregation                                                 |
+| **Promtail**   | Ships Docker container logs to Loki                             |
+| **Grafana**    | Dashboards and log viewer (via `grafana.{domain}` subdomain)    |
 
 ## Tech Stack
 

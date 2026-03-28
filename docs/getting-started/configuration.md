@@ -79,7 +79,7 @@ Per-route rate limits are defined in this file. Each route can specify its own `
 
 ### `deployment/config/bots.yml`
 
-Bot personality definitions live in this file. It is the single source of truth for all bot names, ratings, playstyles, and tier assignments. The database seeder reads from this file on startup, so any changes to bot definitions should be made here first.
+Bot personality seed definitions. This is the **seed source only** — the database is the source of truth. The seeder reads this file on startup and creates missing bots, but never overwrites existing ones. Admin edits via the admin panel persist across reseeds. Use `FORCE_RESEED=1` to overwrite all bots from YAML.
 
 ## Production Checklist
 

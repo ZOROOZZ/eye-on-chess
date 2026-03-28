@@ -35,16 +35,21 @@ All Dockerfiles are co-located with their respective apps.
 
 ## `apps/api/Dockerfile.prod` (Production)
 
-- **Base:** `node:22-alpine` (multi-stage)
-- **Stages:** base → deps → builder → runner
-- **Features:** TypeScript compiled via `tsc`, pnpm store pruned in deps stage
-- **Build:** `pnpm --filter @eyeonchess/api run build` compiles TS to `dist/`
-- **CMD:** Runs migrations → seed → seed-bots → `node dist/server.js` (compiled production server)
-- **Startup sequence:**
+- **Base:** `node:22-alpine` (multi-stage: base → deps → runner)
+- **Features:** pnpm store pruned in deps stage, Prisma client generated
+- **CMD:** `pnpm --filter @eyeonchess/api start` → `tsx src/server.ts` (no file watcher)
+- **No migrations:** Migrations and seeds are handled by the separate `migrate` container
+
+## `apps/api/Dockerfile.migrate` (Database Init Container)
+
+- **Base:** `eyeonchess-base` (Debian bookworm-slim)
+- **Purpose:** Runs once at deploy time, then exits. Handles all database initialization.
+- **CMD:** Runs in sequence:
   1. `prisma migrate deploy` — applies pending migrations (via DIRECT_DATABASE_URL)
   2. `prisma db seed` — creates admin user (idempotent upsert)
   3. `prisma db seed-bots` — seeds bot personalities from YAML
-  4. `node dist/server.js` — starts compiled Fastify server
+- **Volumes:** `bots.yml` mounted for bot seeding
+- **Restart:** `"no"` — runs once and exits, not a long-running service
 
 ## `apps/api/Dockerfile.worker` (Analysis Worker)
 
@@ -52,8 +57,8 @@ All Dockerfiles are co-located with their respective apps.
 - **Why Debian?** Stockfish is not available in Alpine's package repository
 - **Installs:** `stockfish` via apt
 - **PATH:** `/usr/games` added for stockfish binary
-- **Features:** TypeScript compiled via `tsc`, pnpm store pruned after install
-- **CMD:** `pnpm --filter @eyeonchess/api worker:start` (runs compiled `dist/worker.js`)
+- **Features:** pnpm store pruned after install
+- **CMD:** `pnpm --filter @eyeonchess/api worker:start` → `tsx src/worker.ts` (no file watcher)
 
 ## Image Size Optimizations
 

@@ -141,7 +141,7 @@ This parses all commits following the conventional commit format and groups them
 
 ## API Docs
 
-Interactive Swagger UI is available at `/docs` when the API is running. The OpenAPI spec is auto-generated from route schemas.
+Interactive Swagger UI is available at `/docs` in development mode only (`NODE_ENV !== 'production'`). The OpenAPI spec is auto-generated from route schemas. Swagger is disabled in production.
 
 ## Code Style
 

@@ -371,16 +371,17 @@ gh run view <run-id> --log-failed
 
 ### 3.3 What Happens During Deployment
 
-1. **Build** (parallel, ~2-3 min): Three images (api, web, worker) are built in parallel on GitHub Actions runners
-2. **Push** (~30s): Images are pushed to `ghcr.io/{owner}/eye-on-chess/{api,web,worker}:{version}`
+1. **Build** (parallel, ~2-3 min): Four images (api, web, worker, migrate) are built in parallel on GitHub Actions runners
+2. **Push** (~30s): Images are pushed to `ghcr.io/{owner}/eye-on-chess/{api,web,worker,migrate}:{version}`
 3. **Deploy** (~1 min): GitHub Actions SSHs into your VPS and runs:
-   - `docker compose pull api web worker` — downloads new images
-   - `docker compose up -d --no-deps api` — restarts API (runs migrations on start)
+   - `docker compose pull api web worker migrate` — downloads new images
+   - `docker compose up -d --no-deps api` — restarts API
    - Waits 10 seconds for API health
    - `docker compose up -d --no-deps web` — restarts web frontend
    - Waits 5 seconds
    - `docker compose up -d --no-deps worker` — restarts analysis worker
    - Polls `/health` endpoint up to 30 times to confirm
+   - Note: The `migrate` container runs automatically before API/worker start (via `service_completed_successfully` dependency)
 
 ### 3.4 Zero-Downtime Behavior
 

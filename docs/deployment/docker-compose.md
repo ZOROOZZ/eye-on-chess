@@ -13,20 +13,21 @@ docker compose --env-file .env -f deployment/docker-compose.yml up -d
 
 ### Services
 
-| Service    | Image                        | Port               | Health Check                        |
-| ---------- | ---------------------------- | ------------------ | ----------------------------------- |
-| nginx      | nginx:alpine                 | **80, 443** (host) | `wget http://localhost/health`      |
-| certbot    | certbot/certbot:latest       | —                  | —                                   |
-| postgres   | postgres:16-alpine           | internal           | `pg_isready -U postgres`            |
-| pgbouncer  | edoburu/pgbouncer:v1.23.1-p2 | internal (6432)    | `pg_isready -h localhost -p 6432`   |
-| redis      | redis:7-alpine               | internal           | `redis-cli ping`                    |
-| api        | Built from Dockerfile.prod   | internal (3001)    | `wget http://localhost:3001/health` |
-| web        | Built from Dockerfile.prod   | internal (3000)    | `wget http://localhost:3000`        |
-| worker     | Built from Dockerfile.worker | —                  | —                                   |
-| prometheus | prom/prometheus:v3.4.1       | internal (9090)    | —                                   |
-| loki       | grafana/loki:3.5.0           | internal (3100)    | —                                   |
-| promtail   | grafana/promtail:3.5.0       | internal           | —                                   |
-| grafana    | grafana/grafana:11.6.0       | internal (3000)    | —                                   |
+| Service    | Image                         | Port               | Health Check                        |
+| ---------- | ----------------------------- | ------------------ | ----------------------------------- |
+| nginx      | nginx:alpine                  | **80, 443** (host) | `wget http://localhost/health`      |
+| certbot    | certbot/certbot:latest        | —                  | —                                   |
+| postgres   | postgres:16-alpine            | internal           | `pg_isready -U postgres`            |
+| pgbouncer  | edoburu/pgbouncer:v1.23.1-p2  | internal (6432)    | `pg_isready -h localhost -p 6432`   |
+| redis      | redis:7-alpine                | internal           | `redis-cli ping`                    |
+| migrate    | Built from Dockerfile.migrate | —                  | — (runs once, exits)                |
+| api        | Built from Dockerfile.prod    | internal (3001)    | `wget http://localhost:3001/health` |
+| web        | Built from Dockerfile.prod    | internal (3000)    | `wget http://localhost:3000`        |
+| worker     | Built from Dockerfile.worker  | —                  | —                                   |
+| prometheus | prom/prometheus:v3.4.1        | internal (9090)    | —                                   |
+| loki       | grafana/loki:3.5.0            | internal (3100)    | —                                   |
+| promtail   | grafana/promtail:3.5.0        | internal           | —                                   |
+| grafana    | grafana/grafana:11.6.0        | internal (3000)    | —                                   |
 
 ### Key Points
 
@@ -119,10 +120,11 @@ Configuration files are in `deployment/pgbouncer/`:
 1. Postgres + Redis start first (both have health checks)
 2. Postgres must pass health check (with 10s start period) before PgBouncer starts
 3. PgBouncer starts after Postgres is healthy, has its own health check
-4. API waits for PgBouncer healthy + Redis healthy, then runs migrations + seed + bot seed
-5. Web starts after API
-6. Nginx starts after both Web and API are healthy
-7. Certbot starts after Nginx (needs port 80 for ACME challenge, exits cleanly if no SITE_DOMAIN)
+4. **Migrate** container runs after PgBouncer + Redis healthy: migrations → seed → bot seed → exits
+5. API + Worker start after migrate completes successfully
+6. Web starts after API is healthy
+7. Nginx starts after both Web and API are healthy
+8. Certbot starts after Nginx (needs port 80 for ACME challenge, exits cleanly if no SITE_DOMAIN)
 
 ## Graceful Shutdown
 
