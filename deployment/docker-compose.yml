@@ -31,6 +31,8 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
+      admin:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost/health || exit 1"]
       interval: 10s
@@ -215,6 +217,31 @@ services:
           memory: 512M
         reservations:
           memory: 128M
+
+  admin:
+    image: eyeonchess-admin
+    container_name: eyeonchess-admin
+    build:
+      context: ..
+      dockerfile: apps/admin/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3002 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          memory: 64M
 
   worker:
     image: eyeonchess-worker

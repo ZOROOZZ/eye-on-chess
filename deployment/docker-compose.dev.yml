@@ -207,6 +207,30 @@ services:
         reservations:
           memory: 128M
 
+  admin:
+    image: eyeonchess-admin
+    container_name: eyeonchess-dev-admin
+    build:
+      context: ..
+      dockerfile: apps/admin/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3002"
+    env_file:
+      - ../.env
+    volumes:
+      - ../apps/admin/src:/app/apps/admin/src
+      - ../packages/ui/src:/app/packages/ui/src
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          memory: 64M
+
 volumes:
   pgdata:
     name: eyeonchess-dev-pgdata
