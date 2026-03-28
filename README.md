@@ -253,9 +253,11 @@ All configuration is done via environment variables in `.env`. See [`.env.exampl
 ## Architecture
 
 ```
-apps/web        → Next.js 14 frontend (TypeScript, Tailwind CSS)
+apps/web        → Next.js 14 frontend — player-facing (TypeScript, Tailwind CSS)
+apps/admin      → Next.js 14 admin panel — separate subdomain (TypeScript, Tailwind CSS)
 apps/api        → Fastify backend (TypeScript, Prisma, Socket.io)
-packages/chess  → Shared types, constants, helpers (game, time control, openings, etc.)
+packages/chess  → Shared chess types, constants, helpers
+packages/ui     → Shared UI components (Toast, ConfirmModal, Skeleton)
 deployment/     → Dockerfiles, Docker Compose files, Nginx config
 scripts/        → Backup utilities
 ```
@@ -267,7 +269,8 @@ scripts/        → Backup utilities
 | **Nginx**      | Reverse proxy (ports 80/443), routes /api and /socket.io to API |
 | **Certbot**    | Automatic SSL via Let's Encrypt (runs once, then renews)        |
 | **Migrate**    | Database migrations + seeds (init container, runs once)         |
-| **Web**        | Next.js frontend                                                |
+| **Web**        | Next.js frontend (player-facing)                                |
+| **Admin**      | Next.js admin panel (`admin.{domain}` subdomain)                |
 | **API**        | Fastify REST API + Socket.io for real-time                      |
 | **Worker**     | Stockfish analysis pipeline (polls Redis queue)                 |
 | **Postgres**   | Primary database (Prisma ORM)                                   |
