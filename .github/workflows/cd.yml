@@ -90,7 +90,7 @@ jobs:
             COMPOSE="docker compose --env-file .env -f deployment/docker-compose.cd.yml"
 
             echo "Pulling images (tag: $IMAGE_TAG)..."
-            $COMPOSE pull api web worker
+            $COMPOSE pull api web worker admin migrate
 
             echo "Restarting API..."
             $COMPOSE up -d --no-deps api
@@ -98,6 +98,10 @@ jobs:
 
             echo "Restarting Web..."
             $COMPOSE up -d --no-deps web
+            sleep 5
+
+            echo "Restarting Admin..."
+            $COMPOSE up -d --no-deps admin
             sleep 5
 
             echo "Restarting Worker..."

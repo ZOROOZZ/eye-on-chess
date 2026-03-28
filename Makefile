@@ -82,11 +82,13 @@ logs-redis: ## Tail production Redis logs
 CD_COMPOSE = docker compose --env-file .env -f deployment/docker-compose.cd.yml
 
 deploy: ## Deploy from GHCR images (usage: IMAGE_TAG=1.2.0 make deploy)
-	$(CD_COMPOSE) pull api web worker
+	$(CD_COMPOSE) pull api web worker admin migrate
 	$(CD_COMPOSE) up -d --no-deps api
 	@echo "Waiting for API health..."
 	@sleep 10
 	$(CD_COMPOSE) up -d --no-deps web
+	@sleep 5
+	$(CD_COMPOSE) up -d --no-deps admin
 	@sleep 5
 	$(CD_COMPOSE) up -d --no-deps worker
 	@echo "Deployment complete. Verifying health..."
@@ -103,7 +105,7 @@ deploy-all: ## Deploy all services from GHCR images (including infra)
 
 rollback: ## Rollback to a specific version (usage: make rollback IMAGE_TAG=1.1.5)
 	@test -n "$(IMAGE_TAG)" || (echo "Usage: make rollback IMAGE_TAG=1.1.5" && exit 1)
-	IMAGE_TAG=$(IMAGE_TAG) $(CD_COMPOSE) pull api web worker
+	IMAGE_TAG=$(IMAGE_TAG) $(CD_COMPOSE) pull api web worker admin migrate
 	IMAGE_TAG=$(IMAGE_TAG) $(CD_COMPOSE) up -d
 
 # ── Development ──────────────────────────────────────────
