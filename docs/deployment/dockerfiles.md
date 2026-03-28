@@ -51,6 +51,15 @@ All Dockerfiles are co-located with their respective apps.
 - **Volumes:** `bots.yml` mounted for bot seeding
 - **Restart:** `"no"` — runs once and exits, not a long-running service
 
+## `apps/admin/Dockerfile` (Admin Panel)
+
+- **Base:** `node:22-alpine` (multi-stage: base → deps → builder → runner)
+- **Features:** Next.js standalone output, `@eyeonchess/ui` shared components
+- **Build args:** `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`
+- **CMD:** `node apps/admin/server.js` (compiled standalone server)
+- **Port:** 3002
+- **No chess deps**, no Socket.IO, no PWA, no WASM headers
+
 ## `apps/api/Dockerfile.worker` (Analysis Worker)
 
 - **Base:** `eyeonchess-base` (Debian bookworm-slim)

@@ -23,6 +23,7 @@ docker compose --env-file .env -f deployment/docker-compose.yml up -d
 | migrate    | Built from Dockerfile.migrate | —                  | — (runs once, exits)                |
 | api        | Built from Dockerfile.prod    | internal (3001)    | `wget http://localhost:3001/health` |
 | web        | Built from Dockerfile.prod    | internal (3000)    | `wget http://localhost:3000`        |
+| admin      | Built from admin/Dockerfile   | internal (3002)    | `wget http://localhost:3002`        |
 | worker     | Built from Dockerfile.worker  | —                  | —                                   |
 | prometheus | prom/prometheus:v3.4.1        | internal (9090)    | —                                   |
 | loki       | grafana/loki:3.5.0            | internal (3100)    | —                                   |

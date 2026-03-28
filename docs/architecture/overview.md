@@ -37,9 +37,11 @@ EyeOnChess is a monorepo with three packages, deployed as multiple Docker servic
 
 | Service       | Technology              | Purpose                                                                          |
 | ------------- | ----------------------- | -------------------------------------------------------------------------------- |
-| **Nginx**     | Nginx Alpine            | Reverse proxy — routes `/api/v1` and `/socket.io` to API, everything else to Web |
-| **Web**       | Next.js 14 (App Router) | Frontend — server-side rendering, client-side navigation                         |
+| **Nginx**     | Nginx Alpine            | Reverse proxy — routes subdomains to Web, Admin, Grafana; `/api/v1` to API       |
+| **Web**       | Next.js 14 (App Router) | Player-facing frontend — server-side rendering, client-side navigation           |
+| **Admin**     | Next.js 14 (App Router) | Admin panel — separate subdomain (`admin.{domain}`), shared API                  |
 | **API**       | Fastify + Socket.io     | REST API (versioned `/api/v1/`) + real-time WebSocket events                     |
+| **Migrate**   | Node.js + Prisma        | Database migrations + seeds — init container, runs once then exits               |
 | **Worker**    | Node.js + Stockfish 15  | Background analysis — polls Redis queue, runs Stockfish on positions             |
 | **Postgres**  | PostgreSQL 16 Alpine    | Primary database — users, games, moves, analysis, settings                       |
 | **PgBouncer** | edoburu/pgbouncer       | Connection pooler — transaction mode, 20 pool size, 200 max clients              |
