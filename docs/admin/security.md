@@ -17,7 +17,7 @@ The role check hits the database on every request (not cached from the JWT). Thi
 
 Uses the **double-submit cookie** pattern:
 
-1. Frontend calls `GET /api/admin/csrf` — server sets `csrf_token` cookie and returns the token
+1. Frontend calls `GET /api/v1/admin/csrf` — server sets `csrf_token` cookie and returns the token
 2. Frontend includes the token as `X-CSRF-Token` header on all mutations (POST, PUT, PATCH, DELETE)
 3. Server compares the header value against the cookie value
 

@@ -1,6 +1,6 @@
 # User Management
 
-Manage users from `/admin/users` or via the API.
+Manage users from the admin panel (`/users` on the admin subdomain) or via the API.
 
 ## User Table
 

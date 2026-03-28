@@ -57,6 +57,6 @@ This means:
 
 | Endpoint                  | Description                                                 |
 | ------------------------- | ----------------------------------------------------------- |
-| `GET /api/admin/settings` | Read current settings                                       |
-| `PUT /api/admin/settings` | Update settings (CSRF required)                             |
+| `GET /api/v1/admin/settings` | Read current settings                                       |
+| `PUT /api/v1/admin/settings` | Update settings (CSRF required)                             |
 | `GET /api/settings`       | Public endpoint returning site name and registration status |
