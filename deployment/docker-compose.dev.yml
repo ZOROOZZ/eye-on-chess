@@ -21,6 +21,7 @@ services:
     depends_on:
       - api
       - web
+      - admin
     deploy:
       resources:
         limits:
