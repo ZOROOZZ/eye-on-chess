@@ -47,6 +47,8 @@ import { useBotChat } from "../../../../lib/useBotChat";
 import BotChatBubble from "../../../../components/BotChatBubble";
 import { useBotReactions } from "../../../../lib/useBotReactions";
 import ReactionOverlay from "../../../../components/ReactionOverlay";
+import EngineLines from "../../../../components/EngineLines";
+import type { EngineLine } from "../../../../lib/useStockfish";
 
 function eloLabel(elo: number): string {
   if (elo < 400) return "Beginner";
@@ -142,8 +144,8 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
   // Suggestions (auto-shown best move arrow)
   const [suggestionArrow, setSuggestionArrow] = useState<{ from: string; to: string } | null>(null);
 
-  // Engine line (principal variation text)
-  const [engineLine, setEngineLine] = useState<string | null>(null);
+  // Engine lines (multi-PV principal variations)
+  const [engineLines, setEngineLines] = useState<EngineLine[]>([]);
 
   // Mode preset label (for display)
   const [modePreset, setModePreset] = useState<GameModePreset>("friendly");
@@ -614,20 +616,16 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
           } else {
             setSuggestionArrow(null);
           }
-          if (activeSettings.engine && validBestMove) {
-            const score = ev.score;
-            const scoreStr =
-              Math.abs(score) > 99000
-                ? `M${Math.sign(score) > 0 ? "" : "-"}${Math.ceil(Math.abs(100000 - Math.abs(score)) / 2)}`
-                : `${score > 0 ? "+" : ""}${(score / 100).toFixed(1)}`;
-            setEngineLine(`${scoreStr} ${bm.slice(0, 2)}-${bm.slice(2, 4)}`);
+          if (activeSettings.engine) {
+            const pvLines = await botEngine.evaluateMultiPV(chess.fen(), 3);
+            setEngineLines(pvLines);
           } else {
-            setEngineLine(null);
+            setEngineLines([]);
           }
         } else {
           setThreatArrows([]);
           setSuggestionArrow(null);
-          setEngineLine(null);
+          setEngineLines([]);
         }
       }
     } catch (err) {
@@ -668,7 +666,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
       setHintDest(null);
       setThreatArrows([]);
       setSuggestionArrow(null);
-      setEngineLine(null);
+      setEngineLines([]);
       setFeedback(null);
       // Skip evaluation if game is already over (checkmate/stalemate)
       if (chess.isGameOver()) {
@@ -734,6 +732,11 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
           }
         }
       }
+      // Update engine lines after player move (before bot responds)
+      if (activeSettings.engine) {
+        botEngine.evaluateMultiPV(chess.fen(), 3).then(setEngineLines).catch(() => {});
+      }
+
       // Bot games use client-side engine -- don't sync individual moves to server
       // Game will be synced as a whole via /games/sync at completion.
 
@@ -984,9 +987,9 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
                   reactions={botReactions.activeReactions}
                   onExpired={botReactions.removeReaction}
                 />
-                {activeSettings.engine && engineLine && (
-                  <div className="absolute top-2 left-2 bg-gray-900/80 px-2 py-1 rounded text-xs text-blue-400 font-mono">
-                    {engineLine}
+                {activeSettings.engine && engineLines.length > 0 && (
+                  <div className="absolute top-0 left-0 right-0 z-10">
+                    <EngineLines lines={engineLines} fen={displayFen} />
                   </div>
                 )}
                 {thinking && (
