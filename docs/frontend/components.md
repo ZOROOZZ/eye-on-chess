@@ -164,9 +164,21 @@ Applies dark/light mode class to `<html>` element based on settings store.
 
 Injects global CSS overrides for board colors and piece set filters based on settings store.
 
+### `TimeControlPicker`
+
+Accordion-style time control selector shared by bot and friend play pages. Groups presets by category (Bullet, Blitz, Rapid, Classical) with expand/collapse. Includes standalone "No Time Limit" button and custom time inputs with a "Select" button. Uses `TIME_CONTROL_PRESETS` from `@eyeonchess/chess` as the single source of truth.
+
+**Props:** `selectedTime`, `showCustomTime`, `customMinutes`, `customIncrement`, `onSelect`, `onSelectCustom`, `onCustomMinutesChange`, `onCustomIncrementChange`, `disabled?`
+
+### `EngineLines`
+
+Chess.com-style multi-PV engine panel. Renders 3 principal variations with rank indicators (green/yellow/orange), evaluation scores, and SAN move sequences. Converts UCI moves to SAN notation via chess.js. Visible when `engine` is enabled in game mode settings.
+
+**Props:** `lines: EngineLine[]`, `fen: string`
+
 ### `Skeleton` / `BoardSkeleton` / `MoveListSkeleton` / `ProfileSkeleton`
 
-Loading placeholder components with pulse animation. Also available from `packages/ui` for the admin app.
+Loading placeholder components with pulse animation. Live in `packages/ui` — imported as `@eyeonchess/ui`.
 
 ### `ErrorBoundary`
 
@@ -174,16 +186,16 @@ React class component error boundary. Shows friendly error message with refresh 
 
 ### `Toast`
 
-Fixed-position toast notification. Zustand-backed — call `useToast().show(message, type)` from anywhere. Also available from `packages/ui` for the admin app.
+Fixed-position toast notification with `role="alert"` for screen readers. Zustand-backed — call `useToast().show(message, type)` from anywhere. Lives in `packages/ui`. Rendered globally in `ClientProviders.tsx`.
 
 ### `ConfirmModal`
 
-Reusable confirmation dialog with configurable title, message, button label, and danger/primary styling. Supports a loading state that disables both buttons and replaces the confirm label with an ellipsis. Returns null when not open. Also available from `packages/ui` for the admin app.
+Reusable confirmation dialog with configurable title, message, button label, and danger/primary styling. Supports a loading state that disables both buttons and replaces the confirm label with an ellipsis. Returns null when not open. Lives in `packages/ui`.
 
 **Props:** `open: boolean`, `title: string`, `message: string`, `confirmLabel?: string`, `confirmVariant?: 'danger' | 'primary'`, `onConfirm: () => void`, `onCancel: () => void`, `loading?: boolean`
 
 ### `KeyboardShortcutsHelp`
 
-Modal overlay listing available keyboard shortcuts as key/description pairs in a two-column layout. Closes when clicking the backdrop or the Esc button. Accepts an array of `{ key, description }` objects.
+Modal overlay listing available keyboard shortcuts as key/description pairs in a two-column layout. Has `role="dialog"` and `aria-modal` for accessibility. Closes on backdrop click or Escape key.
 
 **Props:** `open: boolean`, `onClose: () => void`, `shortcuts: { key: string, description: string }[]`

@@ -52,30 +52,30 @@ eye-on-chess/
 │       ├── Dockerfile.prod       # Production multi-stage Dockerfile
 │       ├── package.json
 │       ├── tsconfig.json
-│       ├── next.config.js
+│       ├── next.config.mjs
 │       ├── tailwind.config.ts
 │       ├── postcss.config.js
 │       └── src/
 │           ├── middleware.ts      # Next.js route protection
 │           ├── lib/
-│           │   ├── api.ts        # Axios instance + auto-refresh interceptor
-│           │   └── socket.ts     # Socket.io client + heartbeat
+│           │   ├── api.ts        # Re-exports from @eyeonchess/api-client
+│           │   ├── socket.ts     # Socket.io client + heartbeat
+│           │   └── gamePrefs.ts  # Game preferences localStorage persistence
 │           ├── stores/
 │           │   ├── auth.ts       # Auth state (user, tokens, login/logout)
 │           │   └── settings.ts   # User preferences (theme, board, pieces)
 │           ├── components/
-│           │   ├── ChessBoard.tsx      # Chessground wrapper
-│           │   ├── EvaluationBar.tsx   # Vertical eval bar
-│           │   ├── EvalGraph.tsx       # SVG evaluation graph
-│           │   ├── MoveList.tsx        # Move notation list
-│           │   ├── PlayerClock.tsx     # Optimistic countdown clock
-│           │   ├── ChallengePopup.tsx  # Incoming challenge modal
-│           │   ├── ThemeProvider.tsx    # Dark/light mode
-│           │   ├── BoardThemeStyles.tsx # Board color themes
-│           │   ├── Skeleton.tsx        # Loading skeletons
-│           │   ├── ErrorBoundary.tsx   # Error boundary
-│           │   ├── Toast.tsx           # Toast notifications
-│           │   └── ConfirmModal.tsx    # Confirmation dialog
+│           │   ├── ChessBoard.tsx         # Chessground wrapper
+│           │   ├── EvaluationBar.tsx      # Vertical eval bar
+│           │   ├── EvalGraph.tsx          # SVG evaluation graph
+│           │   ├── MoveList.tsx           # Move notation list
+│           │   ├── PlayerClock.tsx        # Optimistic countdown clock
+│           │   ├── ChallengePopup.tsx     # Incoming challenge modal
+│           │   ├── TimeControlPicker.tsx  # Accordion time control selector
+│           │   ├── EngineLines.tsx        # Multi-PV engine lines panel
+│           │   ├── ThemeProvider.tsx       # Dark/light mode
+│           │   ├── BoardThemeStyles.tsx    # Board color themes
+│           │   └── ErrorBoundary.tsx      # Error boundary
 │           └── app/
 │               ├── layout.tsx          # Root layout (theme, error boundary)
 │               ├── globals.css         # Tailwind + light mode overrides
@@ -98,7 +98,7 @@ eye-on-chess/
 │       ├── Dockerfile            # Admin Dockerfile
 │       ├── package.json
 │       ├── tsconfig.json
-│       ├── next.config.js
+│       ├── next.config.mjs
 │       ├── tailwind.config.ts
 │       └── src/
 │           ├── lib/
@@ -121,18 +121,39 @@ eye-on-chess/
 │   │   └── src/
 │   │       └── index.ts          # Color, PieceType, Piece types
 │   │
-│   └── ui/                       # Shared UI components
+│   ├── ui/                       # Shared UI components
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── src/
+│   │       ├── Toast.tsx         # Toast notifications (Zustand-backed)
+│   │       ├── ConfirmModal.tsx  # Confirmation dialog
+│   │       └── Skeleton.tsx      # Loading skeletons
+│   │
+│   └── api-client/               # Shared Axios HTTP client
 │       ├── package.json
 │       ├── tsconfig.json
 │       └── src/
-│           ├── Toast.tsx         # Toast notifications
-│           ├── ConfirmModal.tsx  # Confirmation dialog
-│           └── Skeleton.tsx      # Loading skeletons
+│           └── index.ts          # Axios instance, JWT refresh, token management
+│
+├── tooling/
+│   ├── eslint-config/            # @eyeonchess/eslint-config
+│   │   ├── package.json
+│   │   └── index.mjs             # Shared ESLint flat config
+│   ├── prettier-config/          # @eyeonchess/prettier-config
+│   │   ├── package.json
+│   │   └── index.json            # Shared formatting rules
+│   └── typescript-config/        # @eyeonchess/typescript-config
+│       ├── package.json
+│       ├── base.json             # Base config (strict, bundler, ES2022)
+│       ├── library.json          # Library preset (outDir, declaration)
+│       ├── react-library.json    # React library preset (+ jsx)
+│       └── nextjs.json           # Next.js app preset (dom, preserve jsx)
 │
 ├── deployment/
 │   ├── docker-compose.yml        # Production compose
 │   ├── docker-compose.dev.yml    # Development compose
-│   ├── nginx.conf                # Nginx reverse proxy config
+│   ├── nginx.http.conf           # Nginx HTTP config
+│   ├── nginx.ssl.conf.template   # Nginx SSL config template
 │   ├── pgbouncer/
 │   │   ├── pgbouncer.ini         # PgBouncer pool configuration
 │   │   └── userlist.txt          # PgBouncer auth credentials
@@ -150,11 +171,14 @@ eye-on-chess/
 │       ├── bug_report.md
 │       └── feature_request.md
 │
+├── .changeset/                   # Changesets version management config
 ├── docs/                         # Documentation (you are here)
 ├── Makefile                      # Build/run commands
 ├── package.json                  # Root monorepo config
-├── pnpm-workspace.yaml           # pnpm workspace definition
+├── pnpm-workspace.yaml           # pnpm workspace definition (apps/*, packages/*, tooling/*)
+├── tsconfig.base.json            # Root TypeScript base config (extends tooling preset)
 ├── turbo.json                    # Turborepo pipeline config
+├── vitest.workspace.ts           # Vitest workspace for test discovery
 ├── .env.example                  # Environment variable template
 ├── .gitignore
 ├── LICENSE                       # MIT

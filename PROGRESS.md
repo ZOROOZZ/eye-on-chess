@@ -398,6 +398,9 @@ Self-hostable chess platform built with Next.js 14, Fastify, PostgreSQL, Redis, 
 
 ## Current Status
 
-- All phases complete: 1, 2, 3, 4, 5, 7, 8, 9 + release prep + admin panel + technical improvements + bot personality system + security hardening + v1.1.4 hardening & PWA
-- Version 1.1.4 (packages), with 2 additional untagged commits (PWA update notification + hardening fixes)
+- All phases complete: 1, 2, 3, 4, 5, 7, 8, 9 + release prep + admin panel + technical improvements + bot personality system + security hardening + monorepo refactor + UX improvements
+- Current version: **1.5.2**
 - Note: Phase 6 was skipped (user jumped from Phase 5 to Phase 7)
+- v1.5.0: Monorepo best practices refactor (tsconfig, turbo, tooling, api-client, changesets, filtered CI)
+- v1.5.1: Security fixes (move lock, stockfish cleanup, silent catches, rate limits, nginx headers)
+- v1.5.2: UX improvements (Toast fix, accessibility, SEO metadata, observability, request ID, game preferences, accordion UI, engine lines)
