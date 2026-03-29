@@ -235,14 +235,12 @@ async function main() {
     setupGameSocket(io);
     fastify.log.info("Socket.io attached with game events");
 
-    registerShutdown(fastify, io, fastify.log);
-
     // Update custom Prometheus metrics every 15 seconds
-    setInterval(updateMetrics, 15_000);
+    const metricsInterval = setInterval(updateMetrics, 15_000);
     updateMetrics();
 
     // Abort stale ACTIVE bot games (no activity in 24 hours)
-    setInterval(
+    const staleGamesInterval = setInterval(
       async () => {
         try {
           const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -269,7 +267,7 @@ async function main() {
     );
 
     // Clean up expired refresh tokens every hour
-    setInterval(
+    const tokenCleanupInterval = setInterval(
       async () => {
         try {
           const deleted = await prisma.refreshToken.deleteMany({
@@ -284,6 +282,12 @@ async function main() {
       },
       60 * 60 * 1000
     );
+
+    registerShutdown(fastify, io, fastify.log, [
+      metricsInterval,
+      staleGamesInterval,
+      tokenCleanupInterval,
+    ]);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
