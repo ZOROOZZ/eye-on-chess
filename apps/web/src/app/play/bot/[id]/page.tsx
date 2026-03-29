@@ -944,9 +944,9 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
 
   // ── GAME SCREEN ──────────────────────────────────────
   return (
-    <main className="flex flex-col items-center min-h-screen p-4 pt-4">
+    <main className="flex flex-col items-center min-h-screen p-2 pt-2 sm:p-4 sm:pt-4">
       <div className="w-full max-w-6xl">
-        <div className="flex flex-col lg:flex-row gap-4 items-start">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start">
           <div className="flex gap-2 flex-1 min-w-0">
             {activeSettings.evalBar && (
               <div className="h-auto flex">
@@ -1019,25 +1019,25 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() => setCurrentPly(0)}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &laquo;
               </button>
               <button
                 onClick={() => setCurrentPly(Math.max(0, currentPly - 1))}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &lsaquo;
               </button>
               <button
                 onClick={() => setCurrentPly(Math.min(moves.length, currentPly + 1))}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &rsaquo;
               </button>
               <button
                 onClick={() => setCurrentPly(moves.length)}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &raquo;
               </button>

@@ -127,8 +127,8 @@ export default function ChallengeFriendPage() {
   const offlineFriends = friends.filter((f) => !f.isOnline);
 
   return (
-    <main className="flex flex-col items-center min-h-screen p-4 pt-12">
-      <div className="max-w-lg w-full space-y-6">
+    <main className="flex flex-col items-center min-h-screen p-3 pt-6 sm:p-4 sm:pt-12">
+      <div className="max-w-lg w-full space-y-4 sm:space-y-6">
         <h1 className="text-2xl font-bold text-center">Challenge a Friend</h1>
 
         {message && <p className="text-sm text-center text-yellow-400">{message}</p>}

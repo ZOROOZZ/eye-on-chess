@@ -230,8 +230,8 @@ export default function PlayBotPage() {
   const modes: GameModePreset[] = ["challenge", "friendly", "assisted", "custom"];
 
   return (
-    <main className="flex flex-col items-center min-h-screen p-4 pt-12">
-      <div className="max-w-lg w-full space-y-5">
+    <main className="flex flex-col items-center min-h-screen p-3 pt-6 sm:p-4 sm:pt-12">
+      <div className="max-w-lg w-full space-y-4 sm:space-y-5">
         <h1 className="text-2xl font-bold text-center">Play vs Bot</h1>
         {!isOnline && (
           <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-2 text-center text-xs text-yellow-300">

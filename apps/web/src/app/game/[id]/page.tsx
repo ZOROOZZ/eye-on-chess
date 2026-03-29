@@ -327,9 +327,9 @@ export default function GamePage() {
   }
 
   return (
-    <main className="flex flex-col items-center min-h-screen p-4 pt-8">
+    <main className="flex flex-col items-center min-h-screen p-2 pt-4 sm:p-4 sm:pt-8">
       <div className="max-w-5xl w-full">
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-6">
           {/* Board column */}
           <div className="flex flex-col gap-2">
             {/* Top player */}
@@ -400,25 +400,25 @@ export default function GamePage() {
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() => goToPly(0)}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &laquo;
               </button>
               <button
                 onClick={() => goToPly(Math.max(0, currentPly - 1))}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &lsaquo;
               </button>
               <button
                 onClick={() => goToPly(Math.min(moves.length, currentPly + 1))}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &rsaquo;
               </button>
               <button
                 onClick={() => goToPly(moves.length)}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &raquo;
               </button>
