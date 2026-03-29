@@ -17,6 +17,7 @@ import {
   createBotBodySchema,
   updateBotBodySchema,
 } from "../lib/schemas.js";
+import { parsePagination } from "../lib/pagination.js";
 import {
   apiError,
   ADMIN_SELF_DEMOTE,
@@ -197,8 +198,7 @@ export async function adminRoutes(app: FastifyInstance) {
       order?: string;
     };
   }>("/admin/users", async (request) => {
-    const page = Math.max(1, parseInt(request.query.page || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "20")));
+    const { page, limit, skip } = parsePagination(request.query, { maxLimit: 100 });
     const search = request.query.search?.trim();
     const sort = request.query.sort || "createdAt";
     const order = request.query.order === "asc" ? "asc" : "desc";
@@ -229,7 +229,7 @@ export async function adminRoutes(app: FastifyInstance) {
           createdAt: true,
         },
         orderBy,
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.user.count({ where }),
@@ -396,8 +396,7 @@ export async function adminRoutes(app: FastifyInstance) {
       search?: string;
     };
   }>("/admin/games", async (request) => {
-    const page = Math.max(1, parseInt(request.query.page || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "20")));
+    const { page, limit, skip } = parsePagination(request.query, { maxLimit: 100 });
     const statusFilter = request.query.status;
     const search = request.query.search?.trim();
 
@@ -425,7 +424,7 @@ export async function adminRoutes(app: FastifyInstance) {
           black: { select: { username: true } },
         },
         orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.game.count({ where }),
@@ -520,8 +519,7 @@ export async function adminRoutes(app: FastifyInstance) {
       adminId?: string;
     };
   }>("/admin/audit-log", async (request) => {
-    const page = Math.max(1, parseInt(request.query.page || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || "50")));
+    const { page, limit, skip } = parsePagination(request.query, { defaultLimit: 50, maxLimit: 100 });
     const actionFilter = request.query.action;
     const adminFilter = request.query.adminId;
 
@@ -536,7 +534,7 @@ export async function adminRoutes(app: FastifyInstance) {
           admin: { select: { username: true } },
         },
         orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.auditLog.count({ where }),
@@ -551,15 +549,8 @@ export async function adminRoutes(app: FastifyInstance) {
   // ── Bots ────────────────────────────────────────────────
 
   app.get("/admin/bots", async (request) => {
-    const {
-      page: pageStr,
-      limit: limitStr,
-      search,
-      sort,
-      order,
-    } = request.query as Record<string, string | undefined>;
-    const page = Math.max(1, parseInt(pageStr || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(limitStr || "20")));
+    const { search, sort, order } = request.query as Record<string, string | undefined>;
+    const { page, limit, skip } = parsePagination(request.query as { page?: string; limit?: string }, { maxLimit: 100 });
     const sortField = ["elo", "name", "category", "sortOrder", "createdAt"].includes(sort || "")
       ? sort!
       : "sortOrder";
@@ -579,7 +570,7 @@ export async function adminRoutes(app: FastifyInstance) {
       prisma.botProfile.findMany({
         where,
         orderBy: { [sortField]: sortOrder },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.botProfile.count({ where }),
