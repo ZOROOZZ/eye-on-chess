@@ -85,6 +85,12 @@ async function main() {
       cb(new Error("CORS origin not allowed"), false);
     },
     credentials: true,
+    exposedHeaders: ["X-Request-Id"],
+  });
+
+  // Propagate request ID in response headers for client-side tracing
+  fastify.addHook("onSend", async (request, reply) => {
+    reply.header("X-Request-Id", String(request.id));
   });
 
   await fastify.register(cookie);
