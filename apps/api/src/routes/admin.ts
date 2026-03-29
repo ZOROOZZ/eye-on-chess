@@ -11,6 +11,7 @@ import {
   auditLog,
   sanitizeString,
 } from "../middleware/admin.js";
+import { z } from "zod";
 import {
   adminCreateUserBodySchema,
   createBotBodySchema,
@@ -613,33 +614,32 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.post("/admin/bots", { schema: { body: createBotBodySchema } }, async (request, reply) => {
-    const body = request.body as Record<string, unknown>;
-    const botId = body.botId as string;
+    const body = request.body as z.infer<typeof createBotBodySchema>;
 
-    const existing = await prisma.botProfile.findUnique({ where: { botId } });
+    const existing = await prisma.botProfile.findUnique({ where: { botId: body.botId } });
     if (existing) return apiError(reply, 409, ADMIN_BOT_ID_EXISTS, "Bot ID already exists");
 
     const maxSort = await prisma.botProfile.aggregate({ _max: { sortOrder: true } });
     const bot = await prisma.botProfile.create({
       data: {
-        botId,
-        name: sanitizeString(body.name as string),
-        elo: body.elo as number,
-        description: sanitizeString(body.description as string),
-        avatar: body.avatar as string,
-        tier: body.tier as string,
-        category: body.category as string,
-        enabled: (body.enabled as boolean) ?? true,
-        randomMoveChance: (body.randomMoveChance as number) ?? 0,
-        blunderChance: (body.blunderChance as number) ?? 0,
-        captureGreed: (body.captureGreed as number) ?? 0,
-        aggressionBias: (body.aggressionBias as number) ?? 0,
-        maxDepth: (body.maxDepth as number) ?? 3,
-        queenEarly: (body.queenEarly as boolean) ?? false,
-        pawnPusher: (body.pawnPusher as boolean) ?? false,
+        botId: body.botId,
+        name: sanitizeString(body.name),
+        elo: body.elo,
+        description: sanitizeString(body.description),
+        avatar: body.avatar,
+        tier: body.tier,
+        category: body.category,
+        enabled: body.enabled ?? true,
+        randomMoveChance: body.randomMoveChance ?? 0,
+        blunderChance: body.blunderChance ?? 0,
+        captureGreed: body.captureGreed ?? 0,
+        aggressionBias: body.aggressionBias ?? 0,
+        maxDepth: body.maxDepth ?? 3,
+        queenEarly: body.queenEarly ?? false,
+        pawnPusher: body.pawnPusher ?? false,
         sortOrder: (maxSort._max.sortOrder ?? 0) + 1,
-        messages: body.messages as object | undefined,
-        preferredOpenings: body.preferredOpenings as object | undefined,
+        messages: body.messages,
+        preferredOpenings: body.preferredOpenings,
       },
     });
 
@@ -660,34 +660,16 @@ export async function adminRoutes(app: FastifyInstance) {
     { schema: { body: updateBotBodySchema } },
     async (request, reply) => {
       const { id } = request.params;
-      const body = request.body as Record<string, unknown>;
+      const body = request.body as z.infer<typeof updateBotBodySchema>;
 
       const existing = await prisma.botProfile.findUnique({ where: { id } });
       if (!existing) return apiError(reply, 404, ADMIN_BOT_NOT_FOUND, "Bot not found");
 
       const data: Record<string, unknown> = {};
-      for (const key of [
-        "name",
-        "elo",
-        "description",
-        "avatar",
-        "tier",
-        "category",
-        "enabled",
-        "sortOrder",
-        "randomMoveChance",
-        "blunderChance",
-        "captureGreed",
-        "aggressionBias",
-        "maxDepth",
-        "queenEarly",
-        "pawnPusher",
-        "messages",
-        "preferredOpenings",
-      ]) {
-        if (body[key] !== undefined) {
-          data[key] =
-            typeof body[key] === "string" ? sanitizeString(body[key] as string) : body[key];
+      const entries = Object.entries(body) as [string, unknown][];
+      for (const [key, value] of entries) {
+        if (value !== undefined) {
+          data[key] = typeof value === "string" ? sanitizeString(value) : value;
         }
       }
 

@@ -29,6 +29,7 @@ import {
   GAME_INVALID_PRESET,
   GAME_BOT_ERROR,
 } from "../lib/errorCodes.js";
+import { z } from "zod";
 import {
   createFriendGameBodySchema,
   gameActionBodySchema,
@@ -746,19 +747,7 @@ export async function gameRoutes(app: FastifyInstance) {
       timeControl,
       initialTime,
       increment,
-    } = request.body as Record<string, unknown> & {
-      offlineId?: string;
-      botElo: number;
-      playerIsWhite: boolean;
-      moves: { ply: number; san: string; uci: string; fen: string }[];
-      result: string | null;
-      termination: string | null;
-      startedAt: string;
-      endedAt: string | null;
-      timeControl?: string;
-      initialTime?: number;
-      increment?: number;
-    };
+    } = request.body as z.infer<typeof syncOfflineGameBodySchema>;
 
     // Idempotency: check if this offline game was already synced
     if (offlineId) {
