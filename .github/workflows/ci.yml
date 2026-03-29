@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -36,7 +38,12 @@ jobs:
         run: pnpm format:check
 
       - name: TypeScript
-        run: pnpm turbo run typecheck
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm turbo run typecheck --filter='...[origin/master]'
+          else
+            pnpm turbo run typecheck
+          fi
 
   test:
     name: Test
@@ -45,6 +52,8 @@ jobs:
       JWT_SECRET: ci-test-secret
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -60,38 +69,95 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pnpm --filter @eyeonchess/chess exec vitest run --coverage
-          pnpm --filter @eyeonchess/api exec vitest run --coverage
-          pnpm --filter @eyeonchess/web exec vitest run --coverage
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm turbo run test:coverage --filter='...[origin/master]'
+          else
+            pnpm turbo run test:coverage
+          fi
 
       - name: Upload chess coverage
-        if: success()
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: chess-coverage
           path: packages/chess/coverage/lcov.info
           retention-days: 1
+          if-no-files-found: ignore
 
       - name: Upload API coverage
-        if: success()
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: api-coverage
           path: apps/api/coverage/lcov.info
           retention-days: 1
+          if-no-files-found: ignore
 
       - name: Upload web coverage
-        if: success()
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: web-coverage
           path: apps/web/coverage/lcov.info
           retention-days: 1
+          if-no-files-found: ignore
+
+  # Detect which paths changed (for conditional Docker builds on PRs)
+  changes:
+    name: Detect Changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      worker: ${{ steps.filter.outputs.worker }}
+      migrate: ${{ steps.filter.outputs.migrate }}
+      admin: ${{ steps.filter.outputs.admin }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/chess/**'
+              - 'deployment/Dockerfile.base'
+              - 'pnpm-lock.yaml'
+            web:
+              - 'apps/web/**'
+              - 'packages/chess/**'
+              - 'packages/api-client/**'
+              - 'packages/ui/**'
+              - 'deployment/Dockerfile.base'
+              - 'pnpm-lock.yaml'
+            worker:
+              - 'apps/api/**'
+              - 'packages/chess/**'
+              - 'deployment/Dockerfile.base'
+              - 'pnpm-lock.yaml'
+            migrate:
+              - 'apps/api/prisma/**'
+              - 'deployment/Dockerfile.base'
+              - 'pnpm-lock.yaml'
+            admin:
+              - 'apps/admin/**'
+              - 'packages/api-client/**'
+              - 'packages/ui/**'
+              - 'pnpm-lock.yaml'
 
   build-api:
     name: Build API
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, changes]
+    if: |
+      always() &&
+      needs.lint.result == 'success' &&
+      needs.test.result == 'success' &&
+      (github.event_name == 'push' || needs.changes.outputs.api == 'true')
     steps:
       - uses: actions/checkout@v4
 
@@ -104,7 +170,12 @@ jobs:
   build-web:
     name: Build Web
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, changes]
+    if: |
+      always() &&
+      needs.lint.result == 'success' &&
+      needs.test.result == 'success' &&
+      (github.event_name == 'push' || needs.changes.outputs.web == 'true')
     steps:
       - uses: actions/checkout@v4
 
@@ -117,7 +188,12 @@ jobs:
   build-worker:
     name: Build Worker
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, changes]
+    if: |
+      always() &&
+      needs.lint.result == 'success' &&
+      needs.test.result == 'success' &&
+      (github.event_name == 'push' || needs.changes.outputs.worker == 'true')
     steps:
       - uses: actions/checkout@v4
 
@@ -130,7 +206,12 @@ jobs:
   build-migrate:
     name: Build Migrate
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, changes]
+    if: |
+      always() &&
+      needs.lint.result == 'success' &&
+      needs.test.result == 'success' &&
+      (github.event_name == 'push' || needs.changes.outputs.migrate == 'true')
     steps:
       - uses: actions/checkout@v4
 
@@ -143,7 +224,12 @@ jobs:
   build-admin:
     name: Build Admin
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, changes]
+    if: |
+      always() &&
+      needs.lint.result == 'success' &&
+      needs.test.result == 'success' &&
+      (github.event_name == 'push' || needs.changes.outputs.admin == 'true')
     steps:
       - uses: actions/checkout@v4
 
@@ -154,6 +240,9 @@ jobs:
     name: Docker Compose
     runs-on: ubuntu-latest
     needs: [build-api, build-web, build-worker, build-migrate, build-admin]
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure')
     steps:
       - uses: actions/checkout@v4
 
@@ -197,39 +286,48 @@ jobs:
   codacy-coverage:
     name: Codacy Coverage
     needs: [lint, test, compose]
-    if: github.event_name != 'pull_request'
+    if: |
+      always() &&
+      needs.test.result == 'success' &&
+      github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Download chess coverage
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: chess-coverage
 
       - name: Download API coverage
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: api-coverage
           path: api-coverage/
 
       - name: Download web coverage
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: web-coverage
           path: web-coverage/
 
       - name: Upload chess coverage to Codacy
+        if: hashFiles('lcov.info') != ''
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r lcov.info --partial
 
       - name: Upload API coverage to Codacy
+        if: hashFiles('api-coverage/lcov.info') != ''
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r api-coverage/lcov.info --partial
 
       - name: Upload web coverage to Codacy
+        if: hashFiles('web-coverage/lcov.info') != ''
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r web-coverage/lcov.info --partial
