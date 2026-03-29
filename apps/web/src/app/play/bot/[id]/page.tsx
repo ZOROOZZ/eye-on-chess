@@ -1005,8 +1005,24 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
                   </div>
                 )}
                 {thinking && (
-                  <div className="absolute bottom-2 right-2 bg-gray-900/80 px-2 py-1 rounded text-xs text-gray-400">
-                    Thinking...
+                  <div className="absolute bottom-0 left-0 right-0 flex justify-center py-2 bg-gradient-to-t from-black/60 to-transparent z-10">
+                    <div className="flex items-center gap-1.5 bg-gray-900/90 px-3 py-1.5 rounded-full">
+                      <span className="text-xs text-gray-300 font-medium">Thinking</span>
+                      <span className="flex gap-0.5">
+                        <span
+                          className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0ms" }}
+                        />
+                        <span
+                          className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "150ms" }}
+                        />
+                        <span
+                          className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "300ms" }}
+                        />
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
