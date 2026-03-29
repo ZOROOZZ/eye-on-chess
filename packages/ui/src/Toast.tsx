@@ -43,6 +43,8 @@ export default function Toast() {
 
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
       } ${type === "success" ? "bg-green-600" : "bg-red-600"}`}

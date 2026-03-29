@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { Toast } from "@eyeonchess/ui";
 import ThemeProvider from "./ThemeProvider";
 import BoardThemeStyles from "./BoardThemeStyles";
 import ErrorBoundary from "./ErrorBoundary";
@@ -31,6 +32,7 @@ export default function ClientProviders({ children }: { children: React.ReactNod
   return (
     <ThemeProvider>
       <BoardThemeStyles />
+      <Toast />
       <ErrorBoundary>{isExempt ? children : <TosGate>{children}</TosGate>}</ErrorBoundary>
     </ThemeProvider>
   );

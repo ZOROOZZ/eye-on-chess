@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
-import { Skeleton } from "@eyeonchess/ui";
+import { Skeleton, useToast } from "@eyeonchess/ui";
 import GameNoteEditor from "../../components/GameNoteEditor";
 import ExportPGN from "../../components/ExportPGN";
 import { RESULT_LABELS } from "@eyeonchess/chess";
@@ -29,6 +29,7 @@ interface GameRecord {
 export default function HistoryPage() {
   const router = useRouter();
   const { user, isLoading, fetchMe } = useAuthStore();
+  const toast = useToast();
   const [games, setGames] = useState<GameRecord[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -48,7 +49,7 @@ export default function HistoryPage() {
       setGames(data.games);
       setTotalPages(data.pagination.totalPages);
     } catch {
-      // ignore
+      toast.show("Failed to load game history", "error");
     } finally {
       setLoading(false);
     }

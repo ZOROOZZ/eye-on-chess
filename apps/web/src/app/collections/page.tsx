@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
-import { ConfirmModal } from "@eyeonchess/ui";
-import { Skeleton } from "@eyeonchess/ui";
+import { ConfirmModal, Skeleton, useToast } from "@eyeonchess/ui";
 
 interface CollectionItem {
   id: string;
@@ -17,6 +16,7 @@ interface CollectionItem {
 export default function CollectionsPage() {
   const router = useRouter();
   const { user, isLoading, fetchMe } = useAuthStore();
+  const toast = useToast();
   const [collections, setCollections] = useState<CollectionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
@@ -36,7 +36,7 @@ export default function CollectionsPage() {
       const { data } = await api.get("/api/v1/collections");
       setCollections(data.collections);
     } catch {
-      // ignore
+      toast.show("Failed to load collections", "error");
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export default function CollectionsPage() {
       await api.delete(`/api/v1/collections/${deleteTarget.id}`);
       await loadCollections();
     } catch {
-      // ignore
+      toast.show("Failed to delete collection", "error");
     }
     setDeleteTarget(null);
   }

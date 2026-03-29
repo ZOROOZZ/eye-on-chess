@@ -6,7 +6,7 @@ import Link from "next/link";
 import api from "../../../lib/api";
 import { useAuthStore } from "../../../stores/auth";
 import { connectSocket, getSocket } from "../../../lib/socket";
-import { ConfirmModal } from "@eyeonchess/ui";
+import { ConfirmModal, useToast } from "@eyeonchess/ui";
 
 interface Friend {
   friendshipId: string;
@@ -31,6 +31,7 @@ const PRESETS = [
 export default function ChallengeFriendPage() {
   const router = useRouter();
   const { user, isLoading, fetchMe } = useAuthStore();
+  const toast = useToast();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [customMinutes, setCustomMinutes] = useState(10);
@@ -53,7 +54,7 @@ export default function ChallengeFriendPage() {
       const { data } = await api.get("/api/v1/friends");
       setFriends(data.friends);
     } catch {
-      // ignore
+      toast.show("Failed to load friends", "error");
     }
   }, []);
 

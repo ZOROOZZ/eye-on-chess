@@ -133,7 +133,7 @@ export default function PlayBotPage() {
           setShowActivePrompt(true);
         }
       })
-      .catch(() => {});
+      .catch(() => toast.show("Failed to check for active game", "error"));
   }, [user, isOnline]);
 
   async function resumeGame() {

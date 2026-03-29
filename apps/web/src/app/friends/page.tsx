@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "../../lib/api";
+import { useToast } from "@eyeonchess/ui";
 import { useAuthStore } from "../../stores/auth";
 
 interface Friend {
@@ -34,6 +35,7 @@ interface SearchUser {
 export default function FriendsPage() {
   const router = useRouter();
   const { user, isLoading, fetchMe } = useAuthStore();
+  const toast = useToast();
 
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
@@ -61,7 +63,7 @@ export default function FriendsPage() {
       setFriends(friendsRes.data.friends);
       setRequests(requestsRes.data.requests);
     } catch {
-      // Silently fail - user might not be authenticated yet
+      toast.show("Failed to load friends", "error");
     }
   }, []);
 
