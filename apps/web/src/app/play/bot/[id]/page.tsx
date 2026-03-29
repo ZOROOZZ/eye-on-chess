@@ -215,6 +215,8 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
     F: () => setFlipDisplay((f) => !f),
     h: () => activeSettings.hints && handleHint(),
     H: () => activeSettings.hints && handleHint(),
+    z: () => activeSettings.takeback && handleTakeback(),
+    Z: () => activeSettings.takeback && handleTakeback(),
     r: () => !gameOver && setConfirmResign(true),
     R: () => !gameOver && setConfirmResign(true),
     Escape: () => {
@@ -1088,6 +1090,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
           { key: "Home/End", description: "First/last move" },
           { key: "F", description: "Flip board" },
           ...(activeSettings.hints ? [{ key: "H", description: "Hint" }] : []),
+          ...(activeSettings.takeback ? [{ key: "Z", description: "Takeback" }] : []),
           { key: "R", description: "Resign" },
           { key: "Esc", description: "Close modal" },
           { key: "?", description: "This help" },
