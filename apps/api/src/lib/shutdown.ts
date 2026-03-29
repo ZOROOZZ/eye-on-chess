@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { Server as SocketServer } from "socket.io";
 import { prisma } from "./prisma.js";
 import { redis } from "./redis.js";
+import { destroyBotEngine } from "./botEngine.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -9,9 +10,10 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
  * Gracefully shut down the server by closing connections in order:
  * 1. Stop accepting new HTTP connections (Fastify close)
  * 2. Disconnect Socket.io clients
- * 3. Disconnect Prisma (drain DB pool)
- * 4. Disconnect Redis
- * 5. Exit process
+ * 3. Kill Stockfish child processes
+ * 4. Disconnect Prisma (drain DB pool)
+ * 5. Disconnect Redis
+ * 6. Exit process
  *
  * Force exits after 10 seconds if cleanup hangs.
  *
@@ -53,11 +55,15 @@ export function registerShutdown(
         log.info("Socket.io closed");
       }
 
-      // 3. Disconnect Prisma
+      // 3. Kill Stockfish processes
+      destroyBotEngine();
+      log.info("Stockfish engines destroyed");
+
+      // 4. Disconnect Prisma
       await prisma.$disconnect();
       log.info("Prisma disconnected");
 
-      // 4. Disconnect Redis
+      // 5. Disconnect Redis
       await redis.quit();
       log.info("Redis disconnected");
 

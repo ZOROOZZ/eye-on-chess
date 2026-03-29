@@ -75,3 +75,13 @@ export async function getBotMove(
 
   return bestMove;
 }
+
+/** Destroy the cached Stockfish engine process. Called during graceful shutdown. */
+export function destroyBotEngine(): void {
+  if (engine) {
+    engine.destroy();
+    engine = null;
+    currentElo = null;
+    log.info("bot stockfish engine destroyed");
+  }
+}
