@@ -14,7 +14,7 @@ export default tseslint.config(
     ],
   },
 
-  // TypeScript files
+  // TypeScript files (API, packages)
   {
     files: ["apps/*/src/**/*.ts", "packages/*/src/**/*.ts"],
     extends: [tseslint.configs.recommended],
@@ -24,13 +24,13 @@ export default tseslint.config(
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
-      "no-console": ["warn", { allow: ["warn", "error", "log"] }],
+      "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
 
-  // TSX files
+  // TSX files (web, admin, packages/ui)
   {
-    files: ["apps/web/src/**/*.tsx"],
+    files: ["apps/*/src/**/*.tsx", "packages/*/src/**/*.tsx"],
     extends: [tseslint.configs.recommended],
     rules: {
       "@typescript-eslint/no-unused-vars": [
