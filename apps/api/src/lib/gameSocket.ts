@@ -4,6 +4,7 @@ import { prisma } from "./prisma.js";
 import { computeElo } from "./elo.js";
 import { redis, checkReactionRateLimit } from "./redis.js";
 import { logger } from "./logger.js";
+import { moveValidationFailures, gameTimeouts } from "./metrics.js";
 import { VALID_REACTIONS, type GameResult, type Termination } from "@eyeonchess/chess";
 import {
   initClocks,
@@ -325,6 +326,7 @@ async function processMoveInner(
   // Check for timeout before processing move
   const timedOut = await isTimeout(gameId);
   if (timedOut) {
+    gameTimeouts.inc();
     const result = timedOut === "white" ? "BLACK_WIN" : "WHITE_WIN";
     await endGame(io, gameId, result, "TIMEOUT");
     return;
@@ -333,6 +335,7 @@ async function processMoveInner(
   // Validate and apply move
   const move = chess.move({ from, to, promotion: promotion || undefined });
   if (!move) {
+    moveValidationFailures.inc();
     socket.emit("game:error", { message: "Invalid move" });
     return;
   }
@@ -404,6 +407,7 @@ function startTimeoutChecker(io: SocketServer) {
         if (timedOut) {
           const game = await prisma.game.findUnique({ where: { id: gameId } });
           if (game && game.status === "ACTIVE" && game.timeControl !== "UNLIMITED") {
+            gameTimeouts.inc();
             const result = timedOut === "white" ? "BLACK_WIN" : "WHITE_WIN";
             await endGame(io, gameId, result, "TIMEOUT");
           }

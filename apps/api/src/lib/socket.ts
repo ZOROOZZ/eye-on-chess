@@ -2,6 +2,7 @@ import { Server as HttpServer } from "http";
 import { Server as SocketServer } from "socket.io";
 import { verifyAccessToken } from "./jwt.js";
 import { setOnline, setOffline } from "./redis.js";
+import { websocketConnections } from "./metrics.js";
 
 let io: SocketServer;
 
@@ -46,6 +47,7 @@ export function setupSocket(httpServer: HttpServer) {
 
   io.on("connection", async (socket) => {
     const userId = socket.data.userId as string;
+    websocketConnections.inc();
     await setOnline(userId);
 
     socket.on("heartbeat", async () => {
@@ -53,6 +55,7 @@ export function setupSocket(httpServer: HttpServer) {
     });
 
     socket.on("disconnect", async () => {
+      websocketConnections.dec();
       await setOffline(userId);
     });
   });

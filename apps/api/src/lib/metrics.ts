@@ -28,6 +28,21 @@ export const gamesCompletedTotal = new client.Counter({
   help: "Total number of completed games",
 });
 
+export const websocketConnections = new client.Gauge({
+  name: "eyeonchess_websocket_connections",
+  help: "Number of active WebSocket connections",
+});
+
+export const moveValidationFailures = new client.Counter({
+  name: "eyeonchess_move_validation_failures_total",
+  help: "Total move validation failures (illegal moves submitted)",
+});
+
+export const gameTimeouts = new client.Counter({
+  name: "eyeonchess_game_timeouts_total",
+  help: "Total games ended by clock timeout",
+});
+
 let lastCompletedCount = 0;
 
 /**
