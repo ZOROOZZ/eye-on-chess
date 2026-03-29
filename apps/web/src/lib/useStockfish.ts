@@ -2,10 +2,18 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 
+export interface EngineLine {
+  score: number;
+  mate: number | null;
+  pv: string[];
+  depth: number;
+}
+
 interface StockfishHook {
   ready: boolean;
   getBotMove: (fen: string, elo: number) => Promise<string | null>;
   evaluate: (fen: string) => Promise<{ score: number; bestMove: string | null }>;
+  evaluateMultiPV: (fen: string, numLines?: number) => Promise<EngineLine[]>;
 }
 
 /**
@@ -172,5 +180,66 @@ export function useStockfish(): StockfishHook {
     [ready, sendCommand, sendRaw]
   );
 
-  return { ready, getBotMove, evaluate };
+  const evaluateMultiPV = useCallback(
+    async (fen: string, numLines: number = 3): Promise<EngineLine[]> => {
+      if (!ready) return [];
+
+      sendRaw("setoption name UCI_LimitStrength value false");
+      sendRaw(`setoption name MultiPV value ${numLines}`);
+      await sendCommand("isready", "readyok");
+
+      sendRaw("ucinewgame");
+      sendRaw(`position fen ${fen}`);
+      await sendCommand("isready", "readyok");
+
+      const lines = await sendCommand("go depth 16", "bestmove");
+
+      const isBlack = fen.split(" ")[1] === "b";
+      const results = new Map<number, EngineLine>();
+
+      for (const line of lines) {
+        if (!line.includes("info depth") || !line.includes("multipv")) continue;
+
+        const depthMatch = line.match(/depth (\d+)/);
+        const pvIdxMatch = line.match(/multipv (\d+)/);
+        const pvMovesMatch = line.match(/ pv (.+)/);
+        if (!depthMatch || !pvIdxMatch || !pvMovesMatch) continue;
+
+        const depth = parseInt(depthMatch[1]);
+        const pvIdx = parseInt(pvIdxMatch[1]);
+        const pvMoves = pvMovesMatch[1].trim().split(/\s+/);
+
+        let score = 0;
+        let mate: number | null = null;
+        const cpMatch = line.match(/score cp (-?\d+)/);
+        const mateMatch = line.match(/score mate (-?\d+)/);
+        if (mateMatch) {
+          mate = parseInt(mateMatch[1]);
+          score = mate > 0 ? 100000 : -100000;
+        } else if (cpMatch) {
+          score = parseInt(cpMatch[1]);
+        }
+        if (isBlack) {
+          score = -score;
+          if (mate !== null) mate = -mate;
+        }
+
+        const prev = results.get(pvIdx);
+        if (!prev || depth > prev.depth) {
+          results.set(pvIdx, { score, mate, pv: pvMoves, depth });
+        }
+      }
+
+      // Reset MultiPV
+      sendRaw("setoption name MultiPV value 1");
+
+      // Return sorted by pvIdx (1, 2, 3)
+      return Array.from(results.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([, v]) => v);
+    },
+    [ready, sendCommand, sendRaw]
+  );
+
+  return { ready, getBotMove, evaluate, evaluateMultiPV };
 }
