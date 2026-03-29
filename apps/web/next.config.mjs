@@ -1,4 +1,6 @@
-const withPWA = require("next-pwa")({
+import withPWA from "next-pwa";
+
+const pwa = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
@@ -71,7 +73,7 @@ const withPWA = require("next-pwa")({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  transpilePackages: ["@eyeonchess/chess", "@eyeonchess/ui"],
+  transpilePackages: ["@eyeonchess/api-client", "@eyeonchess/chess", "@eyeonchess/ui"],
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
@@ -117,4 +119,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+export default pwa(nextConfig);
