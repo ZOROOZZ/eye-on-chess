@@ -154,6 +154,7 @@ model Game {
   @@index([blackId])
   @@index([createdAt])
   @@index([endedAt])
+  @@index([isVsBot, botElo])
 }
 
 model Move {
