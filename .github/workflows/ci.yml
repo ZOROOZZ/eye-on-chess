@@ -35,11 +35,8 @@ jobs:
       - name: Prettier
         run: pnpm format:check
 
-      - name: TypeScript (API)
-        run: pnpm --filter @eyeonchess/api lint
-
-      - name: TypeScript (Chess)
-        run: pnpm --filter @eyeonchess/chess lint
+      - name: TypeScript
+        run: pnpm turbo run typecheck
 
   test:
     name: Test
