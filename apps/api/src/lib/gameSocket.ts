@@ -2,7 +2,8 @@ import { Server as SocketServer, Socket } from "socket.io";
 import { Chess } from "chess.js";
 import { prisma } from "./prisma.js";
 import { computeElo } from "./elo.js";
-import { checkReactionRateLimit } from "./redis.js";
+import { redis, checkReactionRateLimit } from "./redis.js";
+import { logger } from "./logger.js";
 import { VALID_REACTIONS, type GameResult, type Termination } from "@eyeonchess/chess";
 import {
   initClocks,
@@ -228,6 +229,30 @@ export function setupGameSocket(io: SocketServer) {
  * and checks for game-ending conditions.
  */
 async function processMove(
+  io: SocketServer,
+  socket: Socket,
+  userId: string,
+  drawOffers: Map<string, string>,
+  data: { gameId: string; from: string; to: string; promotion?: string }
+) {
+  const { gameId, from, to, promotion } = data;
+
+  // Acquire per-game move lock (prevents concurrent move race condition)
+  const lockKey = `game:lock:${gameId}`;
+  const acquired = await redis.set(lockKey, "1", "EX", 5, "NX");
+  if (!acquired) {
+    socket.emit("game:error", { message: "Move already being processed" });
+    return;
+  }
+
+  try {
+    await processMoveInner(io, socket, userId, drawOffers, data);
+  } finally {
+    await redis.del(lockKey);
+  }
+}
+
+async function processMoveInner(
   io: SocketServer,
   socket: Socket,
   userId: string,
