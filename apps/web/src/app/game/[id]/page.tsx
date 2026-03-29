@@ -42,8 +42,10 @@ export default function GamePage() {
   const [white, setWhite] = useState<Player | null>(null);
   const [black, setBlack] = useState<Player | null>(null);
   const [moves, setMoves] = useState<MoveRecord[]>([]);
+  const [moveUcis, setMoveUcis] = useState<string[]>([]);
   const [currentPly, setCurrentPly] = useState(0);
   const [lastMove, setLastMove] = useState<[string, string] | undefined>();
+  const [previewArrow, setPreviewArrow] = useState<{ from: string; to: string } | null>(null);
   const [clocks, setClocks] = useState<ClockState | null>(null);
   const [status, setStatus] = useState<string>("WAITING");
   const [timeControl, setTimeControl] = useState<string>("RAPID");
@@ -159,6 +161,7 @@ export default function GamePage() {
           fen: m.fen,
         }));
         setMoves(moveRecords);
+        setMoveUcis(g.moves.map((m: { uci?: string }) => m.uci || ""));
         setCurrentPly(moveRecords.length);
       }
       setReconnecting(false);
@@ -168,6 +171,7 @@ export default function GamePage() {
     socket.on("game:moved", (data) => {
       setFen(data.fen);
       setMoves((prev) => [...prev, { ply: data.ply, san: data.san, fen: data.fen }]);
+      setMoveUcis((prev) => [...prev, `${data.from}${data.to}`]);
       setCurrentPly(data.ply);
       setLastMove([data.from, data.to]);
       if (data.clocks) setClocks(data.clocks);
@@ -360,6 +364,7 @@ export default function GamePage() {
                 lastMove={lastMove}
                 check={false}
                 onMove={handleMove}
+                arrows={previewArrow ? [{ from: previewArrow.from, to: previewArrow.to, color: "yellow" }] : undefined}
               />
               <ReactionOverlay reactions={activeReactions} onExpired={removeReaction} />
             </div>
@@ -396,7 +401,18 @@ export default function GamePage() {
 
           {/* Right panel */}
           <div className="flex-1 space-y-4 min-w-0">
-            <MoveList moves={moves} currentPly={currentPly} onGoToPly={goToPly} />
+            <MoveList
+              moves={moves}
+              currentPly={currentPly}
+              onGoToPly={goToPly}
+              onMoveHover={(ply) => {
+                const uci = moveUcis[ply - 1];
+                if (uci && uci.length >= 4) {
+                  setPreviewArrow({ from: uci.slice(0, 2), to: uci.slice(2, 4) });
+                }
+              }}
+              onMoveHoverEnd={() => setPreviewArrow(null)}
+            />
 
             {/* Navigation */}
             <div className="flex gap-2 justify-center">

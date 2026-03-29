@@ -11,16 +11,25 @@ interface MoveListProps {
   moves: Move[];
   currentPly: number;
   onGoToPly: (ply: number) => void;
+  onMoveHover?: (ply: number) => void;
+  onMoveHoverEnd?: () => void;
 }
 
 /**
  * Renders a scrollable list of chess moves grouped into numbered pairs (white/black),
  * with the current ply highlighted and auto-scrolling into view.
+ * Supports optional hover callbacks for move preview on the board.
  *
  * @param props - {@link MoveListProps}
  * @returns The move list panel, or a "No moves yet" placeholder when empty.
  */
-export default function MoveList({ moves, currentPly, onGoToPly }: MoveListProps) {
+export default function MoveList({
+  moves,
+  currentPly,
+  onGoToPly,
+  onMoveHover,
+  onMoveHoverEnd,
+}: MoveListProps) {
   const currentRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +77,8 @@ export default function MoveList({ moves, currentPly, onGoToPly }: MoveListProps
               <button
                 ref={pair.white.ply === currentPly ? currentRef : undefined}
                 onClick={() => onGoToPly(pair.white!.ply)}
+                onMouseEnter={() => onMoveHover?.(pair.white!.ply)}
+                onMouseLeave={() => onMoveHoverEnd?.()}
                 className={`px-2 py-0.5 rounded mr-1 min-w-[4rem] text-left font-mono transition-colors ${
                   pair.white.ply === currentPly
                     ? "bg-blue-600 text-white"
@@ -81,6 +92,8 @@ export default function MoveList({ moves, currentPly, onGoToPly }: MoveListProps
               <button
                 ref={pair.black.ply === currentPly ? currentRef : undefined}
                 onClick={() => onGoToPly(pair.black!.ply)}
+                onMouseEnter={() => onMoveHover?.(pair.black!.ply)}
+                onMouseLeave={() => onMoveHoverEnd?.()}
                 className={`px-2 py-0.5 rounded min-w-[4rem] text-left font-mono transition-colors ${
                   pair.black.ply === currentPly
                     ? "bg-blue-600 text-white"

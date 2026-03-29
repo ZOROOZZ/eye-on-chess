@@ -149,6 +149,9 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
   // Engine lines (multi-PV principal variations)
   const [engineLines, setEngineLines] = useState<EngineLine[]>([]);
 
+  // Move hover preview
+  const [previewArrow, setPreviewArrow] = useState<{ from: string; to: string } | null>(null);
+
   // Mode preset label (for display)
   const [modePreset, setModePreset] = useState<GameModePreset>("friendly");
 
@@ -941,6 +944,8 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
   for (const t of threatArrows) arrows.push({ from: t.from, to: t.to, color: "red" });
   if (suggestionArrow)
     arrows.push({ from: suggestionArrow.from, to: suggestionArrow.to, color: "blue" });
+  if (previewArrow)
+    arrows.push({ from: previewArrow.from, to: previewArrow.to, color: "yellow" });
   const highlightedSquares: { square: string; color: string }[] = [];
   if (hintStep >= 1 && hintSource) highlightedSquares.push({ square: hintSource, color: "green" });
 
@@ -1017,7 +1022,18 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
           </div>
 
           <div className="w-full lg:w-72 space-y-3">
-            <MoveList moves={moves} currentPly={currentPly} onGoToPly={setCurrentPly} />
+            <MoveList
+              moves={moves}
+              currentPly={currentPly}
+              onGoToPly={setCurrentPly}
+              onMoveHover={(ply) => {
+                const uci = allUciMoves[ply - 1];
+                if (uci && uci.length >= 4) {
+                  setPreviewArrow({ from: uci.slice(0, 2), to: uci.slice(2, 4) });
+                }
+              }}
+              onMoveHoverEnd={() => setPreviewArrow(null)}
+            />
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() => setCurrentPly(0)}
