@@ -7,11 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@eyeonchess/api-client": "workspace:*",
     "@eyeonchess/chess": "workspace:*",
     "@eyeonchess/ui": "workspace:*",
     "axios": "^1.13.6",

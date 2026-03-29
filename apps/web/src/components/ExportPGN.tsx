@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import api from "../lib/api";
-import { useToast } from "./Toast";
+import { useToast } from "@eyeonchess/ui";
 
 interface ExportPGNProps {
   gameId: string;

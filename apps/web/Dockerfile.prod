@@ -5,6 +5,7 @@ FROM base AS deps
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY apps/web/package.json ./apps/web/
+COPY packages/api-client/package.json ./packages/api-client/
 COPY packages/chess/package.json ./packages/chess/
 COPY packages/ui/package.json ./packages/ui/
 RUN pnpm install --frozen-lockfile && pnpm store prune
@@ -16,9 +17,11 @@ ARG NEXT_PUBLIC_API_URL=http://localhost
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=deps /app/packages/api-client/node_modules* ./packages/api-client/node_modules/
 COPY --from=deps /app/packages/chess/node_modules* ./packages/chess/node_modules/
 COPY --from=deps /app/packages/ui/node_modules* ./packages/ui/node_modules/
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
+COPY packages/api-client ./packages/api-client
 COPY packages/chess ./packages/chess
 COPY packages/ui ./packages/ui
 COPY apps/web ./apps/web

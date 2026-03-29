@@ -5,6 +5,7 @@ FROM base AS deps
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY apps/admin/package.json ./apps/admin/
+COPY packages/api-client/package.json ./packages/api-client/
 COPY packages/ui/package.json ./packages/ui/
 RUN pnpm install --frozen-lockfile && pnpm store prune
 
@@ -17,8 +18,10 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/admin/node_modules ./apps/admin/node_modules
+COPY --from=deps /app/packages/api-client/node_modules* ./packages/api-client/node_modules/
 COPY --from=deps /app/packages/ui/node_modules* ./packages/ui/node_modules/
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
+COPY packages/api-client ./packages/api-client
 COPY packages/ui ./packages/ui
 COPY apps/admin ./apps/admin
 RUN pnpm --filter @eyeonchess/admin build
