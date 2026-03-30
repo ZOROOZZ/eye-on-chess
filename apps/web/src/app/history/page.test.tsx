@@ -37,6 +37,7 @@ vi.mock("@eyeonchess/ui", () => ({
   Skeleton: ({ className }: { className?: string }) => (
     <div data-testid="skeleton" className={className} />
   ),
+  useToast: () => ({ show: vi.fn(), clear: vi.fn() }),
 }));
 
 vi.mock("../../components/GameNoteEditor", () => ({

@@ -53,7 +53,7 @@ export default function BotSelector({ selected, onSelect, bots }: BotSelectorPro
     if (selected) {
       setExpanded(selected.category);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggle(cat: BotCategory) {
     setExpanded((prev) => (prev === cat ? null : cat));

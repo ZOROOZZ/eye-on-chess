@@ -63,7 +63,7 @@ export default function TimeControlPicker({
       const cat = findCategory(selectedTime);
       if (cat) setExpanded(cat);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleCategory(cat: TimeControl) {
     setExpanded((prev) => (prev === cat ? null : cat));
