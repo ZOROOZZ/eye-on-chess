@@ -152,6 +152,9 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
   // Move hover preview
   const [previewArrow, setPreviewArrow] = useState<{ from: string; to: string } | null>(null);
 
+  // Copy FEN feedback
+  const [fenCopied, setFenCopied] = useState(false);
+
   // Mode preset label (for display)
   const [modePreset, setModePreset] = useState<GameModePreset>("friendly");
 
@@ -1074,6 +1077,18 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
                 className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
               >
                 &raquo;
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(displayFen).then(() => {
+                    setFenCopied(true);
+                    setTimeout(() => setFenCopied(false), 1500);
+                  }).catch(() => {});
+                }}
+                className="px-4 py-2 min-h-[44px] bg-gray-700 hover:bg-gray-600 rounded text-xs flex items-center justify-center"
+                title="Copy FEN to clipboard"
+              >
+                {fenCopied ? "\u2713 FEN" : "FEN"}
               </button>
             </div>
 

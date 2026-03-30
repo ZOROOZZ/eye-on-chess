@@ -46,6 +46,7 @@ export default function GamePage() {
   const [currentPly, setCurrentPly] = useState(0);
   const [lastMove, setLastMove] = useState<[string, string] | undefined>();
   const [previewArrow, setPreviewArrow] = useState<{ from: string; to: string } | null>(null);
+  const [fenCopied, setFenCopied] = useState(false);
   const [clocks, setClocks] = useState<ClockState | null>(null);
   const [status, setStatus] = useState<string>("WAITING");
   const [timeControl, setTimeControl] = useState<string>("RAPID");
@@ -442,10 +443,22 @@ export default function GamePage() {
               </button>
               <button
                 onClick={() => setFlipDisplay((f) => !f)}
-                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm ml-2"
+                className="px-3 py-2 min-h-[44px] bg-gray-700 hover:bg-gray-600 rounded text-sm ml-2"
                 title="Flip board (F)"
               >
                 ↕
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(displayFen).then(() => {
+                    setFenCopied(true);
+                    setTimeout(() => setFenCopied(false), 1500);
+                  }).catch(() => {});
+                }}
+                className="px-3 py-2 min-h-[44px] bg-gray-700 hover:bg-gray-600 rounded text-xs"
+                title="Copy FEN to clipboard"
+              >
+                {fenCopied ? "\u2713 FEN" : "FEN"}
               </button>
             </div>
 
