@@ -54,7 +54,7 @@ export default function PlayBotPage() {
     } catch {}
     return [];
   });
-  const [_botsLoading, setBotsLoading] = useState(botList.length === 0);
+  const [botsLoading, setBotsLoading] = useState(botList.length === 0);
   useEffect(() => {
     if (isOnline) {
       api
@@ -368,7 +368,13 @@ export default function PlayBotPage() {
               {useCustomElo ? "Choose a personality" : "Custom Elo"}
             </button>
           </div>
-          {useCustomElo || botList.length === 0 ? (
+          {botsLoading && botList.length === 0 ? (
+            <div className="space-y-1">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-12 bg-gray-800 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : useCustomElo || botList.length === 0 ? (
             <>
               {botList.length === 0 && !isOnline && (
                 <p className="text-xs text-gray-500 text-center mb-2">
