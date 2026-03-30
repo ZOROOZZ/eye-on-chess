@@ -24,6 +24,8 @@ const EvalGraph = dynamic(() => import("../../../../components/EvalGraph"), {
 });
 import type { Player } from "@eyeonchess/chess";
 import { CLASSIFICATION_COLORS, CLASSIFICATION_SYMBOLS } from "@eyeonchess/chess";
+import { useClientAnalysis } from "../../../../lib/useClientAnalysis";
+import AnalysisProgress from "../../../../components/AnalysisProgress";
 
 interface FeedbackEntry {
   ply: number;
@@ -52,6 +54,10 @@ export default function AnalysisPage() {
   const [status, setStatus] = useState<string>("loading");
   const [white, setWhite] = useState<Player | null>(null);
   const [black, setBlack] = useState<Player | null>(null);
+  const [gameMoves, setGameMoves] = useState<
+    { ply: number; san: string; uci: string; fen: string }[]
+  >([]);
+  const clientAnalysis = useClientAnalysis();
   const [currentPly, setCurrentPly] = useState(0);
   const [startingFen] = useState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -81,6 +87,18 @@ export default function AnalysisPage() {
       setAnalysis(analysisRes.data.analysis);
       setWhite(gameRes.data.game.white);
       setBlack(gameRes.data.game.black);
+      if (gameRes.data.game.moves) {
+        setGameMoves(
+          gameRes.data.game.moves.map(
+            (m: { ply: number; san: string; uci: string; fen: string }) => ({
+              ply: m.ply,
+              san: m.san,
+              uci: m.uci || "",
+              fen: m.fen,
+            })
+          )
+        );
+      }
     } catch {
       setStatus("error");
     }
@@ -96,6 +114,28 @@ export default function AnalysisPage() {
     const interval = setInterval(loadAnalysis, 3000);
     return () => clearInterval(interval);
   }, [status, loadAnalysis]);
+
+  // Convert client analysis results to Analysis format when complete
+  useEffect(() => {
+    if (clientAnalysis.accuracy && clientAnalysis.results.length > 0) {
+      setAnalysis({
+        whiteAccuracy: clientAnalysis.accuracy.white,
+        blackAccuracy: clientAnalysis.accuracy.black,
+        opening: null,
+        feedback: clientAnalysis.results.map((r) => ({
+          ply: r.ply,
+          san: r.san,
+          uci: r.uci,
+          fen: r.fen,
+          classification: r.classification,
+          bestMove: r.bestMove,
+          evalBefore: r.evalBefore,
+          evalAfter: r.evalAfter,
+        })),
+      });
+      setStatus("done");
+    }
+  }, [clientAnalysis.accuracy, clientAnalysis.results]);
 
   async function requestAnalysis() {
     try {
@@ -175,17 +215,54 @@ export default function AnalysisPage() {
           <p className="text-gray-400 mb-6">
             No analysis available yet. Run the engine to analyze this game.
           </p>
-          <button
-            onClick={requestAnalysis}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
-          >
-            Analyze Game
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => {
+                if (gameMoves.length > 0 && clientAnalysis.ready) {
+                  setStatus("client-analyzing");
+                  clientAnalysis.analyze(gameMoves);
+                }
+              }}
+              disabled={!clientAnalysis.ready || gameMoves.length === 0}
+              className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded font-medium transition-colors"
+            >
+              {clientAnalysis.ready ? "Quick Analyze (Browser)" : "Loading engine..."}
+            </button>
+            <button
+              onClick={requestAnalysis}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
+            >
+              Deep Analyze (Server)
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            Browser: depth 14, instant. Server: depth 18, queued.
+          </p>
           <div className="mt-4">
             <Link href={`/game/${gameId}`} className="text-gray-400 hover:text-white text-sm">
               &larr; Back to game
             </Link>
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (status === "client-analyzing") {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="max-w-lg w-full">
+          <h1 className="text-xl font-bold text-center mb-4">Analyzing in Browser</h1>
+          <AnalysisProgress
+            currentPly={clientAnalysis.currentPly}
+            totalMoves={clientAnalysis.totalMoves}
+            progress={clientAnalysis.progress}
+            evalPoints={clientAnalysis.evalPoints}
+            onCancel={() => {
+              clientAnalysis.cancel();
+              setStatus("none");
+            }}
+          />
         </div>
       </main>
     );
