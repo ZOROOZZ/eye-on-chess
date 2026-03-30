@@ -70,16 +70,15 @@ describe("GameOverModal", () => {
     expect(onRematchDecline).toHaveBeenCalledOnce();
   });
 
-  it("shows 'Offered...' text when rematchOffered=true", () => {
+  it("shows waiting state when rematchOffered=true", () => {
     renderModal({ rematchOffered: true });
-    expect(screen.getByText("Offered...")).toBeInTheDocument();
+    expect(screen.getByText("Waiting for opponent...")).toBeInTheDocument();
     expect(screen.queryByText("Rematch")).not.toBeInTheDocument();
   });
 
-  it("rematch button is disabled when rematchOffered=true", () => {
+  it("rematch button replaced by waiting indicator when rematchOffered=true", () => {
     renderModal({ rematchOffered: true });
-    const btn = screen.getByText("Offered...");
-    expect(btn).toBeDisabled();
+    expect(screen.getByText("Waiting for opponent...")).toBeInTheDocument();
   });
 
   it("Back button calls onClose", () => {
