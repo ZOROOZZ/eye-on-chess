@@ -1,6 +1,6 @@
 {
   "name": "@eyeonchess/typescript-config",
-  "version": "1.9.6",
+  "version": "1.9.8",
   "private": true,
   "type": "module",
   "exports": {

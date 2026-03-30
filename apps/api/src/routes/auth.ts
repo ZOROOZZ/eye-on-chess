@@ -27,13 +27,29 @@ const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 const BCRYPT_ROUNDS = 12;
 const COOKIE_NAME = "refresh_token";
 
+function getCookieDomain(): string | undefined {
+  const siteUrl = process.env.SITE_URL;
+  if (!siteUrl) return undefined;
+  try {
+    const hostname = new URL(siteUrl).hostname;
+    // Set domain to .root-domain so subdomains (admin.*) share the cookie
+    const parts = hostname.split(".");
+    if (parts.length >= 2) return "." + parts.slice(-2).join(".");
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function cookieOptions(maxAgeMs: number) {
+  const domain = getCookieDomain();
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
     maxAge: maxAgeMs,
+    ...(domain ? { domain } : {}),
   };
 }
 
