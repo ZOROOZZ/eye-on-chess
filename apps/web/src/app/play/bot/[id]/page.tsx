@@ -156,6 +156,9 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
   // Copy FEN feedback
   const [fenCopied, setFenCopied] = useState(false);
 
+  // Board coordinates toggle
+  const [showCoordinates, setShowCoordinates] = useState(true);
+
   // Confetti on player win
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -1002,6 +1005,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
                   orientation={orientation}
                   movable={isMyTurn && isViewingLatest && !gameOver}
                   premovable={!gameOver && isViewingLatest}
+                  coordinates={showCoordinates}
                   lastMove={lastMove}
                   check={isInCheck}
                   onMove={handleMove}
@@ -1103,6 +1107,13 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
                 title="Copy FEN to clipboard"
               >
                 {fenCopied ? "\u2713 FEN" : "FEN"}
+              </button>
+              <button
+                onClick={() => setShowCoordinates((c) => !c)}
+                className={`px-4 py-2 min-h-[44px] rounded text-xs flex items-center justify-center ${showCoordinates ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-800 text-gray-500 hover:bg-gray-700"}`}
+                title="Toggle board coordinates"
+              >
+                a-h
               </button>
             </div>
 

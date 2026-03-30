@@ -47,6 +47,7 @@ export default function GamePage() {
   const [lastMove, setLastMove] = useState<[string, string] | undefined>();
   const [previewArrow, setPreviewArrow] = useState<{ from: string; to: string } | null>(null);
   const [fenCopied, setFenCopied] = useState(false);
+  const [showCoordinates, setShowCoordinates] = useState(true);
   const [clocks, setClocks] = useState<ClockState | null>(null);
   const [status, setStatus] = useState<string>("WAITING");
   const [timeControl, setTimeControl] = useState<string>("RAPID");
@@ -364,6 +365,7 @@ export default function GamePage() {
                 movable={isActive && isMyTurn && isViewingLatest}
                 lastMove={lastMove}
                 check={false}
+                coordinates={showCoordinates}
                 onMove={handleMove}
                 arrows={previewArrow ? [{ from: previewArrow.from, to: previewArrow.to, color: "yellow" }] : undefined}
               />
@@ -459,6 +461,13 @@ export default function GamePage() {
                 title="Copy FEN to clipboard"
               >
                 {fenCopied ? "\u2713 FEN" : "FEN"}
+              </button>
+              <button
+                onClick={() => setShowCoordinates((c) => !c)}
+                className={`px-3 py-2 min-h-[44px] rounded text-xs ${showCoordinates ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-800 text-gray-500 hover:bg-gray-700"}`}
+                title="Toggle board coordinates"
+              >
+                a-h
               </button>
             </div>
 
