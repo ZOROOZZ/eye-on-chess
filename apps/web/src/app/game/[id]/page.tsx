@@ -109,33 +109,55 @@ export default function GamePage() {
     if (user) connectSocket();
   }, [user]);
 
-  // Load initial game state via REST
+  const [isSpectator, setIsSpectator] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  // Load initial game state via REST (fallback to public endpoint for spectators)
   useEffect(() => {
+    async function loadGame(data: { game: Record<string, unknown> }) {
+      const g = data.game as {
+        white: Player | null;
+        black: Player | null;
+        fen: string;
+        status: string;
+        timeControl: string;
+        moves?: { ply: number; san: string; uci?: string; fen: string }[];
+      };
+      setWhite(g.white);
+      setBlack(g.black);
+      setFen(g.fen);
+      setStatus(g.status);
+      setTimeControl(g.timeControl);
+
+      if (g.moves && g.moves.length > 0) {
+        const moveRecords = g.moves.map((m) => ({
+          ply: m.ply,
+          san: m.san,
+          fen: m.fen,
+        }));
+        setMoves(moveRecords);
+        setMoveUcis(g.moves.map((m) => m.uci || ""));
+        setCurrentPly(moveRecords.length);
+        const last = g.moves[g.moves.length - 1];
+        if (last.uci && last.uci.length >= 4) {
+          setLastMove([last.uci.slice(0, 2), last.uci.slice(2, 4)]);
+        }
+      }
+    }
+
     async function load() {
       try {
         const { data } = await api.get(`/api/v1/games/${gameId}`);
-        const g = data.game;
-        setWhite(g.white);
-        setBlack(g.black);
-        setFen(g.fen);
-        setStatus(g.status);
-        setTimeControl(g.timeControl);
-
-        if (g.moves && g.moves.length > 0) {
-          const moveRecords = g.moves.map((m: { ply: number; san: string; fen: string }) => ({
-            ply: m.ply,
-            san: m.san,
-            fen: m.fen,
-          }));
-          setMoves(moveRecords);
-          setCurrentPly(moveRecords.length);
-          const last = g.moves[g.moves.length - 1];
-          if (last.uci && last.uci.length >= 4) {
-            setLastMove([last.uci.slice(0, 2), last.uci.slice(2, 4)]);
-          }
-        }
+        await loadGame(data);
       } catch {
-        router.push("/play");
+        // Not authenticated or game not found — try public view
+        try {
+          const { data } = await api.get(`/api/v1/games/${gameId}/view`);
+          await loadGame(data);
+          setIsSpectator(true);
+        } catch {
+          router.push("/login");
+        }
       }
     }
     load();
@@ -522,14 +544,30 @@ export default function GamePage() {
               </div>
             )}
 
-            {/* Back to play */}
+            {/* Back to play + Share */}
             {!isActive && (
-              <div className="text-center">
+              <div className="flex gap-2 justify-center">
+                {!isSpectator && (
+                  <button
+                    onClick={() => router.push("/play")}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
+                  >
+                    Back to Play
+                  </button>
+                )}
                 <button
-                  onClick={() => router.push("/play")}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
+                  onClick={() => {
+                    navigator.clipboard
+                      .writeText(window.location.href)
+                      .then(() => {
+                        setShareCopied(true);
+                        setTimeout(() => setShareCopied(false), 2000);
+                      })
+                      .catch(() => {});
+                  }}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
                 >
-                  Back to Play
+                  {shareCopied ? "\u2713 Link Copied" : "Share Game"}
                 </button>
               </div>
             )}
