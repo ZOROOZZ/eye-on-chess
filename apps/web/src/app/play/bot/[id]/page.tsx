@@ -1039,8 +1039,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
 
                 {/* BOARD */}
                 <div
-                  className="relative w-full lg:max-w-[640px] border border-gray-700 rounded flex-1 min-h-0"
-                  style={{ aspectRatio: "1/1" }}
+                  className="relative w-full lg:max-w-[640px] border border-gray-700 rounded"
                 >
                   <ChessBoard
                     fen={displayFen}

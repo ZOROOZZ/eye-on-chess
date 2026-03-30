@@ -394,8 +394,7 @@ export default function GamePage() {
 
             {/* Board */}
             <div
-              className="w-full lg:w-[min(100%,480px)] relative flex-1 min-h-0"
-              style={{ aspectRatio: "1/1" }}
+              className="w-full lg:w-[min(100%,480px)] relative"
             >
               <ChessBoard
                 fen={displayFen}
