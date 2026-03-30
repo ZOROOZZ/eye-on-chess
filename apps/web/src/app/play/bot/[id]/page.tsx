@@ -660,7 +660,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
   // --- Player move ---
   const handleMove = useCallback(
     async (from: string, to: string, promotion?: string) => {
-      if (thinking || gameOver || !botEngine.ready) return;
+      if (gameOver || !botEngine.ready) return;
       const fenBefore = game.fen();
       const chess = new Chess(game.fen());
       const move = chess.move({ from, to, promotion: promotion || undefined });
@@ -1001,6 +1001,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
                   fen={displayFen}
                   orientation={orientation}
                   movable={isMyTurn && isViewingLatest && !gameOver}
+                  premovable={!gameOver && isViewingLatest}
                   lastMove={lastMove}
                   check={isInCheck}
                   onMove={handleMove}

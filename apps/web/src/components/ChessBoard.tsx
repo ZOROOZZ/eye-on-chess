@@ -13,6 +13,7 @@ interface ChessBoardProps {
   fen: string;
   orientation: "white" | "black";
   movable: boolean;
+  premovable?: boolean;
   lastMove?: [string, string];
   check?: boolean;
   onMove: (from: string, to: string, promotion?: string) => void;
@@ -70,6 +71,7 @@ export default function ChessBoard({
   fen,
   orientation,
   movable,
+  premovable,
   lastMove,
   check,
   onMove,
@@ -122,8 +124,13 @@ export default function ChessBoard({
         enabled: true,
         duration: 200,
       },
+      premovable: {
+        enabled: !!premovable,
+        showDests: true,
+        castle: true,
+      },
       draggable: {
-        enabled: movable,
+        enabled: movable || !!premovable,
         showGhost: true,
       },
       events: {
@@ -169,8 +176,11 @@ export default function ChessBoard({
       },
       lastMove: lastMove as [Key, Key] | undefined,
       check: check || false,
+      premovable: {
+        enabled: !!premovable,
+      },
       draggable: {
-        enabled: movable,
+        enabled: movable || !!premovable,
       },
       events: {
         move: handleMove,
@@ -189,7 +199,7 @@ export default function ChessBoard({
         ],
       },
     });
-  }, [fen, orientation, movable, lastMove, check, highlightedSquares, arrows, handleMove]);
+  }, [fen, orientation, movable, premovable, lastMove, check, highlightedSquares, arrows, handleMove]);
 
   function selectPromotion(piece: string) {
     if (promotion) {
