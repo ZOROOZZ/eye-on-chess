@@ -19,6 +19,9 @@ import {
   generateOfflineGameId,
   getPendingCount,
   retryPendingSyncs,
+  findInProgressGames,
+  clearInProgress,
+  type InProgressGame,
 } from "../../../lib/offlineSync";
 import { ConfirmModal, useToast } from "@eyeonchess/ui";
 import type { BotPersonality } from "@eyeonchess/chess";
@@ -104,6 +107,7 @@ export default function PlayBotPage() {
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [activeGame, setActiveGame] = useState<{ id: string; botElo: number | null } | null>(null);
   const [showActivePrompt, setShowActivePrompt] = useState(false);
+  const [savedGames, setSavedGames] = useState<InProgressGame[]>([]);
 
   useEffect(() => {
     if (!user) fetchMe();
@@ -112,6 +116,11 @@ export default function PlayBotPage() {
     if (!isLoading && !user) router.push("/login");
   }, [isLoading, user, router]);
   const toast = useToast();
+
+  // Check for in-progress games to resume
+  useEffect(() => {
+    setSavedGames(findInProgressGames());
+  }, []);
   useEffect(() => {
     setPendingSyncCount(getPendingCount());
     if (isOnline) {
@@ -241,6 +250,40 @@ export default function PlayBotPage() {
         {pendingSyncCount > 0 && isOnline && (
           <div className="bg-green-900/30 border border-green-700 rounded-lg p-2 text-center text-xs text-green-300">
             Syncing {pendingSyncCount} offline game{pendingSyncCount > 1 ? "s" : ""}...
+          </div>
+        )}
+        {savedGames.length > 0 && (
+          <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3 space-y-2">
+            <p className="text-sm font-medium text-blue-300 text-center">
+              Resume in-progress game{savedGames.length > 1 ? "s" : ""}
+            </p>
+            {savedGames.slice(0, 3).map((g) => (
+              <div key={g.id} className="flex items-center justify-between gap-2">
+                <div className="text-xs text-gray-300">
+                  <span className="font-mono">Elo {g.botElo}</span>
+                  <span className="text-gray-500 ml-2">
+                    {g.moves.length} move{g.moves.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => router.push(`/play/bot/${g.id}`)}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs font-medium transition-colors"
+                  >
+                    Resume
+                  </button>
+                  <button
+                    onClick={() => {
+                      clearInProgress(g.id);
+                      setSavedGames((prev) => prev.filter((s) => s.id !== g.id));
+                    }}
+                    className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
         {!botEngine.ready && (

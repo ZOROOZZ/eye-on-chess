@@ -234,3 +234,22 @@ export function clearInProgress(id: string) {
     localStorage.removeItem(IN_PROGRESS_PREFIX + id);
   } catch {}
 }
+
+/** Find all in-progress bot games saved in localStorage, sorted newest first. */
+export function findInProgressGames(): InProgressGame[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const results: InProgressGame[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith(IN_PROGRESS_PREFIX)) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const game = JSON.parse(raw) as InProgressGame;
+      if (game.moves && game.moves.length > 0) results.push(game);
+    }
+    return results.sort((a, b) => (b.savedAt || "").localeCompare(a.savedAt || ""));
+  } catch {
+    return [];
+  }
+}
