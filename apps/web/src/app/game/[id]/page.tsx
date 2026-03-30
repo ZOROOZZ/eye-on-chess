@@ -9,6 +9,7 @@ import { connectSocket, getSocket } from "../../../lib/socket";
 import dynamic from "next/dynamic";
 import { BoardSkeleton } from "@eyeonchess/ui";
 import MoveList from "../../../components/MoveList";
+import MoveTimeline from "../../../components/MoveTimeline";
 
 const ChessBoard = dynamic(() => import("../../../components/ChessBoard"), {
   loading: () => <BoardSkeleton />,
@@ -365,30 +366,37 @@ export default function GamePage() {
   }
 
   return (
-    <main className="flex flex-col items-center min-h-screen p-2 pt-4 sm:p-4 sm:pt-8">
-      <div className="max-w-5xl w-full">
-        <div className="flex flex-col lg:flex-row gap-3 sm:gap-6">
-          {/* Board column */}
-          <div className="flex flex-col gap-2">
+    <main className="flex flex-col h-[100dvh] lg:h-auto lg:min-h-screen overflow-hidden lg:overflow-auto p-1 lg:p-4">
+      <div className="max-w-5xl w-full mx-auto flex flex-col flex-1 min-h-0 lg:block">
+        <div className="flex flex-col lg:flex-row gap-1 lg:gap-6 items-start flex-1 min-h-0">
+          {/* ── LEFT: Board area ── */}
+          <div className="flex flex-col flex-1 min-h-0 min-w-0 w-full">
             {/* Top player */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-sm font-bold">
+            <div className="flex items-center justify-between px-1 py-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 lg:w-8 lg:h-8 bg-gray-700 rounded-full flex items-center justify-center text-[10px] lg:text-sm font-bold shrink-0">
                   {topPlayer?.username?.[0]?.toUpperCase() || "?"}
                 </div>
-                <div>
-                  <span className="font-medium text-sm">{topPlayer?.username || "Opponent"}</span>
-                  <span className="text-gray-400 text-xs ml-1">({topPlayer?.rating || "?"})</span>
-                </div>
+                <span className="text-xs lg:text-sm font-medium truncate">
+                  {topPlayer?.username || "Opponent"}
+                  <span className="text-gray-400 ml-1">({topPlayer?.rating || "?"})</span>
+                </span>
               </div>
               {!isUnlimited && clocks && (
                 <PlayerClock timeMs={topClockMs} isActive={!!topActive} isRunning={isActive} />
               )}
             </div>
-            <CapturedPieces fen={displayFen} color={isWhite ? "white" : "black"} />
+
+            {/* Desktop: captured pieces */}
+            <div className="hidden lg:block">
+              <CapturedPieces fen={displayFen} color={isWhite ? "white" : "black"} />
+            </div>
 
             {/* Board */}
-            <div className="w-[min(100%,480px)] relative">
+            <div
+              className="w-full lg:w-[min(100%,480px)] relative flex-1 min-h-0"
+              style={{ aspectRatio: "1/1" }}
+            >
               <ChessBoard
                 fen={displayFen}
                 orientation={orientation}
@@ -406,25 +414,21 @@ export default function GamePage() {
               <ReactionOverlay reactions={activeReactions} onExpired={removeReaction} />
             </div>
 
-            {/* Reaction picker */}
-            {isActive && !gameOver && (
-              <ReactionPicker onReact={sendReaction} disabled={!isActive} />
-            )}
-
-            <CapturedPieces fen={displayFen} color={isWhite ? "black" : "white"} />
+            {/* Desktop: captured pieces */}
+            <div className="hidden lg:block">
+              <CapturedPieces fen={displayFen} color={isWhite ? "black" : "white"} />
+            </div>
 
             {/* Bottom player */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-sm font-bold">
+            <div className="flex items-center justify-between px-1 py-0.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 lg:w-8 lg:h-8 bg-gray-700 rounded-full flex items-center justify-center text-[10px] lg:text-sm font-bold shrink-0">
                   {bottomPlayer?.username?.[0]?.toUpperCase() || "?"}
                 </div>
-                <div>
-                  <span className="font-medium text-sm">{bottomPlayer?.username || "You"}</span>
-                  <span className="text-gray-400 text-xs ml-1">
-                    ({bottomPlayer?.rating || "?"})
-                  </span>
-                </div>
+                <span className="text-xs lg:text-sm font-medium truncate">
+                  {bottomPlayer?.username || "You"}
+                  <span className="text-gray-400 ml-1">({bottomPlayer?.rating || "?"})</span>
+                </span>
               </div>
               {!isUnlimited && clocks && (
                 <PlayerClock
@@ -434,10 +438,88 @@ export default function GamePage() {
                 />
               )}
             </div>
+
+            {/* Mobile: move timeline */}
+            <div className="lg:hidden">
+              <MoveTimeline moves={moves} currentPly={currentPly} onGoToPly={goToPly} />
+            </div>
+
+            {/* Mobile: compact buttons */}
+            <div className="lg:hidden flex flex-wrap gap-1 justify-center px-1 py-0.5">
+              <button
+                onClick={() => goToPly(0)}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+              >
+                &laquo;
+              </button>
+              <button
+                onClick={() => goToPly(Math.max(0, currentPly - 1))}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+              >
+                &lsaquo;
+              </button>
+              <button
+                onClick={() => goToPly(Math.min(moves.length, currentPly + 1))}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+              >
+                &rsaquo;
+              </button>
+              <button
+                onClick={() => goToPly(moves.length)}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+              >
+                &raquo;
+              </button>
+              <button
+                onClick={() => setFlipDisplay((f) => !f)}
+                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+              >
+                &updownarrow;
+              </button>
+              {isActive && !gameOver && (
+                <>
+                  {drawIncoming ? (
+                    <>
+                      <button
+                        onClick={() => setConfirmAcceptDraw(true)}
+                        className="px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-xs"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={declineDraw}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+                      >
+                        Decline
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setConfirmDraw(true)}
+                        disabled={drawOffered}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded text-xs"
+                      >
+                        {drawOffered ? "Offered" : "Draw"}
+                      </button>
+                      <button
+                        onClick={() => setConfirmResign(true)}
+                        className="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs"
+                      >
+                        Resign
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+              {isActive && !gameOver && (
+                <ReactionPicker onReact={sendReaction} disabled={!isActive} />
+              )}
+            </div>
           </div>
 
-          {/* Right panel */}
-          <div className="flex-1 space-y-4 min-w-0">
+          {/* ── RIGHT: Desktop panel ── */}
+          <div className="hidden lg:block flex-1 space-y-4 min-w-0">
             {openingName && (
               <div className="text-xs text-gray-400 text-center px-2 py-1 bg-gray-900 rounded">
                 {openingName}
@@ -455,39 +537,36 @@ export default function GamePage() {
               }}
               onMoveHoverEnd={() => setPreviewArrow(null)}
             />
-
-            {/* Navigation */}
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-2 justify-center flex-wrap">
               <button
                 onClick={() => goToPly(0)}
-                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
               >
                 &laquo;
               </button>
               <button
                 onClick={() => goToPly(Math.max(0, currentPly - 1))}
-                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
               >
                 &lsaquo;
               </button>
               <button
                 onClick={() => goToPly(Math.min(moves.length, currentPly + 1))}
-                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
               >
                 &rsaquo;
               </button>
               <button
                 onClick={() => goToPly(moves.length)}
-                className="px-4 py-2 min-h-[44px] min-w-[44px] bg-gray-700 hover:bg-gray-600 rounded text-base flex items-center justify-center"
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
               >
                 &raquo;
               </button>
               <button
                 onClick={() => setFlipDisplay((f) => !f)}
-                className="px-3 py-2 min-h-[44px] bg-gray-700 hover:bg-gray-600 rounded text-sm ml-2"
-                title="Flip board (F)"
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm"
               >
-                ↕
+                &updownarrow;
               </button>
               <button
                 onClick={() => {
@@ -499,50 +578,47 @@ export default function GamePage() {
                     })
                     .catch(() => {});
                 }}
-                className="px-3 py-2 min-h-[44px] bg-gray-700 hover:bg-gray-600 rounded text-xs"
-                title="Copy FEN to clipboard"
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+                title="Copy FEN"
               >
                 {fenCopied ? "\u2713 FEN" : "FEN"}
               </button>
               <button
                 onClick={() => setShowCoordinates((c) => !c)}
-                className={`px-3 py-2 min-h-[44px] rounded text-xs ${showCoordinates ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-800 text-gray-500 hover:bg-gray-700"}`}
-                title="Toggle board coordinates"
+                className={`px-3 py-1.5 rounded text-xs ${showCoordinates ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-800 text-gray-500"}`}
               >
                 a-h
               </button>
             </div>
-
-            {/* Game actions */}
             {isActive && (
               <div className="flex gap-2">
                 {drawIncoming ? (
-                  <div className="flex-1 flex gap-2">
+                  <>
                     <button
                       onClick={() => setConfirmAcceptDraw(true)}
-                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded text-sm font-medium transition-colors"
+                      className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded text-sm font-medium"
                     >
                       Accept Draw
                     </button>
                     <button
                       onClick={declineDraw}
-                      className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-medium transition-colors"
+                      className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm font-medium"
                     >
                       Decline
                     </button>
-                  </div>
+                  </>
                 ) : (
                   <>
                     <button
                       onClick={() => setConfirmDraw(true)}
                       disabled={drawOffered}
-                      className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded text-sm font-medium transition-colors"
+                      className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 rounded text-sm font-medium"
                     >
                       {drawOffered ? "Draw Offered" : "Offer Draw"}
                     </button>
                     <button
                       onClick={() => setConfirmResign(true)}
-                      className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium transition-colors"
+                      className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium"
                     >
                       Resign
                     </button>
@@ -550,14 +626,15 @@ export default function GamePage() {
                 )}
               </div>
             )}
-
-            {/* Back to play + Share */}
+            {isActive && !gameOver && (
+              <ReactionPicker onReact={sendReaction} disabled={!isActive} />
+            )}
             {!isActive && (
               <div className="flex gap-2 justify-center">
                 {!isSpectator && (
                   <button
                     onClick={() => router.push("/play")}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium"
                   >
                     Back to Play
                   </button>
@@ -572,23 +649,22 @@ export default function GamePage() {
                       })
                       .catch(() => {});
                   }}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium transition-colors"
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded font-medium"
                 >
                   {shareCopied ? "\u2713 Link Copied" : "Share Game"}
                 </button>
               </div>
             )}
-
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => setShowShortcuts(true)}
-                className="py-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                className="py-1 text-xs text-gray-500 hover:text-gray-300"
               >
                 Shortcuts (?)
               </button>
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="py-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                className="py-1 text-xs text-gray-500 hover:text-gray-300"
                 aria-label="Toggle dark mode"
               >
                 {darkMode ? "\u2600\uFE0F Light" : "\uD83C\uDF19 Dark"}
