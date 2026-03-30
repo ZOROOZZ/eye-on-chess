@@ -8,6 +8,7 @@ import BoardThemeStyles from "./BoardThemeStyles";
 import ErrorBoundary from "./ErrorBoundary";
 import TosGate from "./TosGate";
 import { useUpdateNotification, checkDeferredUpdate } from "../lib/useUpdateNotification";
+import { useOnlineStatus } from "../lib/useOnlineStatus";
 
 // Pages that don't require TOS acceptance
 const TOS_EXEMPT_PATHS = ["/legal", "/login", "/register", "/board-test"];
@@ -23,6 +24,8 @@ export default function ClientProviders({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const isExempt = TOS_EXEMPT_PATHS.some((p) => pathname.startsWith(p)) || pathname === "/";
 
+  const isOnline = useOnlineStatus();
+
   // PWA update detection
   useUpdateNotification();
   useEffect(() => {
@@ -33,6 +36,11 @@ export default function ClientProviders({ children }: { children: React.ReactNod
     <ThemeProvider>
       <BoardThemeStyles />
       <Toast />
+      {!isOnline && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-yellow-900/90 border border-yellow-700 rounded-full text-xs text-yellow-300 shadow-lg">
+          You&apos;re offline &mdash; bot games still work
+        </div>
+      )}
       <ErrorBoundary>{isExempt ? children : <TosGate>{children}</TosGate>}</ErrorBoundary>
     </ThemeProvider>
   );
