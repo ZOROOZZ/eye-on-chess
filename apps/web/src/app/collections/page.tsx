@@ -113,6 +113,11 @@ export default function CollectionsPage() {
               <Skeleton key={i} className="h-14 rounded-lg" />
             ))}
           </div>
+        ) : collections.length === 0 ? (
+          <div className="text-center text-gray-500 py-12">
+            <p>No collections yet.</p>
+            <p className="text-sm mt-1">Create one above to organize your games!</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {collections.map((c) => (
