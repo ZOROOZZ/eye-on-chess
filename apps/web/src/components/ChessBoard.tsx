@@ -80,10 +80,22 @@ export default function ChessBoard({
 }: ChessBoardProps) {
   const boardRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<Api | null>(null);
+  const prevOrientation = useRef(orientation);
+  const [flipping, setFlipping] = useState(false);
   const [promotion, setPromotion] = useState<{
     from: string;
     to: string;
   } | null>(null);
+
+  // Brief opacity dip on board flip
+  useEffect(() => {
+    if (orientation !== prevOrientation.current) {
+      prevOrientation.current = orientation;
+      setFlipping(true);
+      const timer = setTimeout(() => setFlipping(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [orientation]);
 
   const handleMove = useCallback(
     (from: Key, to: Key) => {
@@ -210,7 +222,11 @@ export default function ChessBoard({
 
   return (
     <div className="relative w-full" style={{ aspectRatio: "1/1" }}>
-      <div ref={boardRef} className="w-full h-full" />
+      <div
+        ref={boardRef}
+        className="w-full h-full transition-opacity duration-200"
+        style={{ opacity: flipping ? 0.4 : 1 }}
+      />
       {promotion && (
         <div
           role="dialog"
