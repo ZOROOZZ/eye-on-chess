@@ -6,7 +6,9 @@ export interface GameModeSettings {
   suggestions: boolean;
   moveFeedback: boolean;
   takeback: boolean;
-  engine: boolean; // show engine eval line
+  engine: boolean;
+  botChat: boolean;
+  botReactions: boolean;
 }
 
 /** Union type of available game mode preset identifiers. */
@@ -22,6 +24,8 @@ export const GAME_MODE_PRESETS: Record<Exclude<GameModePreset, "custom">, GameMo
     moveFeedback: false,
     takeback: false,
     engine: false,
+    botChat: false,
+    botReactions: false,
   },
   friendly: {
     hints: true,
@@ -31,6 +35,8 @@ export const GAME_MODE_PRESETS: Record<Exclude<GameModePreset, "custom">, GameMo
     moveFeedback: false,
     takeback: true,
     engine: false,
+    botChat: true,
+    botReactions: true,
   },
   assisted: {
     hints: true,
@@ -40,6 +46,8 @@ export const GAME_MODE_PRESETS: Record<Exclude<GameModePreset, "custom">, GameMo
     moveFeedback: true,
     takeback: false,
     engine: true,
+    botChat: true,
+    botReactions: true,
   },
 };
 
@@ -60,4 +68,6 @@ export const DEFAULT_CUSTOM: GameModeSettings = {
   moveFeedback: true,
   takeback: false,
   engine: false,
+  botChat: true,
+  botReactions: true,
 };

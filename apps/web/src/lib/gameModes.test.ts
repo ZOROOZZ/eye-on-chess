@@ -72,6 +72,8 @@ describe("DEFAULT_CUSTOM", () => {
       moveFeedback: true,
       takeback: false,
       engine: false,
+      botChat: true,
+      botReactions: true,
     });
   });
 });

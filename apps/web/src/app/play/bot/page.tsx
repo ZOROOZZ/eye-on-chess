@@ -340,7 +340,11 @@ export default function PlayBotPage() {
                       ? "Evaluation Bar"
                       : key === "moveFeedback"
                         ? "Move Feedback"
-                        : key.charAt(0).toUpperCase() + key.slice(1)}
+                        : key === "botChat"
+                          ? "Bot Chat"
+                          : key === "botReactions"
+                            ? "Bot Reactions"
+                            : key.charAt(0).toUpperCase() + key.slice(1)}
                   </span>
                   <input
                     type="checkbox"

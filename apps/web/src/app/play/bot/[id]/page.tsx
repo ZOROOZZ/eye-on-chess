@@ -219,8 +219,28 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
   }
 
   // --- Hooks ---
-  const botChat = useBotChat({ messages: bot?.messages });
-  const botReactions = useBotReactions();
+  const botChatRaw = useBotChat({ messages: bot?.messages });
+  const botReactionsRaw = useBotReactions();
+
+  // Gate chat/reactions based on game mode settings
+  const botChat = useMemo(
+    () => ({
+      ...botChatRaw,
+      triggerMessage: (...args: Parameters<typeof botChatRaw.triggerMessage>) => {
+        if (activeSettings.botChat) botChatRaw.triggerMessage(...args);
+      },
+    }),
+    [botChatRaw, activeSettings.botChat]
+  );
+  const botReactions = useMemo(
+    () => ({
+      ...botReactionsRaw,
+      triggerReaction: (...args: Parameters<typeof botReactionsRaw.triggerReaction>) => {
+        if (activeSettings.botReactions) botReactionsRaw.triggerReaction(...args);
+      },
+    }),
+    [botReactionsRaw, activeSettings.botReactions]
+  );
 
   useKeyboardShortcuts({
     ArrowLeft: () => setCurrentPly((p) => Math.max(0, p - 1)),
@@ -991,7 +1011,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
               <span className="text-xs lg:text-sm font-medium truncate">
                 {bot ? bot.name : "Bot"} ({botElo})
               </span>
-              <BotChatBubble message={botChat.currentMessage} />
+              {activeSettings.botChat && <BotChatBubble message={botChatRaw.currentMessage} />}
               {thinking && (
                 <span className="flex gap-0.5 ml-1">
                   <span
@@ -1051,10 +1071,12 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
                     }
                   />
                   {activeSettings.moveFeedback && <MoveFeedbackPopup classification={feedback} />}
-                  <ReactionOverlay
-                    reactions={botReactions.activeReactions}
-                    onExpired={botReactions.removeReaction}
-                  />
+                  {activeSettings.botReactions && (
+                    <ReactionOverlay
+                      reactions={botReactionsRaw.activeReactions}
+                      onExpired={botReactionsRaw.removeReaction}
+                    />
+                  )}
                   {showConfetti && <Confetti />}
                 </div>
                 <div className="hidden lg:block">
