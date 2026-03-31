@@ -53,13 +53,13 @@ describe("CapturedPieces", () => {
     const fen = "rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     const { container } = render(<CapturedPieces fen={fen} color="white" />);
     const span = container.querySelector("span");
-    expect(span?.className).toContain("text-gray-300");
+    expect(span?.className).toContain("text-white");
   });
 
   it("applies correct text class for black color", () => {
     const fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNB1KBNR w KQkq - 0 1";
     const { container } = render(<CapturedPieces fen={fen} color="black" />);
     const span = container.querySelector("span");
-    expect(span?.className).toContain("text-gray-600");
+    expect(span?.className).toContain("text-gray-400");
   });
 });
