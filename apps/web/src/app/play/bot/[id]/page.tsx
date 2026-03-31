@@ -1291,7 +1291,14 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
       {gameOver && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-gray-900 rounded-lg p-6 max-w-sm w-full mx-4 text-center">
-            <h2 className="text-xl font-bold mb-2">Game Over</h2>
+            <h2 className="text-xl font-bold mb-2">
+              {gameOver.includes("Draw")
+                ? "Draw"
+                : (playerIsWhite && gameOver.includes("White wins")) ||
+                    (!playerIsWhite && gameOver.includes("Black wins"))
+                  ? "You Win! \uD83C\uDF89"
+                  : "You Lose"}
+            </h2>
             <p className="text-gray-300 mb-1">{gameOver}</p>
             <p className="text-gray-500 text-sm mb-2">
               vs {bot ? `${bot.avatar} ${bot.name}` : "Bot"} ({botElo})
