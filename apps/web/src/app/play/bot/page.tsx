@@ -105,8 +105,6 @@ export default function PlayBotPage() {
   const [error, setError] = useState("");
   const [confirmStart, setConfirmStart] = useState(false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
-  const [activeGame, setActiveGame] = useState<{ id: string; botElo: number | null } | null>(null);
-  const [showActivePrompt, setShowActivePrompt] = useState(false);
   const [savedGames, setSavedGames] = useState<InProgressGame[]>([]);
 
   useEffect(() => {
@@ -139,34 +137,6 @@ export default function PlayBotPage() {
       });
     }
   }, [isOnline]);
-  useEffect(() => {
-    if (!user || !isOnline) return;
-    api
-      .get("/api/v1/games/active")
-      .then(({ data }) => {
-        if (data.game?.isVsBot) {
-          setActiveGame(data.game);
-          setShowActivePrompt(true);
-        }
-      })
-      .catch(() => toast.show("Failed to check for active game", "error"));
-  }, [user, isOnline]);
-
-  async function resumeGame() {
-    if (!activeGame) return;
-    setShowActivePrompt(false);
-    router.push(`/play/bot/${activeGame.id}`);
-  }
-
-  async function resignActiveAndContinue() {
-    if (activeGame) {
-      try {
-        await api.post(`/api/v1/games/${activeGame.id}/resign`);
-      } catch {}
-    }
-    setActiveGame(null);
-    setShowActivePrompt(false);
-  }
 
   function getActiveMode(): GameModeSettings {
     return modePreset === "custom"
@@ -252,7 +222,7 @@ export default function PlayBotPage() {
             Syncing {pendingSyncCount} offline game{pendingSyncCount > 1 ? "s" : ""}...
           </div>
         )}
-        {savedGames.length > 0 && !showActivePrompt && (
+        {savedGames.length > 0 && (
           <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3 space-y-2">
             <p className="text-sm font-medium text-blue-300 text-center">
               Resume in-progress game{savedGames.length > 1 ? "s" : ""}
@@ -293,25 +263,6 @@ export default function PlayBotPage() {
           </div>
         )}
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-        {showActivePrompt && activeGame && (
-          <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 text-center">
-            <p className="text-sm text-yellow-300 mb-3">Active game vs Bot ({activeGame.botElo})</p>
-            <div className="flex gap-3">
-              <button
-                onClick={resumeGame}
-                className="flex-1 py-2 bg-green-600 hover:bg-green-700 rounded text-sm font-medium"
-              >
-                Continue
-              </button>
-              <button
-                onClick={resignActiveAndContinue}
-                className="flex-1 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-medium"
-              >
-                Resign &amp; New
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Game Mode */}
         <div className="bg-gray-900 rounded-lg p-4">

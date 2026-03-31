@@ -1055,7 +1055,7 @@ export default function BotGamePage({ params }: { params: { id: string } }) {
                 <div className="hidden lg:block">
                   <CapturedPieces fen={displayFen} color={playerIsWhite ? "white" : "black"} />
                 </div>
-                <div className="relative w-full lg:max-w-[640px] border border-gray-700 rounded">
+                <div className="relative w-full lg:max-w-[640px]">
                   <ChessBoard
                     fen={displayFen}
                     orientation={orientation}

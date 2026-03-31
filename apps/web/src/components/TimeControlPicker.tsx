@@ -151,9 +151,9 @@ export default function TimeControlPicker({
             isCustom ? "bg-blue-600/20" : "bg-gray-800"
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-gray-200 shrink-0">Custom</span>
-            <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-1.5 flex-1 min-w-[140px]">
               <input
                 type="number"
                 min={0}
@@ -162,7 +162,7 @@ export default function TimeControlPicker({
                 onChange={(e) => onCustomMinutesChange(parseInt(e.target.value) || 0)}
                 disabled={disabled}
                 aria-label="Minutes"
-                className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-center disabled:opacity-50"
+                className="w-14 px-1.5 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-center disabled:opacity-50"
               />
               <span className="text-xs text-gray-400">min</span>
               <input
@@ -173,7 +173,7 @@ export default function TimeControlPicker({
                 onChange={(e) => onCustomIncrementChange(parseInt(e.target.value) || 0)}
                 disabled={disabled}
                 aria-label="Increment in seconds"
-                className="w-16 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-center disabled:opacity-50"
+                className="w-14 px-1.5 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-center disabled:opacity-50"
               />
               <span className="text-xs text-gray-400">sec</span>
             </div>
