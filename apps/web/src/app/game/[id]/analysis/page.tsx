@@ -25,6 +25,7 @@ const EvalGraph = dynamic(() => import("../../../../components/EvalGraph"), {
 import type { Player } from "@eyeonchess/chess";
 import { CLASSIFICATION_COLORS, CLASSIFICATION_SYMBOLS } from "@eyeonchess/chess";
 import { useClientAnalysis } from "../../../../lib/useClientAnalysis";
+import { useOnlineStatus } from "../../../../lib/useOnlineStatus";
 import AnalysisProgress from "../../../../components/AnalysisProgress";
 import MoveTimeline from "../../../../components/MoveTimeline";
 
@@ -55,6 +56,11 @@ export default function AnalysisPage() {
   const [status, setStatus] = useState<string>("loading");
   const [white, setWhite] = useState<Player | null>(null);
   const [black, setBlack] = useState<Player | null>(null);
+  const [serverProgress, setServerProgress] = useState<{
+    currentMove: number;
+    totalMoves: number;
+  } | null>(null);
+  const isOnline = useOnlineStatus();
   const [gameMoves, setGameMoves] = useState<
     { ply: number; san: string; uci: string; fen: string }[]
   >([]);
@@ -86,6 +92,9 @@ export default function AnalysisPage() {
 
       setStatus(analysisRes.data.status);
       setAnalysis(analysisRes.data.analysis);
+      if (analysisRes.data.progress) {
+        setServerProgress(analysisRes.data.progress);
+      }
       setWhite(gameRes.data.game.white);
       setBlack(gameRes.data.game.black);
       if (gameRes.data.game.moves) {
@@ -214,31 +223,29 @@ export default function AnalysisPage() {
         <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full text-center">
           <h1 className="text-xl font-bold mb-4">Game Analysis</h1>
           <p className="text-gray-400 mb-6">
-            No analysis available yet. Run the engine to analyze this game.
+            Analyze every move with Stockfish.
+            {isOnline
+              ? " Deep analysis (depth 18) saved to your account."
+              : " Running in your browser (depth 14)."}
           </p>
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={() => {
-                if (gameMoves.length > 0 && clientAnalysis.ready) {
-                  setStatus("client-analyzing");
-                  clientAnalysis.analyze(gameMoves);
-                }
-              }}
-              disabled={!clientAnalysis.ready || gameMoves.length === 0}
-              className="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded font-medium transition-colors"
-            >
-              {clientAnalysis.ready ? "Quick Analyze (Browser)" : "Loading engine..."}
-            </button>
-            <button
-              onClick={requestAnalysis}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition-colors"
-            >
-              Deep Analyze (Server)
-            </button>
-          </div>
-          <p className="mt-2 text-xs text-gray-500">
-            Browser: depth 14, instant. Server: depth 18, queued.
-          </p>
+          <button
+            onClick={() => {
+              if (isOnline) {
+                requestAnalysis();
+              } else if (gameMoves.length > 0 && clientAnalysis.ready) {
+                setStatus("client-analyzing");
+                clientAnalysis.analyze(gameMoves);
+              }
+            }}
+            disabled={!isOnline && (!clientAnalysis.ready || gameMoves.length === 0)}
+            className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded font-medium transition-colors"
+          >
+            {isOnline
+              ? "Analyze Game"
+              : clientAnalysis.ready
+                ? "Analyze Game (Offline)"
+                : "Loading engine..."}
+          </button>
           <div className="mt-4">
             <Link href={`/game/${gameId}`} className="text-gray-400 hover:text-white text-sm">
               &larr; Back to game
@@ -270,12 +277,24 @@ export default function AnalysisPage() {
   }
 
   if (status === "queued" || status === "processing") {
+    const serverCurrentMove = serverProgress?.currentMove ?? 0;
+    const serverTotalMoves = (serverProgress?.totalMoves ?? gameMoves.length) || 1;
+    const serverPct = serverTotalMoves > 0 ? (serverCurrentMove / serverTotalMoves) * 100 : 0;
+
     return (
       <main className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="bg-gray-900 rounded-lg p-8 max-w-md w-full text-center">
-          <h1 className="text-xl font-bold mb-4">Analyzing...</h1>
-          <p className="text-gray-400 mb-2">Stockfish is analyzing every position at depth 18.</p>
-          <p className="text-gray-500 text-sm">Status: {status}. This may take a minute.</p>
+        <div className="max-w-lg w-full">
+          <h1 className="text-xl font-bold text-center mb-4">Server Analysis (Depth 18)</h1>
+          <AnalysisProgress
+            currentPly={serverCurrentMove}
+            totalMoves={serverTotalMoves}
+            progress={serverPct}
+            evalPoints={[]}
+            onCancel={() => setStatus("none")}
+          />
+          {status === "queued" && (
+            <p className="text-gray-500 text-sm text-center mt-2">Waiting in queue...</p>
+          )}
         </div>
       </main>
     );
@@ -287,10 +306,10 @@ export default function AnalysisPage() {
         <div className="text-center">
           <p className="text-red-400 mb-4">Analysis failed.</p>
           <button
-            onClick={requestAnalysis}
+            onClick={() => setStatus("none")}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm"
           >
-            Retry
+            Try Again
           </button>
         </div>
       </main>
