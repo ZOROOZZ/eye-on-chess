@@ -7,16 +7,12 @@ services:
     build:
       context: ..
       dockerfile: deployment/Dockerfile.base
-    profiles: [build]
 
   # ── Reverse proxy ────────────────────────────────────
   nginx:
     image: nginx:alpine
     container_name: eyeonchess-nginx
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
     environment:
       SITE_DOMAIN: ${SITE_DOMAIN:-}
     entrypoint: ["/bin/sh", "/etc/nginx/nginx-entrypoint.sh"]
