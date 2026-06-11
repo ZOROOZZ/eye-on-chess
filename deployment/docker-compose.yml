@@ -37,8 +37,6 @@ services:
         limits:
           cpus: "0.5"
           memory: 128M
-        reservations:
-          memory: 32M
 
   # ── Data stores ──────────────────────────────────────
   postgres:
@@ -47,7 +45,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ChessPassword2026!
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: eyeonchess
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -62,49 +60,16 @@ services:
         limits:
           cpus: "2.0"
           memory: 1G
-        reservations:
-          memory: 256M
-
-  pgbouncer:
-    image: edoburu/pgbouncer:v1.23.1-p2
-    container_name: eyeonchess-pgbouncer
-    restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: ChessPassword2026!
-    entrypoint:
-      [
-        "/bin/sh",
-        "-c",
-        'echo ''"postgres" "''$$POSTGRES_PASSWORD''"'' > /etc/pgbouncer/userlist.txt && exec /entrypoint.sh /usr/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini',
-      ]
-    volumes:
-      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 64M
-        reservations:
-          memory: 32M
 
   redis:
     image: redis:7-alpine
     container_name: eyeonchess-redis
     restart: unless-stopped
-    command: redis-server --requirepass RedisPassword2026! --appendonly yes
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "RedisPassword2026!", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -113,8 +78,6 @@ services:
         limits:
           cpus: "0.5"
           memory: 256M
-        reservations:
-          memory: 64M
 
   # ── Database migrations + seeds (runs once, then exits) ─
   migrate:
@@ -127,12 +90,11 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:ChessPassword2026!@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
-      DIRECT_DATABASE_URL: postgresql://postgres:ChessPassword2026!@postgres:5432/eyeonchess
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ./config/bots.yml:/app/config/bots.yml:ro
     depends_on:
-      pgbouncer:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -148,7 +110,7 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:ChessPassword2026!@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     volumes:
       - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
     depends_on:
@@ -167,8 +129,6 @@ services:
         limits:
           cpus: "2.0"
           memory: 1G
-        reservations:
-          memory: 256M
 
   web:
     image: eyeonchess-web
@@ -192,8 +152,6 @@ services:
         limits:
           cpus: "1.0"
           memory: 512M
-        reservations:
-          memory: 128M
 
   admin:
     image: eyeonchess-admin
@@ -219,8 +177,6 @@ services:
         limits:
           cpus: "0.5"
           memory: 256M
-        reservations:
-          memory: 64M
 
   worker:
     image: eyeonchess-worker
@@ -232,7 +188,7 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:ChessPassword2026!@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -243,8 +199,6 @@ services:
         limits:
           cpus: "2.0"
           memory: 1G
-        reservations:
-          memory: 256M
 
 volumes:
   pgdata:
