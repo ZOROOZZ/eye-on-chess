@@ -47,7 +47,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ChessPassword2026!
       POSTGRES_DB: eyeonchess
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -70,7 +70,7 @@ services:
     container_name: eyeonchess-pgbouncer
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ChessPassword2026!
     entrypoint:
       [
         "/bin/sh",
@@ -100,11 +100,11 @@ services:
     image: redis:7-alpine
     container_name: eyeonchess-redis
     restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    command: redis-server --requirepass RedisPassword2026! --appendonly yes
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "RedisPassword2026!", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -127,8 +127,8 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
-      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
+      DATABASE_URL: postgresql://postgres:ChessPassword2026!@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
+      DIRECT_DATABASE_URL: postgresql://postgres:ChessPassword2026!@postgres:5432/eyeonchess
     volumes:
       - ./config/bots.yml:/app/config/bots.yml:ro
     depends_on:
@@ -148,7 +148,7 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
+      DATABASE_URL: postgresql://postgres:ChessPassword2026!@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
     volumes:
       - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
     depends_on:
@@ -232,7 +232,7 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
+      DATABASE_URL: postgresql://postgres:ChessPassword2026!@pgbouncer:6432/eyeonchess?pgbouncer=true&connection_limit=10
     depends_on:
       migrate:
         condition: service_completed_successfully
