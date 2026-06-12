@@ -45,7 +45,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${CHESS_DB_PASS}
       POSTGRES_DB: eyeonchess
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -90,8 +90,8 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
-      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
+      DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
+      DIRECT_DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
     volumes:
       - ./config/bots.yml:/app/config/bots.yml:ro
     depends_on:
@@ -111,8 +111,8 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
-      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
+      DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
+      DIRECT_DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
     volumes:
       - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
     depends_on:
@@ -190,8 +190,8 @@ services:
     env_file:
       - ../.env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
-      DIRECT_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/eyeonchess
+      DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
+      DIRECT_DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
     depends_on:
       migrate:
         condition: service_completed_successfully
