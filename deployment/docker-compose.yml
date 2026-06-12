@@ -92,8 +92,6 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
       DIRECT_DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
-    volumes:
-      - ./config/bots.yml:/app/config/bots.yml:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -113,8 +111,6 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
       DIRECT_DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
-    volumes:
-      - ./config/rate-limits.yml:/app/config/rate-limits.yml:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
