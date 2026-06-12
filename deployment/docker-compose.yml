@@ -113,6 +113,7 @@ services:
       DIRECT_DATABASE_URL: postgresql://postgres:${CHESS_DB_PASS}@postgres:5432/eyeonchess
       JWT_SECRET: ${JWT_SECRET}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      PORT: "3001"
     depends_on:
       migrate:
         condition: service_completed_successfully
